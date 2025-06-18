@@ -20,14 +20,15 @@ namespace Infrastructure
 
         public void Enter()
         {
-            if (_googleSheetService.UseJSONAsConfig)
+            _stateChanger.Enter<LevelState>();
+            /*if (_googleSheetService.UseJSONAsConfig)
             {
                 _stateChanger.Enter<LoadGoogleSheetState>();
             }
             else
             {
                 _stateChanger.Enter<SelectGoogleSheetState>();
-            }
+            }*/
         }
 
         private void RegisterServices()
@@ -40,6 +41,7 @@ namespace Infrastructure
             _services.RegisterSingle(new WalletService());
             _services.RegisterSingle(new DebugService());
             _services.RegisterSingle(new GameWalletService());
+            _services.RegisterSingle(new PlayerMovementSystem());
 
             _services.RegisterSingle(new UIFactory());
             _services.RegisterSingle(new WindowService());

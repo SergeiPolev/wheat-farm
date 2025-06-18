@@ -117,6 +117,7 @@ Material:
     - _Grass_Height: 0.19
     - _Grass_Height_Divider: 1.5
     - _Height: 2
+    - _Id: 1
     - _Interaction_Power: 5
     - _Interaction_Radius: 1
     - _Metallic: 0
@@ -135,7 +136,7 @@ Material:
     - _Surface: 0
     - _UVSec: 0
     - _Upper_Lerp: 3.02
-    - _WindHeight: 0.3
+    - _WindHeight: 0.01
     - _Wind_Noise_Scale: 0.01
     - _Wind_Shift_Strenght: 15
     - _Wind_Speed: 0.94

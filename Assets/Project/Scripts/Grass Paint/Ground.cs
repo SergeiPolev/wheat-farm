@@ -28,7 +28,7 @@ public class Ground : MonoBehaviour
 		mesh.colors32 = vertColors;
 	}
 
-	public void ApplyPaintInSight(Vector3 targetPos, Vector3 originPos, float radius, float smallR = 2f, float maxAngle = 15f, float coloringSpeed = 2f)
+	public void ApplyPaintInSight(Color paintColor, Vector3 targetPos, Vector3 originPos, float radius, float smallR = 2f, float maxAngle = 15f, float coloringSpeed = 2f)
 	{
 		originPos.y = targetPos.y;
 		Vector3 center = transform.InverseTransformPoint(targetPos);
@@ -50,10 +50,9 @@ public class Ground : MonoBehaviour
 			if (minRSqr >= dsqr)
 			{
 				Color color = targetColors[i];
-				targetColors[i].a = 255;
 
-				float vertColor = color.r + Time.deltaTime * coloringSpeed;
-				targetColors[i] = new Color(vertColor, vertColor, vertColor, 1);
+				float vertColor = paintColor.a == 0 ? 0 : color.r + Time.deltaTime * coloringSpeed;
+				targetColors[i] = new Color(paintColor.r, paintColor.g, paintColor.b, vertColor);
 			}
 			else if (dsqr <= maxRSqr)
 			{
@@ -61,10 +60,9 @@ public class Ground : MonoBehaviour
 				if (angle <= maxAngle + 2)
 				{
 					Color color = targetColors[i];
-					targetColors[i].a = 255;
 
-					float vertColor = color.r + Time.deltaTime * coloringSpeed;
-					targetColors[i] = new Color(vertColor, vertColor, vertColor, 1);
+					float vertColor = paintColor.a == 0 ? 0 : color.a + Time.deltaTime * coloringSpeed;
+					targetColors[i] = new Color(paintColor.r, paintColor.g, paintColor.b, vertColor);
 				}
 			}
 		}

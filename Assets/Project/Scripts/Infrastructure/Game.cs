@@ -6,6 +6,7 @@ namespace Infrastructure
     public class Game : MonoBehaviour, ICoroutineRunner
     {        
         private GameStateMachine _stateMachine;
+        
         public GameStateMachine StateMachine => _stateMachine;
 
         private void Awake()

@@ -35,7 +35,7 @@ public class Grass : MonoBehaviour
 
 		_ground.Init();
 		
-		ApplyPaint(Vector3.zero, 0, 0);
+		ApplyPaint(Color.white, Vector3.zero, 0, 0);
 		
 		UpdateGrass();
 	}
@@ -74,7 +74,7 @@ public class Grass : MonoBehaviour
 			if (dsqr <= innerRsqr)
 			{
 				Color color = targetColors[i];
-				if (color.r < .99f)
+				if (color.a < .99f)
 				{
 					isColored = false;
 				}
@@ -84,7 +84,7 @@ public class Grass : MonoBehaviour
 		return isColored;
 	}
 
-	public void ApplyPaintInSight(Vector3 targetPos, Vector3 originPos, float radius, float smallR = 2f, float maxAngle = 15f, float coloringSpeed = 2f)
+	public void ApplyPaintInSight(Color paintColor, Vector3 targetPos, Vector3 originPos, float radius, float smallR = 2f, float maxAngle = 15f, float coloringSpeed = 2f)
 	{
 		originPos.y = targetPos.y;
 		Vector3 center = transform.InverseTransformPoint(targetPos);
@@ -98,7 +98,7 @@ public class Grass : MonoBehaviour
 
 		var coloredCount = 0;
 
-		_ground.ApplyPaintInSight(targetPos + Vector3.up * 2.2f, originPos, radius, smallR, maxAngle, coloringSpeed);
+		_ground.ApplyPaintInSight(paintColor, targetPos + Vector3.up * 2.2f, originPos, radius, smallR, maxAngle, coloringSpeed);
 		
 		for (int i = 0; i < verts.Length; i++)
 		{
@@ -108,10 +108,9 @@ public class Grass : MonoBehaviour
 			if (minRSqr >= dsqr)
 			{
 				Color color = targetColors[i];
-				targetColors[i].a = 255;
 
-				float vertColor = color.r + Time.deltaTime * coloringSpeed;
-				targetColors[i] = new Color(vertColor, vertColor, vertColor, 1);
+				float vertColor = paintColor.a == 0 ? 0 : color.a + Time.deltaTime * coloringSpeed;
+				targetColors[i] = new Color(paintColor.r, paintColor.g, paintColor.b, vertColor);
 				_lastColoredVector = verts[i];
 			}
 			else if (dsqr <= maxRSqr)
@@ -120,15 +119,14 @@ public class Grass : MonoBehaviour
 				if (angle <= maxAngle)
 				{
 					Color color = targetColors[i];
-					targetColors[i].a = 255;
 
-					float vertColor = color.r + Time.deltaTime * coloringSpeed;
-					targetColors[i] = new Color(vertColor, vertColor, vertColor, 1);
+					float vertColor = paintColor.a == 0 ? 0 : color.a + Time.deltaTime * coloringSpeed;
+					targetColors[i] = new Color(paintColor.r, paintColor.g, paintColor.b, vertColor);
 					_lastColoredVector = verts[i];
 				}
 			}
 
-			if (targetColors[i].r >= 1f)
+			if (targetColors[i].a >= 1f)
 			{
 				coloredCount++;
 			}
@@ -147,7 +145,7 @@ public class Grass : MonoBehaviour
 		}
 		
 	}
-	public void ApplyPaint(Vector3 position, float innerRadius, float outerRadius, float coloringSpeed = 2f)
+	public void ApplyPaint(Color paintColor, Vector3 position, float innerRadius, float outerRadius, float coloringSpeed = 2f)
 	{
 		Vector3 center = transform.InverseTransformPoint(position);
 
@@ -158,7 +156,7 @@ public class Grass : MonoBehaviour
 
 		var coloredCount = 0;
 		
-		_ground.ApplyPaintInSight(position + Vector3.up * 2.2f, position, innerRadius, innerRadius, 0, 1);
+		_ground.ApplyPaintInSight(paintColor, position + Vector3.up * 2.2f, position, innerRadius, innerRadius, 0, 1);
 
 		for (int i = 0; i < verts.Length; i++)
 		{
@@ -168,26 +166,25 @@ public class Grass : MonoBehaviour
 			if (dsqr <= outerRsqr)
 			{
 				Color color = targetColors[i];
-				targetColors[i].a = 255;
 
 				if (dsqr < innerRsqr)
 				{
-					if (color.r < 1)
+					if (color.a < 1)
 					{
 						_lastColoredVector = verts[i];
 					}
 					
-					float vertColor = color.r + Time.deltaTime * coloringSpeed;
-					targetColors[i] = new Color(vertColor, vertColor, vertColor, 1);
+					float vertColor = paintColor.a == 0 ? 0 : color.a + Time.deltaTime * coloringSpeed;
+					targetColors[i] = new Color(paintColor.r, paintColor.g, paintColor.b, vertColor);
 				}
 				else
 				{
 					float d = Mathf.Sqrt(dsqr);
-					float blobColor = color.r + (1 - (d - innerR) / outerR) * Time.deltaTime * coloringSpeed;
+					float blobColor = paintColor.a == 0 ? 0 : color.a + (1 - (d - innerR) / outerR) * Time.deltaTime * coloringSpeed;
 
-					Color newColor = new Color(blobColor, blobColor, blobColor, 1);
+					Color newColor = new Color(paintColor.r, paintColor.g, paintColor.b, blobColor);
 
-					if (newColor.r >= color.r)
+					if (newColor.a >= color.a)
 					{
 						targetColors[i] = newColor;
 						_lastColoredVector = verts[i];
@@ -195,7 +192,7 @@ public class Grass : MonoBehaviour
 				}
 			}
 
-			if (targetColors[i].r >= .95f)
+			if (targetColors[i].a >= .95f)
 			{
 				coloredCount++;
 			}

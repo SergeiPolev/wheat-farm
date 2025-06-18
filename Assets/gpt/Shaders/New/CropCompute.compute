@@ -1,0 +1,25 @@
+#pragma kernel CSMain
+
+RWStructuredBuffer<float4> _OutputBuffer;
+Texture2D<float4> _CropMap;
+SamplerState linearClampSampler;
+
+uint _CropId;
+uint _Resolution;
+
+[numthreads(8,8,1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _Resolution || id.y >= _Resolution) return;
+
+    float2 uv = float2(id.x, id.y) / (float)_Resolution;
+    float4 data = _CropMap.SampleLevel(linearClampSampler, uv, 0);
+
+    uint currentCrop = (uint)(data.r * 255.0 + 0.5);
+    if (currentCrop != _CropId) return;
+
+    float growth = data.g;
+    uint index = id.y * _Resolution + id.x;
+
+    _OutputBuffer[index] = float4(id.x, growth, id.y, 0);
+}

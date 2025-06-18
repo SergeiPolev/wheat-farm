@@ -41,14 +41,14 @@ namespace Services
         {
             _isActive = isActive;
 
-            if (_isActive)
+            /*if (_isActive)
             {
                 _windowService.Open(WindowId.Joystick);
             }
             else
             {
                 _windowService.Close(WindowId.Joystick);
-            }
+            }*/
         }
     }
 }
