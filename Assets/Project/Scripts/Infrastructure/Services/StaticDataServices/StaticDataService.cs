@@ -13,9 +13,12 @@ namespace Services
         private string _vfxStaticDataPath = "StaticData/VFX/VFXStaticData";
         private string _prefabStaticDataPath = "StaticData/Prefabs/PrefabStaticData";
         private string _materialsStaticDataPath = "StaticData/Materials/MaterialsStaticData";
+        private string _cropsStaticDataPath = "StaticData/Crops/CropsStaticData";
 
         private Dictionary<WindowId, WindowBase> _windowConfigs;
+        private Dictionary<CropsType, CropsData> _cropsDatas;
         public SettingsStaticData Settings { get; set; }
+        public CropsStaticData Crops { get; set; }
         public PrefabStaticData Prefabs { get; set; }
         public MaterialsStaticData Materials { get; set; }
 
@@ -29,6 +32,7 @@ namespace Services
             LoadMaterials();
             LoadLevels();
             LoadVFX();
+            LoadCrops();
         }
 
         private void LoadMaterials()
@@ -68,8 +72,19 @@ namespace Services
         {
             VfxStaticData = Resources.Load<VFXStaticData>(_vfxStaticDataPath);
         }
+        private void LoadCrops()
+        {
+            Crops = Resources.Load<CropsStaticData>(_cropsStaticDataPath);
+
+            _cropsDatas = Crops.CropsData.ToDictionary(x => x.Crop, x => x);
+        }
         private void LoadLevels()
         {
+        }
+
+        public CropsData GetCropData(CropsType cropsType)
+        {
+            return _cropsDatas[cropsType];
         }
     }
 }

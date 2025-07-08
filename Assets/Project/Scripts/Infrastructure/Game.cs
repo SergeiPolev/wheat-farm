@@ -29,7 +29,7 @@ namespace Infrastructure
         private void SetFPSLimit()
         {
             //QualitySettings.vSyncCount = 0;
-            Application.targetFrameRate = 60;
+            //Application.targetFrameRate = 60;
         }
 
         private void SetScreenSleep()

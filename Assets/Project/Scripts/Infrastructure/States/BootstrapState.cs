@@ -42,6 +42,8 @@ namespace Infrastructure
             _services.RegisterSingle(new DebugService());
             _services.RegisterSingle(new GameWalletService());
             _services.RegisterSingle(new PlayerMovementSystem());
+            _services.RegisterSingle(new GetCropPointsService());
+            _services.RegisterSingle(new PaintFieldService());
 
             _services.RegisterSingle(new UIFactory());
             _services.RegisterSingle(new WindowService());
