@@ -152,6 +152,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   FieldData: {fileID: 19681446}
   CropsType: 1
+  cropMaterial: {fileID: 0}
 --- !u!114 &19681446
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -200,6 +201,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   FieldData: {fileID: 19681446}
   CropsType: 2
+  cropMaterial: {fileID: 0}
 --- !u!1001 &54249355
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -334,6 +336,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   FieldData: {fileID: 226141223}
   CropsType: 2
+  cropMaterial: {fileID: 0}
 --- !u!114 &226141222
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -348,6 +351,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   FieldData: {fileID: 226141223}
   CropsType: 1
+  cropMaterial: {fileID: 0}
 --- !u!114 &226141223
 MonoBehaviour:
   m_ObjectHideFlags: 0

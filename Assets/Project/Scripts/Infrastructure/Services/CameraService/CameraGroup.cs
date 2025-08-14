@@ -1,15 +1,6 @@
 using Unity.Cinemachine;
 using UnityEngine;
 
-public enum BoundsBorder
-{
-    None,
-    Top,
-    Bottom,
-    Left,
-    Right,
-}
-
 public class CameraGroup : MonoBehaviour
 {
     [SerializeField] private CinemachineCamera _virtualCamera;

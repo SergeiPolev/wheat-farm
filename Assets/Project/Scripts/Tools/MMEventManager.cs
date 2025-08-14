@@ -8,25 +8,7 @@ using UnityEngine;
 using System.Collections.Generic;
 
 namespace MoreMountains.Tools
-{	
-	/// <summary>
-	/// MMGameEvents are used throughout the game for general game events (game started, game ended, life lost, etc.)
-	/// </summary>
-	public struct MMGameEvent
-	{
-		public string EventName;
-		public MMGameEvent(string newName)
-		{
-			EventName = newName;
-		}
-		static MMGameEvent e;
-		public static void Trigger(string newName)
-		{
-			e.EventName = newName;
-			MMEventManager.TriggerEvent(e);
-		}
-	}
-    
+{
 	/// <summary>
 	/// This class handles event management, and can be used to broadcast events throughout the game, to tell one class (or many) that something's happened.
 	/// Events are structs, you can define any kind of events you want. This manager comes with MMGameEvents, which are 
@@ -195,76 +177,6 @@ namespace MoreMountains.Tools
 			}
 
 			return exists;
-		}
-	}
-
-	/// <summary>
-	/// Static class that allows any class to start or stop listening to events
-	/// </summary>
-	public static class EventRegister
-	{
-		public delegate void Delegate<T>( T eventType );
-
-		public static void MMEventStartListening<EventType>( this MMEventListener<EventType> caller ) where EventType : struct
-		{
-			MMEventManager.AddListener<EventType>( caller );
-		}
-
-		public static void MMEventStopListening<EventType>( this MMEventListener<EventType> caller ) where EventType : struct
-		{
-			MMEventManager.RemoveListener<EventType>( caller );
-		}
-	}
-
-	/// <summary>
-	/// Event listener basic interface
-	/// </summary>
-	public interface MMEventListenerBase { };
-
-	/// <summary>
-	/// A public interface you'll need to implement for each type of event you want to listen to.
-	/// </summary>
-	public interface MMEventListener<T> : MMEventListenerBase
-	{
-		void OnMMEvent( T eventType );
-	}
-
-	public class MMEventListenerWrapper<TOwner, TTarget, TEvent> : MMEventListener<TEvent>, IDisposable
-		where TEvent : struct
-	{
-		private Action<TTarget> _callback;
-
-		private TOwner _owner;
-		public MMEventListenerWrapper(TOwner owner, Action<TTarget> callback)
-		{
-			_owner = owner;
-			_callback = callback;
-			RegisterCallbacks(true);
-		}
-
-		public void Dispose()
-		{
-			RegisterCallbacks(false);
-			_callback = null;
-		}
-
-		protected virtual TTarget OnEvent(TEvent eventType) => default;
-		public void OnMMEvent(TEvent eventType)
-		{
-			var item = OnEvent(eventType);
-			_callback?.Invoke(item);
-		}
-
-		private void RegisterCallbacks(bool b)
-		{
-			if (b)
-			{
-				this.MMEventStartListening<TEvent>();
-			}
-			else
-			{
-				this.MMEventStopListening<TEvent>();
-			}
 		}
 	}
 }

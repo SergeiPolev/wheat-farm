@@ -43,7 +43,8 @@ namespace Infrastructure
             _services.RegisterSingle(new GameWalletService());
             _services.RegisterSingle(new PlayerMovementSystem());
             _services.RegisterSingle(new GetCropPointsService());
-            _services.RegisterSingle(new PaintFieldService());
+            _services.RegisterSingle(new FieldToolsService());
+            _services.RegisterSingle(new ChangeToolsService());
 
             _services.RegisterSingle(new UIFactory());
             _services.RegisterSingle(new WindowService());
@@ -71,6 +72,7 @@ namespace Infrastructure
             _services.Single<GoogleSheetService>().Initialize(_services.Single<StaticDataService>());
             _services.Single<GlobalBlackboard>().Initialize();
             _services.Single<CombatTextFactory>().Initialize();
+            _services.Single<ChangeToolsService>().Initialize();
 
             _services.Single<CameraService>().Initialize();
             _services.Single<GameFactory>()

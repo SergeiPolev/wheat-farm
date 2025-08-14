@@ -3,18 +3,22 @@ using UnityEngine;
 
 namespace Infrastructure
 {
-    public class PaintFieldService : IService, ITick
+    public class FieldToolsService : IService, ITick
     {
         public Color Color = Color.yellow;
 
         private int _currentCrop;
         private Plane _plane;
+        
         private GetCropPointsService _getCropPointsService;
+        private GlobalBlackboard _globalBlackboard;
+        
         private static float Radius => 2f;
 
         public void OnLevelEnter()
         {
             _getCropPointsService = AllServices.Container.Single<GetCropPointsService>();
+            _globalBlackboard = AllServices.Container.Single<GlobalBlackboard>();
             _plane = new Plane(Vector3.up, Vector3.zero);
         }
 
@@ -61,14 +65,7 @@ namespace Infrastructure
                                     && py < fieldData.FieldSize.y
                                     && x * x + y * y <= sqrRadius)
                                 {
-                                    if (_currentCrop == 5)
-                                    {
-                                        CutCrops(fieldData, new Vector2Int(px, py));
-                                    }
-                                    else
-                                    {
-                                        PaintCrops(fieldData, new Vector2Int(px, py));
-                                    }
+                                    _globalBlackboard.Player.ToolHandler.CurrentTool.UseAt(fieldData, new Vector2Int(px, py));
                                 }
                             }
                         }
@@ -99,8 +96,8 @@ namespace Infrastructure
                 _currentCrop = 5;
             }
         }
-        
-        private void CutCrops(CropFieldData cropRenderer, Vector2Int posInArray)
+
+        public void CutCrops(CropFieldData cropRenderer, Vector2Int posInArray)
         {
             int linearIndex = posInArray.y * cropRenderer.FieldSize.y + posInArray.x;
             var props = cropRenderer.GetMeshProperties[linearIndex];
@@ -112,16 +109,27 @@ namespace Infrastructure
             cropRenderer.GetMeshProperties[linearIndex] = props;
         }
 
-        private void PaintCrops(CropFieldData cropRenderer, Vector2Int posInArray)
+        public void PlantCrops(CropFieldData cropRenderer, Vector2Int posInArray)
         {
             int linearIndex = posInArray.y * cropRenderer.FieldSize.y + posInArray.x;
             var props = cropRenderer.GetMeshProperties[linearIndex];
 
             props.color = Color;
             props.cropState.x = _currentCrop;
-            props.cropState.y = Mathf.Min(1, props.cropState.y + 1f * Time.deltaTime);
 
             cropRenderer.GetMeshProperties[linearIndex] = props;
+        }
+
+        public void WaterCrops(CropFieldData cropRenderer, Vector2Int posInArray)
+        {
+            int linearIndex = posInArray.y * cropRenderer.FieldSize.y + posInArray.x;
+            var props = cropRenderer.GetMeshProperties[linearIndex];
+
+            if (props.cropState.x > 0)
+            {
+                props.cropState.y = Mathf.Min(1, props.cropState.y + 1f * Time.deltaTime);
+                cropRenderer.GetMeshProperties[linearIndex] = props;
+            }
         }
     }
 }
