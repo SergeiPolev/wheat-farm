@@ -54,9 +54,7 @@ namespace WheatFarm.Player
 
             Vector3? hitPoint = GetGroundHitPoint();
             if (hitPoint.HasValue)
-            {
                 _toolService.UseCurrentTool(hitPoint.Value);
-            }
         }
 
         private Vector3? GetGroundHitPoint()

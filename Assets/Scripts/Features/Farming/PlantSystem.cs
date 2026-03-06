@@ -26,6 +26,12 @@ namespace WheatFarm.Farming
 
     public class PlantSystem : IPlantSystem, ITickable
     {
+        /// <summary>
+        /// Multiplier applied to CellWorldSize to get base crop scale.
+        /// The pyramid.fbx "Plane" mesh is very small natively, needs significant scaling.
+        /// </summary>
+        private const float ScaleMultiplier = 6f;
+
         private readonly IChunkSystem _chunkSystem;
         private readonly PlantDatabase _plantDb;
 
@@ -69,6 +75,9 @@ namespace WheatFarm.Farming
             }
         }
 
+        /// <summary>Initial growth for newly planted crops (must be > 0 for shader visibility).</summary>
+        private const float InitialGrowth = 0.1f;
+
         public void Plant(Vector2Int chunkCoord, int cellX, int cellY, PlantData data)
         {
             var chunk = _chunkSystem.GetChunk(chunkCoord);
@@ -79,14 +88,24 @@ namespace WheatFarm.Farming
             if (cell.Occupied || cell.HasPlant) return;
 
             cell.PlantId = data.PlantId;
-            cell.Growth = 0f;
+            cell.Growth = InitialGrowth;
             cell.Watered = false;
             cell.FertilizerMultiplier = 1f;
 
-            // Sync to GPU: set crop type (encoded as hash for now)
+            // Sync to GPU: position, crop type, color
             ref var props = ref chunk.MeshProps[idx];
-            props.cropState.x = GetPlantTypeIndex(data);
-            props.cropState.y = 0f;
+            Vector3 worldPos = _chunkSystem.CellToWorld(chunkCoord, cellX, cellY);
+
+            float baseScale = _chunkSystem.CellWorldSize * ScaleMultiplier;
+            float randomScale = baseScale * Random.Range(data.ScaleRange.x, data.ScaleRange.y);
+            float rotation = Random.Range(0f, 360f);
+            var scale = new Vector3(randomScale, randomScale, randomScale);
+            props.m = Matrix4x4.TRS(worldPos, Quaternion.Euler(0, rotation, 0), scale);
+            props.gr = Matrix4x4.TRS(worldPos, Quaternion.identity, scale);
+
+            // cropState.x = type id (must match material _Id); cropState.y = growth (>0 = visible)
+            props.cropState.x = 1; // TODO: per-plant-type material _Id when multiple materials supported
+            props.cropState.y = InitialGrowth;
             props.color = new Vector4(cell.Color.r, cell.Color.g, cell.Color.b, cell.Color.a);
 
             chunk.Dirty = true;
@@ -137,11 +156,11 @@ namespace WheatFarm.Farming
 
             if (plantData.RenewableHarvest)
             {
-                // Bushes/trees regrow
-                cell.Growth = 0f;
+                // Bushes/trees regrow from seedling stage (stay visible)
+                cell.Growth = InitialGrowth;
                 cell.Watered = false;
                 ref var props = ref chunk.MeshProps[idx];
-                props.cropState.y = 0f;
+                props.cropState.y = InitialGrowth;
             }
             else
             {
@@ -185,8 +204,10 @@ namespace WheatFarm.Farming
         private static void ClearCell(ref SubCellState cell, ref MeshProperties props)
         {
             cell = SubCellState.Empty;
+            props.m = Matrix4x4.zero;
+            props.gr = Matrix4x4.zero;
             props.cropState = Vector4.zero;
-            props.color = new Vector4(1, 1, 1, 1);
+            props.color = Vector4.zero;
         }
 
         private int GetPlantTypeIndex(PlantData data)

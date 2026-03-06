@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1177836daf6ccc74fae097b7182aed93, type: 3}
   m_Name: FarmRenderConfig
   m_EditorClassIdentifier: 
-  CropMesh: {fileID: 4300000, guid: 38abb676afed0fa4b91ee74564a7a010, type: 3}
+  CropMesh: {fileID: -462981019419857548, guid: 38abb676afed0fa4b91ee74564a7a010, type: 3}
   CropMaterial: {fileID: 2100000, guid: bfb1947c6982fe545a7ce6ad4f4f1849, type: 2}
   ChunkWorldSize: 4
   SubCellResolution: 8

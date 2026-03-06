@@ -14,6 +14,7 @@ namespace WheatFarm.Farming
         private readonly IChunkSystem _chunkSystem;
         private readonly FarmRenderConfig _config;
         private readonly Dictionary<Vector2Int, ChunkCropRenderer> _renderers = new();
+        private bool _loggedOnce;
 
         public FarmRenderSystem(IChunkSystem chunkSystem, FarmRenderConfig config)
         {
@@ -23,8 +24,8 @@ namespace WheatFarm.Farming
 
         public void Tick()
         {
-            // Skip rendering if mesh/material not assigned yet
-            if (_config.CropMesh == null || _config.CropMaterial == null) return;
+            if (_config.CropMesh == null || _config.CropMaterial == null)
+                return;
 
             // Create renderers for newly unlocked chunks
             foreach (var chunk in _chunkSystem.GetAllUnlockedChunks())
@@ -38,6 +39,12 @@ namespace WheatFarm.Farming
                         _chunkSystem.ChunkWorldSize);
                     _renderers[chunk.ChunkCoord] = renderer;
                 }
+            }
+
+            if (!_loggedOnce)
+            {
+                Debug.Log($"[FarmRenderSystem] mesh={_config.CropMesh.name}, mat={_config.CropMaterial.name}, renderers={_renderers.Count}");
+                _loggedOnce = true;
             }
 
             // Sync dirty buffers and draw
