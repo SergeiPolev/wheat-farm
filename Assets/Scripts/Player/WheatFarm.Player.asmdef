@@ -1,0 +1,21 @@
+{
+    "name": "WheatFarm.Player",
+    "rootNamespace": "WheatFarm.Player",
+    "references": [
+        "WheatFarm.Core",
+        "WheatFarm.Farming",
+        "VContainer",
+        "UniTask",
+        "Unity.InputSystem",
+        "R3.Unity"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

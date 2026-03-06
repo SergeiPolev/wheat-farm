@@ -1,0 +1,22 @@
+{
+    "name": "WheatFarm.Buildings",
+    "rootNamespace": "WheatFarm.Buildings",
+    "references": [
+        "WheatFarm.Core",
+        "WheatFarm.Farming",
+        "WheatFarm.Inventory",
+        "WheatFarm.Economy",
+        "VContainer",
+        "UniTask",
+        "R3.Unity"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

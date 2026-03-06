@@ -1,0 +1,30 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "csharp-analyzer": {
+      "type": "local",
+      "command": [
+        "dotnet",
+        "run",
+        "--project",
+        "tools/CSharpAnalyzerMcp"
+      ],
+      "environment": {
+        "PROJECT_PATH": "./wheat-farm.sln"
+      },
+      "enabled": true
+    },
+    "unityMCP": {
+      "type": "local",
+      "command": [
+        "C:\\Users\\spole\\.local\\bin\\uvx.exe",
+        "--from",
+        "mcpforunityserver",
+        "mcp-for-unity",
+        "--transport",
+        "stdio"
+      ],
+      "enabled": true
+    }
+  }
+}

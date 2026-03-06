@@ -1,0 +1,27 @@
+{
+    "name": "WheatFarm.Infrastructure",
+    "rootNamespace": "WheatFarm.Infrastructure",
+    "references": [
+        "WheatFarm.Core",
+        "WheatFarm.Farming",
+        "WheatFarm.Player",
+        "WheatFarm.Economy",
+        "WheatFarm.Inventory",
+        "WheatFarm.Buildings",
+        "WheatFarm.DayNight",
+        "WheatFarm.UI",
+        "VContainer",
+        "VContainer.Unity",
+        "UniTask",
+        "R3.Unity"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

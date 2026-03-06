@@ -9,8 +9,41 @@
       },
       "hash": "d4b41e270eb56f7db0386b52d00df1fd239169a2"
     },
+    "com.coplaydev.unity-mcp": {
+      "version": "https://github.com/CoplayDev/unity-mcp.git?path=/MCPForUnity",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "com.unity.nuget.newtonsoft-json": "3.0.2",
+        "com.unity.test-framework": "1.1.31"
+      },
+      "hash": "74f8606671fbcdbb2f3f29ab75762a3c56e2986e"
+    },
+    "com.cysharp.r3": {
+      "version": "https://github.com/Cysharp/R3.git?path=src/R3.Unity/Assets/R3.Unity",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "com.unity.modules.imgui": "1.0.0"
+      },
+      "hash": "dc69078430149db8cd93069f502cefe148745b4b"
+    },
+    "com.cysharp.unitask": {
+      "version": "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "a9e27c03d411d2fca01cc7410c24c97cd77cb539"
+    },
+    "com.github-glitchenzo.nugetforunity": {
+      "version": "https://github.com/GlitchEnzo/NuGetForUnity.git?path=/src/NuGetForUnity",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "c2af83c9d4f8cdaada9d4a0e94de2f195d8e1d01"
+    },
     "com.unity.ai.navigation": {
-      "version": "2.0.7",
+      "version": "2.0.9",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -28,7 +61,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.burst": {
-      "version": "1.8.21",
+      "version": "1.8.25",
       "depth": 2,
       "source": "registry",
       "dependencies": {
@@ -48,7 +81,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.collab-proxy": {
-      "version": "2.8.2",
+      "version": "2.9.3",
       "depth": 0,
       "source": "registry",
       "dependencies": {},
@@ -73,7 +106,7 @@
       "dependencies": {}
     },
     "com.unity.ide.rider": {
-      "version": "3.0.36",
+      "version": "3.0.38",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -91,7 +124,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.inputsystem": {
-      "version": "1.14.0",
+      "version": "1.14.2",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -206,7 +239,7 @@
       }
     },
     "com.unity.splines": {
-      "version": "2.8.0",
+      "version": "2.8.2",
       "depth": 1,
       "source": "registry",
       "dependencies": {
@@ -217,7 +250,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.test-framework": {
-      "version": "1.5.1",
+      "version": "1.6.0",
       "depth": 0,
       "source": "builtin",
       "dependencies": {
@@ -227,7 +260,7 @@
       }
     },
     "com.unity.test-framework.performance": {
-      "version": "3.1.0",
+      "version": "3.2.0",
       "depth": 2,
       "source": "registry",
       "dependencies": {
@@ -237,7 +270,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.timeline": {
-      "version": "1.8.7",
+      "version": "1.8.9",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -258,7 +291,7 @@
       }
     },
     "com.unity.visualscripting": {
-      "version": "1.9.6",
+      "version": "1.9.7",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -266,6 +299,13 @@
         "com.unity.modules.jsonserialize": "1.0.0"
       },
       "url": "https://packages.unity.com"
+    },
+    "jp.hadashikick.vcontainer": {
+      "version": "https://github.com/hadashiA/VContainer.git?path=VContainer/Assets/VContainer#1.16.9",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "0522be3ef0bb03a3dd8866d43090b6e7ea22884a"
     },
     "com.unity.modules.accessibility": {
       "version": "1.0.0",

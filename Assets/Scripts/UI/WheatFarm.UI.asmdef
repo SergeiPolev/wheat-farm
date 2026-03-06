@@ -1,0 +1,27 @@
+{
+    "name": "WheatFarm.UI",
+    "rootNamespace": "WheatFarm.UI",
+    "references": [
+        "WheatFarm.Core",
+        "WheatFarm.Economy",
+        "WheatFarm.Farming",
+        "WheatFarm.Inventory",
+        "WheatFarm.Player",
+        "WheatFarm.DayNight",
+        "WheatFarm.Buildings",
+        "VContainer",
+        "VContainer.Unity",
+        "UniTask",
+        "Unity.TextMeshPro",
+        "R3.Unity"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
