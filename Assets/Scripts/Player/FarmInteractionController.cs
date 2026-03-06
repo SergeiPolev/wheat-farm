@@ -18,14 +18,18 @@ namespace WheatFarm.Player
 
         private IToolService _toolService;
         private IBrushService _brushService;
+        private FarmRenderConfig _renderConfig;
         private Camera _cam;
         private readonly Plane _groundPlane = new(Vector3.up, Vector3.zero);
 
+        private static readonly int InteractionPositionId = Shader.PropertyToID("_Interaction_Position");
+
         [Inject]
-        public void Construct(IToolService toolService, IBrushService brushService)
+        public void Construct(IToolService toolService, IBrushService brushService, FarmRenderConfig renderConfig)
         {
             _toolService = toolService;
             _brushService = brushService;
+            _renderConfig = renderConfig;
         }
 
         private void Start()
@@ -37,9 +41,16 @@ namespace WheatFarm.Player
         {
             if (_toolService == null) return;
 
+            UpdateInteractionPosition();
             HandleToolSwitching();
             HandleBrushSize();
             HandleToolUse();
+        }
+
+        private void UpdateInteractionPosition()
+        {
+            if (_renderConfig != null && _renderConfig.CropMaterial != null)
+                _renderConfig.CropMaterial.SetVector(InteractionPositionId, transform.position);
         }
 
         private void HandleToolUse()
