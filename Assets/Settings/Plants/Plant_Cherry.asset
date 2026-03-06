@@ -10,18 +10,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 802216f9779a97e429a99c662d13361b, type: 3}
-  m_Name: Plant_1
+  m_Name: Plant_Cherry
   m_EditorClassIdentifier: 
-  PlantId: 
-  DisplayName: 
-  Category: 0
+  PlantId: cherry
+  DisplayName: Cherry Tree
+  Category: 2
   Mesh: {fileID: 0}
-  Material: {fileID: 0}
-  ScaleRange: {x: 0.8, y: 1.2}
-  GrowthDuration: 60
+  Material: {fileID: 2100000, guid: c480bfe2f0153084abdbff4176496d2b, type: 2}
+  ScaleRange: {x: 1.5, y: 2.5}
+  GrowthDuration: 180
   NeedsWatering: 1
-  SeedCost: 5
-  SellPrice: 10
-  RenewableHarvest: 0
-  TrunkSize: {x: 1, y: 1}
+  SeedCost: 25
+  SellPrice: 40
+  RenewableHarvest: 1
+  TrunkSize: {x: 3, y: 3}
   UnlockedByDefault: 0

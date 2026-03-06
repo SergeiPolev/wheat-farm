@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 802216f9779a97e429a99c662d13361b, type: 3}
+  m_Name: Plant_Corn
+  m_EditorClassIdentifier: 
+  PlantId: corn
+  DisplayName: Corn
+  Category: 0
+  Mesh: {fileID: 0}
+  Material: {fileID: 2100000, guid: deb41db3e067f164e9b0154cbee0c662, type: 2}
+  ScaleRange: {x: 0.9, y: 1.3}
+  GrowthDuration: 45
+  NeedsWatering: 1
+  SeedCost: 5
+  SellPrice: 12
+  RenewableHarvest: 0
+  TrunkSize: {x: 1, y: 1}
+  UnlockedByDefault: 1
