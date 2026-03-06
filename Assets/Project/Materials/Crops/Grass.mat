@@ -126,7 +126,7 @@ Material:
     - _Height: 0
     - _HiddenHeight: -2
     - _Id: 1
-    - _Interaction_Power: 7.24
+    - _Interaction_Power: 0
     - _Interaction_Radius: 1.2
     - _MaxHeight: 3.8
     - _Metallic: 0

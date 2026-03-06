@@ -30,7 +30,7 @@ namespace WheatFarm.Farming
         /// Multiplier applied to CellWorldSize to get base crop scale.
         /// The pyramid.fbx "Plane" mesh is very small natively, needs significant scaling.
         /// </summary>
-        private const float ScaleMultiplier = 36f;
+        private const float ScaleMultiplier = 72f;
 
         /// <summary>Initial growth for newly planted crops (must be > 0 for shader visibility).</summary>
         private const float InitialGrowth = 0.1f;
