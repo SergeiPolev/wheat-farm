@@ -27,6 +27,12 @@ namespace WheatFarm.Farming
         /// <summary>Whether this cell is blocked (e.g. by a tree trunk or building).</summary>
         public bool Occupied;
 
+        /// <summary>Randomized base scale (full-size) set at planting time.</summary>
+        public float BaseScale;
+
+        /// <summary>Random Y-axis rotation (degrees) set at planting time.</summary>
+        public float RotationY;
+
         public bool HasPlant => !string.IsNullOrEmpty(PlantId);
         public bool IsHarvestable => HasPlant && Growth >= 1f;
 
@@ -37,7 +43,9 @@ namespace WheatFarm.Farming
             Watered = false,
             FertilizerMultiplier = 1f,
             Color = Color.white,
-            Occupied = false
+            Occupied = false,
+            BaseScale = 0f,
+            RotationY = 0f
         };
     }
 }
