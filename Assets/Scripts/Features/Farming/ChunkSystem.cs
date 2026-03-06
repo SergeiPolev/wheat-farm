@@ -23,6 +23,12 @@ namespace WheatFarm.Farming
         (Vector2Int chunkCoord, int cellX, int cellY) WorldToCell(Vector3 worldPos);
         Vector3 CellToWorld(Vector2Int chunkCoord, int cellX, int cellY);
 
+        /// <summary>
+        /// Bounds center for a chunk (used by DrawMeshInstancedIndirect).
+        /// MeshProperties positions must be RELATIVE to this for the shader to work correctly.
+        /// </summary>
+        Vector3 ChunkBoundsCenter(Vector2Int chunkCoord);
+
         List<(Vector2Int chunkCoord, int cellX, int cellY)> GetCellsInRadius(Vector3 worldPos, float radius);
     }
 
@@ -111,6 +117,14 @@ namespace WheatFarm.Farming
             return new Vector3(x, 0f, z);
         }
 
+        public Vector3 ChunkBoundsCenter(Vector2Int chunkCoord)
+        {
+            return new Vector3(
+                (chunkCoord.x + 0.5f) * ChunkWorldSize,
+                0f,
+                (chunkCoord.y + 0.5f) * ChunkWorldSize);
+        }
+
         public List<(Vector2Int chunkCoord, int cellX, int cellY)> GetCellsInRadius(Vector3 worldPos, float radius)
         {
             var result = new List<(Vector2Int, int, int)>();
@@ -150,18 +164,18 @@ namespace WheatFarm.Farming
         private void InitializeChunkMeshProps(ChunkData chunk)
         {
             float cellSize = CellWorldSize;
-            float chunkOriginX = chunk.ChunkCoord.x * ChunkWorldSize;
-            float chunkOriginZ = chunk.ChunkCoord.y * ChunkWorldSize;
+            // Positions in MeshProperties must be RELATIVE to bounds center
+            // because the shader does: objectToWorld = mul(objectToWorld, data.m)
+            // and objectToWorld already contains the bounds-based transform
+            Vector3 boundsCenter = ChunkBoundsCenter(chunk.ChunkCoord);
 
             for (int x = 0; x < chunk.Resolution; x++)
             {
                 for (int y = 0; y < chunk.Resolution; y++)
                 {
                     int idx = chunk.CellIndex(x, y);
-                    var worldPos = new Vector3(
-                        chunkOriginX + (x + 0.5f) * cellSize,
-                        0f,
-                        chunkOriginZ + (y + 0.5f) * cellSize);
+                    var worldPos = CellToWorld(chunk.ChunkCoord, x, y);
+                    var relativePos = worldPos - boundsCenter;
 
                     // Small random offset for natural look
                     var randomOffset = new Vector3(
@@ -171,11 +185,11 @@ namespace WheatFarm.Farming
 
                     var props = new MeshProperties();
                     props.m = Matrix4x4.TRS(
-                        worldPos + randomOffset,
+                        relativePos + randomOffset,
                         Quaternion.Euler(0, Random.Range(0, 360), 0),
                         Vector3.one * Random.Range(0.8f, 1.2f));
                     props.gr = Matrix4x4.TRS(
-                        worldPos + Vector3.up * 0.05f,
+                        relativePos + Vector3.up * 0.05f,
                         Quaternion.identity,
                         Vector3.one * 0.01f);
                     props.color = new Vector4(1, 1, 1, 1);

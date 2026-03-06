@@ -30,7 +30,7 @@ namespace WheatFarm.Farming
         /// Multiplier applied to CellWorldSize to get base crop scale.
         /// The pyramid.fbx "Plane" mesh is very small natively, needs significant scaling.
         /// </summary>
-        private const float ScaleMultiplier = 10f;
+        private const float ScaleMultiplier = 36f;
 
         /// <summary>Initial growth for newly planted crops (must be > 0 for shader visibility).</summary>
         private const float InitialGrowth = 0.1f;
@@ -101,15 +101,15 @@ namespace WheatFarm.Farming
             cell.BaseScale = baseScale * Random.Range(data.ScaleRange.x, data.ScaleRange.y);
             cell.RotationY = Random.Range(0f, 360f);
 
-            // Sync to GPU: set position first, then RebuildMatrix uses it
+            // Sync to GPU: positions RELATIVE to chunk bounds center (shader requirement)
             ref var props = ref chunk.MeshProps[idx];
             Vector3 worldPos = _chunkSystem.CellToWorld(chunkCoord, cellX, cellY);
+            Vector3 relPos = worldPos - _chunkSystem.ChunkBoundsCenter(chunkCoord);
 
-            // Seed position into matrix so RebuildMatrix can extract it
             float initScale = cell.BaseScale * MinGrowthScale;
-            props.m = Matrix4x4.TRS(worldPos, Quaternion.Euler(0, cell.RotationY, 0),
+            props.m = Matrix4x4.TRS(relPos, Quaternion.Euler(0, cell.RotationY, 0),
                 new Vector3(initScale, initScale, initScale));
-            props.gr = Matrix4x4.TRS(worldPos, Quaternion.identity, Vector3.one * cell.BaseScale);
+            props.gr = Matrix4x4.TRS(relPos, Quaternion.identity, Vector3.one * cell.BaseScale);
 
             // cropState.x = type id (must match material _Id); cropState.y = growth (>0 = visible)
             props.cropState.x = 1; // TODO: per-plant-type material _Id when multiple materials supported
