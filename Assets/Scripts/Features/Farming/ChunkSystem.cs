@@ -30,6 +30,13 @@ namespace WheatFarm.Farming
         Vector3 ChunkBoundsCenter(Vector2Int chunkCoord);
 
         List<(Vector2Int chunkCoord, int cellX, int cellY)> GetCellsInRadius(Vector3 worldPos, float radius);
+
+        /// <summary>
+        /// Recompute ground neighbor flags (uv.w) for a cell and its 8 neighbors.
+        /// Handles cross-chunk lookups so the shader doesn't need to read across buffers.
+        /// Call after any ground state change (plant, water, harvest, uproot, etc.).
+        /// </summary>
+        void UpdateGroundNeighborFlags(Vector2Int chunkCoord, int cellX, int cellY);
     }
 
     public class ChunkSystem : IChunkSystem
@@ -161,6 +168,149 @@ namespace WheatFarm.Farming
             return result;
         }
 
+        /// <summary>Radius (in cells) for grass proximity blending around farmland.</summary>
+        private const int ProximityRadius = 2;
+
+        public void UpdateGroundNeighborFlags(Vector2Int chunkCoord, int cellX, int cellY)
+        {
+            // Update a (ProximityRadius+1) ring around the changed cell:
+            // - Farmed cells get 8-bit neighbor flags
+            // - Grass cells get proximity-to-farmland (0..1) for transition blending
+            int range = ProximityRadius + 1; // +1 so edge-flag neighbors of farmland are also updated
+            for (int dy = -range; dy <= range; dy++)
+            {
+                for (int dx = -range; dx <= range; dx++)
+                {
+                    ResolveCell(chunkCoord, cellX + dx, cellY + dy,
+                        out var nChunkCoord, out int nx, out int ny);
+
+                    var nChunk = GetChunk(nChunkCoord);
+                    if (nChunk == null || !nChunk.Unlocked) continue;
+
+                    int idx = nChunk.CellIndex(nx, ny);
+                    ref var props = ref nChunk.MeshProps[idx];
+
+                    if (nChunk.Cells[idx].GroundState != GroundState.Grass)
+                    {
+                        // Farmed cell: store 8-bit neighbor flags
+                        props.uv.w = ComputeNeighborFlags(nChunkCoord, nx, ny);
+                    }
+                    else
+                    {
+                        // Grass cell: store proximity + direction to nearest farmland
+                        ComputeFarmlandProximity(nChunkCoord, nx, ny,
+                            out float prox, out float nearDx, out float nearDy);
+                        props.uv.w = prox;
+                        // Store offset to nearest farmland in color.xy
+                        // (color is unused for grass cells — no plant to tint)
+                        props.color = new Vector4(nearDx, nearDy, 0, 0);
+                    }
+                    nChunk.Dirty = true;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Resolve cell coordinates that may be outside chunk bounds into
+        /// the correct chunk + local cell coords (cross-chunk wrapping).
+        /// </summary>
+        private void ResolveCell(Vector2Int chunkCoord, int cellX, int cellY,
+            out Vector2Int outChunk, out int outX, out int outY)
+        {
+            outChunk = chunkCoord;
+            outX = cellX;
+            outY = cellY;
+
+            if (outX < 0) { outChunk.x--; outX += SubCellResolution; }
+            else if (outX >= SubCellResolution) { outChunk.x++; outX -= SubCellResolution; }
+            if (outY < 0) { outChunk.y--; outY += SubCellResolution; }
+            else if (outY >= SubCellResolution) { outChunk.y++; outY -= SubCellResolution; }
+        }
+
+        /// <summary>
+        /// Compute 8-bit neighbor flags for a farmed cell. Each bit = 1 if that neighbor has ground state > 0.
+        /// Bit layout: 0=N(+Y), 1=E(+X), 2=S(-Y), 3=W(-X), 4=NE, 5=SE, 6=SW, 7=NW.
+        /// Handles cross-chunk lookups.
+        /// </summary>
+        private float ComputeNeighborFlags(Vector2Int chunkCoord, int cellX, int cellY)
+        {
+            int flags = 0;
+
+            // Direction offsets: N, E, S, W, NE, SE, SW, NW
+            int[] dxArr = { 0, 1, 0, -1, 1, 1, -1, -1 };
+            int[] dyArr = { 1, 0, -1, 0, 1, -1, -1, 1 };
+
+            for (int bit = 0; bit < 8; bit++)
+            {
+                ResolveCell(chunkCoord, cellX + dxArr[bit], cellY + dyArr[bit],
+                    out var nChunkCoord, out int nx, out int ny);
+
+                var nChunk = GetChunk(nChunkCoord);
+                if (nChunk != null && nChunk.Unlocked)
+                {
+                    int idx = nChunk.CellIndex(nx, ny);
+                    if (nChunk.Cells[idx].GroundState != GroundState.Grass)
+                        flags |= (1 << bit);
+                }
+            }
+
+            return (float)flags;
+        }
+
+        /// <summary>
+        /// For a grass cell, find the nearest farmed cell within ProximityRadius.
+        /// Stores proximity (0..1) in uv.w and the cell offset (dx,dy) to nearest
+        /// farmland in color.xy (so the shader can compute per-pixel distance).
+        /// </summary>
+        private void ComputeFarmlandProximity(Vector2Int chunkCoord, int cellX, int cellY,
+            out float proximity, out float nearestDx, out float nearestDy)
+        {
+            float minDistSq = (ProximityRadius + 1) * (ProximityRadius + 1);
+            int bestDx = 0, bestDy = 0;
+            bool found = false;
+
+            for (int dy = -ProximityRadius; dy <= ProximityRadius; dy++)
+            {
+                for (int dx = -ProximityRadius; dx <= ProximityRadius; dx++)
+                {
+                    if (dx == 0 && dy == 0) continue;
+
+                    ResolveCell(chunkCoord, cellX + dx, cellY + dy,
+                        out var nChunkCoord, out int nx, out int ny);
+
+                    var nChunk = GetChunk(nChunkCoord);
+                    if (nChunk == null || !nChunk.Unlocked) continue;
+
+                    int idx = nChunk.CellIndex(nx, ny);
+                    if (nChunk.Cells[idx].GroundState != GroundState.Grass)
+                    {
+                        float distSq = dx * dx + dy * dy;
+                        if (distSq < minDistSq)
+                        {
+                            minDistSq = distSq;
+                            bestDx = dx;
+                            bestDy = dy;
+                            found = true;
+                        }
+                    }
+                }
+            }
+
+            if (!found)
+            {
+                proximity = 0f;
+                nearestDx = 0f;
+                nearestDy = 0f;
+                return;
+            }
+
+            float dist = Mathf.Sqrt(minDistSq);
+            // 1.0 at distance 0.5 (touching), 0.0 at ProximityRadius+0.5
+            proximity = Mathf.Clamp01(1f - (dist - 0.5f) / (ProximityRadius + 0.5f));
+            nearestDx = bestDx;
+            nearestDy = bestDy;
+        }
+
         private void InitializeChunkMeshProps(ChunkData chunk)
         {
             float cellSize = CellWorldSize;
@@ -188,16 +338,23 @@ namespace WheatFarm.Farming
                         relativePos + randomOffset,
                         Quaternion.Euler(0, Random.Range(0, 360), 0),
                         Vector3.one * Random.Range(0.8f, 1.2f));
+                    // Ground tile: flat quad covering the cell, slightly above ground plane
+                    // Quad mesh faces +Z in local space; rotate 90° around X to face +Y (up)
+                    // Exact cell size — edge softening is done in UV space within the tile
+                    float groundScale = cellSize;
                     props.gr = Matrix4x4.TRS(
-                        relativePos + Vector3.up * 0.05f,
-                        Quaternion.identity,
-                        Vector3.one * 0.01f);
-                    props.color = new Vector4(1, 1, 1, 1);
+                        relativePos + Vector3.up * 0.01f,
+                        Quaternion.Euler(90, 0, 0),
+                        new Vector3(groundScale, groundScale, groundScale));
+                    // color = (0,0,0,0) for grass cells (shader reads color.xy as farmDir)
+                    // Plant() sets color to plant tint; UpdateGroundNeighborFlags sets
+                    // color.xy to nearest-farmland offset for proximity grass cells
+                    props.color = Vector4.zero;
                     props.uv = new Vector4(
                         (float)x / chunk.Resolution,
                         (float)y / chunk.Resolution,
                         1f / chunk.Resolution,
-                        1f / chunk.Resolution);
+                        0f); // uv.w = 0: no neighbor flags / no proximity
                     props.cropState = Vector4.zero;
 
                     chunk.MeshProps[idx] = props;

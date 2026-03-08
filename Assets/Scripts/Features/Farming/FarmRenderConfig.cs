@@ -14,8 +14,15 @@ namespace WheatFarm.Farming
         [Tooltip("Mesh used for all crop instances (GPU instanced indirect)")]
         public Mesh CropMesh;
 
-        [Tooltip("Material with GetStructedBuffer.hlsl support")]
+        [Tooltip("Material with GetStructedBuffer.hlsl support (Grass Instanced shader)")]
         public Material CropMaterial;
+
+        [Header("Ground Tile Rendering")]
+        [Tooltip("Flat quad mesh for ground tiles (Unity Quad or custom)")]
+        public Mesh GroundMesh;
+
+        [Tooltip("Material with Ground Instanced shader")]
+        public Material GroundMaterial;
 
         [Header("Chunk Settings")]
         [Tooltip("World size of one chunk in units")]

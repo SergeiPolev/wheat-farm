@@ -14,6 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   CropMesh: {fileID: -462981019419857548, guid: 38abb676afed0fa4b91ee74564a7a010, type: 3}
   CropMaterial: {fileID: 2100000, guid: bfb1947c6982fe545a7ce6ad4f4f1849, type: 2}
+  GroundMesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
+  GroundMaterial: {fileID: 2100000, guid: 968c513b0ec0c2d4697d9eb5ef13336a, type: 2}
   ChunkWorldSize: 4
   SubCellResolution: 16
   StarterChunkRadius: 2

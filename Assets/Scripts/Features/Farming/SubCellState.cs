@@ -2,6 +2,15 @@ using UnityEngine;
 
 namespace WheatFarm.Farming
 {
+    /// <summary>Visual state of the ground tile under a cell.</summary>
+    public enum GroundState
+    {
+        Grass = 0,
+        Tilled = 1,
+        Watered = 2,
+        Fertilized = 3
+    }
+
     /// <summary>
     /// Gameplay state of a single sub-cell within a chunk.
     /// Separate from MeshProperties (GPU data) — this is the source of truth.
@@ -24,6 +33,9 @@ namespace WheatFarm.Farming
         /// <summary>Dye tint color applied to the plant.</summary>
         public Color Color;
 
+        /// <summary>Visual state of the ground tile (Grass, Tilled, Watered, Fertilized).</summary>
+        public GroundState GroundState;
+
         /// <summary>Whether this cell is blocked (e.g. by a tree trunk or building).</summary>
         public bool Occupied;
 
@@ -43,6 +55,7 @@ namespace WheatFarm.Farming
             Watered = false,
             FertilizerMultiplier = 1f,
             Color = Color.white,
+            GroundState = GroundState.Grass,
             Occupied = false,
             BaseScale = 0f,
             RotationY = 0f

@@ -36,6 +36,8 @@ namespace WheatFarm.Farming
                         chunk,
                         _config.CropMesh,
                         _config.CropMaterial,
+                        _config.GroundMesh,
+                        _config.GroundMaterial,
                         _chunkSystem.ChunkWorldSize);
                     _renderers[chunk.ChunkCoord] = renderer;
                 }
@@ -43,7 +45,8 @@ namespace WheatFarm.Farming
 
             if (!_loggedOnce)
             {
-                Debug.Log($"[FarmRenderSystem] mesh={_config.CropMesh.name}, mat={_config.CropMaterial.name}, renderers={_renderers.Count}");
+                bool hasGround = _config.GroundMesh != null && _config.GroundMaterial != null;
+                Debug.Log($"[FarmRenderSystem] crop={_config.CropMesh.name}, ground={hasGround}, renderers={_renderers.Count}");
                 _loggedOnce = true;
             }
 

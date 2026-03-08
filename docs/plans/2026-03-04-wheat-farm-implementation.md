@@ -1329,21 +1329,132 @@
 
 ---
 
+## Phase 4.5: Auto-Water & Ground Visualization
+
+> **Status:** Phases 0-4 are DONE. This is the next work to do.
+
+### Task 4.5.1: Auto-Water on Plant
+
+**Files:**
+- Modify: `Assets/Scripts/Features/Farming/PlantSystem.cs`
+
+**Steps:**
+1. In `Plant()` method, change `cell.Watered = false` to `cell.Watered = true` so crops grow immediately after planting.
+2. This removes the friction of needing to switch to WateringCan before crops start growing.
+3. WateringCan tool remains available for future mechanics (e.g., re-watering after harvest for renewable plants).
+4. Commit: `fix: auto-water crops on plant so they grow immediately`
+
+### Task 4.5.2: Add GroundState to SubCellState
+
+**Files:**
+- Modify: `Assets/Scripts/Features/Farming/SubCellState.cs`
+
+**Steps:**
+1. Add `GroundState` field to `SubCellState`:
+   ```csharp
+   public enum GroundState { Grass = 0, Tilled = 1, Watered = 2, Fertilized = 3 }
+   // Add to SubCellState struct:
+   public GroundState GroundState;
+   ```
+2. Commit: `feat: add GroundState enum to SubCellState`
+
+### Task 4.5.3: Update PlantSystem to Set Ground State
+
+**Files:**
+- Modify: `Assets/Scripts/Features/Farming/PlantSystem.cs`
+
+**Steps:**
+1. In `Plant()`: set `cell.GroundState = Tilled`, write `cropState.z = 1` to MeshProperties.
+2. In `Water()`: set `cell.GroundState = Watered`, write `cropState.z = 2`, mark chunk dirty.
+3. In `Fertilize()`: set `cell.GroundState = Fertilized`, write `cropState.z = 3`, mark chunk dirty.
+4. In `Harvest()` (non-renewable): reset `cell.GroundState = Grass`, `cropState.z = 0`.
+5. In `Uproot()`: reset `cell.GroundState = Grass`, `cropState.z = 0`.
+6. Commit: `feat: PlantSystem updates ground state on plant/water/fertilize/harvest`
+
+### Task 4.5.4: Initialize Ground Tiles for All Chunk Cells
+
+**Files:**
+- Modify: `Assets/Scripts/Features/Farming/ChunkSystem.cs`
+
+**Steps:**
+1. In `InitializeChunkMeshProps()`: ensure `gr` matrix is set for every cell as a flat quad at the cell's position (relative to chunk bounds center), with appropriate scale to cover the cell area.
+2. Set `cropState.z = 0` (grass state) for all cells by default.
+3. Ground tiles must always be visible (unlike crops, which hide when `cropState.y = 0`).
+4. Commit: `feat: initialize ground tile matrices for all chunk cells`
+
+### Task 4.5.5: Uncomment vertInstancingGroundSetup in HLSL
+
+**Files:**
+- Modify: `Assets/Project/Shaders/GetStructedBuffer.hlsl`
+
+**Steps:**
+1. Uncomment the `vertInstancingGroundSetup()` function body.
+2. Verify it reads `data.gr` matrix and applies it correctly via `vertInstancingGroundMatrices()`.
+3. **DO NOT modify the existing vertInstancingSetup for crops.**
+4. Commit: `feat: uncomment vertInstancingGroundSetup in HLSL`
+
+### Task 4.5.6: Create Ground Instanced ShaderGraph
+
+**Files:**
+- Create: `Assets/Project/Shaders/Ground Instanced.shadergraph`
+- Create: `Assets/Project/Materials/Ground/GroundTile.mat`
+
+**Steps:**
+1. Create a new ShaderGraph `Ground Instanced`:
+   - Enable `PROCEDURAL_INSTANCING_ON` keyword.
+   - Use `#pragma instancing_options procedural:vertInstancingGroundSetup` (via Custom Function node referencing GetStructedBuffer.hlsl).
+   - Read `cropState.z` via `GetCropState_float` custom function.
+   - Use `cropState.z` value to compute UV offset into a 2x2 texture atlas:
+     - `0 (Grass)`: UV region (0, 0.5) to (0.5, 1.0)
+     - `1 (Tilled)`: UV region (0.5, 0.5) to (1.0, 1.0)
+     - `2 (Watered)`: UV region (0, 0) to (0.5, 0.5)
+     - `3 (Fertilized)`: UV region (0.5, 0) to (1.0, 0.5)
+   - Sample from ground atlas texture using computed UVs.
+   - Set render queue to 2001 (after static Ground Plane at 2000, before crops at 2002).
+2. Create `GroundTile.mat` using this shader.
+3. Create or source a 2x2 ground atlas texture with grass, tilled soil, wet soil, fertilized soil.
+4. Commit: `feat: add Ground Instanced ShaderGraph with state-based texture atlas`
+
+### Task 4.5.7: Add Ground Rendering to ChunkCropRenderer
+
+**Files:**
+- Modify: `Assets/Scripts/Features/Farming/ChunkCropRenderer.cs`
+- Modify: `Assets/Scripts/Features/Farming/FarmRenderConfig.cs`
+- Modify: `Assets/Scripts/Features/Farming/FarmRenderSystem.cs`
+
+**Steps:**
+1. Add to `FarmRenderConfig`:
+   ```csharp
+   public Mesh GroundMesh;       // flat Quad mesh
+   public Material GroundMaterial; // Ground Instanced material
+   ```
+2. In `ChunkCropRenderer`:
+   - Clone ground material (same as crop material cloning).
+   - Create second `argsBuffer` for ground mesh.
+   - Bind same `_PerInstanceData` ComputeBuffer to ground material.
+   - In `Draw()`: call `DrawMeshInstancedIndirect` for ground first, then crops.
+3. In `FarmRenderSystem`: pass `GroundMesh` and `GroundMaterial` to `ChunkCropRenderer` constructor.
+4. Assign Quad mesh and GroundTile material in `FarmRenderConfig.asset` in Inspector.
+5. Commit: `feat: dual DrawMeshInstancedIndirect per chunk — ground tiles + crops`
+
+---
+
 ## Execution Order Summary
 
 ```
-Phase 0:  Packages + asmdef structure           (~1 session)
-Phase 1:  VContainer bootstrap                  (~1 session)
-Phase 2:  Data layer (ScriptableObjects)         (~1 session)
-Phase 3:  Chunk-based farming core               (~2-3 sessions)
-Phase 4:  Tools & player                         (~1-2 sessions)
-Phase 5:  Economy                                (~1-2 sessions)
-Phase 6:  Buildings & production                 (~1-2 sessions)
-Phase 7:  Trees & bushes                         (~1 session)
-Phase 8:  Day/night                              (~1 session)
-Phase 9:  UI (MVP)                               (~2-3 sessions)
-Phase 10: Save/load                              (~1 session)
-Phase 11: Integration & cleanup                  (~1-2 sessions)
+Phase 0:    Packages + asmdef structure           (~1 session)  ✓ DONE
+Phase 1:    VContainer bootstrap                  (~1 session)  ✓ DONE
+Phase 2:    Data layer (ScriptableObjects)         (~1 session)  ✓ DONE
+Phase 3:    Chunk-based farming core               (~2-3 sessions) ✓ DONE
+Phase 4:    Tools & player                         (~1-2 sessions) ✓ DONE
+Phase 4.5:  Auto-water + ground visualization      (~1-2 sessions) ← NEXT
+Phase 5:    Economy                                (~1-2 sessions)
+Phase 6:    Buildings & production                 (~1-2 sessions)
+Phase 7:    Trees & bushes                         (~1 session)
+Phase 8:    Day/night                              (~1 session)
+Phase 9:    UI (MVP)                               (~2-3 sessions)
+Phase 10:   Save/load                              (~1 session)
+Phase 11:   Integration & cleanup                  (~1-2 sessions)
 ```
 
 **Each phase delivers a working increment.** After Phase 5, the core loop (plant -> grow -> harvest -> sell -> buy) works. Remaining phases add depth.

@@ -111,7 +111,7 @@ StructuredBuffer<MeshProperties> _PerInstanceData;
 
 	void vertInstancingGroundSetup()
 	{
-		//vertInstancingGroundMatrices(unity_ObjectToWorld, unity_WorldToObject);
+		vertInstancingGroundMatrices(unity_ObjectToWorld, unity_WorldToObject);
 	}
 #endif
 

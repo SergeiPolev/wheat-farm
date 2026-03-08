@@ -199,6 +199,9 @@ Plants scale from 30% to 100% as they grow (0 -> 1). `RebuildMatrix()` in `Plant
 - Q/E to change brush size
 - Grass trampling effect follows player position (global shader property)
 - GPU instanced indirect rendering (per-chunk ComputeBuffers)
+- Auto-water on plant (crops grow immediately after planting)
+- Per-cell ground state tracking (Grass/Tilled/Watered/Fertilized in cropState.z)
+- Dual DrawMeshInstancedIndirect per chunk (ground tiles + crops, shared ComputeBuffer)
 
 ### Git History
 ```
@@ -213,7 +216,7 @@ ff6150d fix: GPU instanced crop rendering — proper scale, cropState, TRS matri
 ```
 
 ### What's Next (priority order)
-1. **Auto-water on plant** — crops don't grow until watered, no visual prompt yet. Quick fix: auto-set Watered=true on plant.
+1. **Unity Editor setup for ground tiles** — assign Quad mesh + GroundTile material in FarmRenderConfig.asset, create ground atlas texture.
 2. **HUD UI** — show current tool, selected plant, coins, brush size. MVP views exist but not wired to scene.
 3. **Per-plant-type meshes** — use Corn1_P.fbx, Sunflower1_P.fbx etc. Requires multi-material rendering.
 4. **Harvest + economy loop** — sickle harvests → coins added → shop to buy seeds.
@@ -223,4 +226,4 @@ ff6150d fix: GPU instanced crop rendering — proper scale, cropState, TRS matri
 ### Known Issues
 - Graphy FPS counter shows 1 FPS on first frame after entering Play Mode (screenshot artifact, normalizes after).
 - No visual feedback for tool switching or brush size.
-- Crops only grow when `Watered = true` — need to either auto-water or make watering more discoverable.
+- Ground tiles require Unity Editor setup: assign Quad mesh and GroundTile.mat in FarmRenderConfig.asset.

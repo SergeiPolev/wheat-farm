@@ -93,8 +93,9 @@ namespace WheatFarm.Farming
             // Gameplay state
             cell.PlantId = data.PlantId;
             cell.Growth = InitialGrowth;
-            cell.Watered = false;
+            cell.Watered = true; // Auto-water so crops grow immediately
             cell.FertilizerMultiplier = 1f;
+            cell.GroundState = GroundState.Watered;
 
             // Placement data (for matrix reconstruction during growth)
             float baseScale = _chunkSystem.CellWorldSize * ScaleMultiplier;
@@ -109,14 +110,18 @@ namespace WheatFarm.Farming
             float initScale = cell.BaseScale * MinGrowthScale;
             props.m = Matrix4x4.TRS(relPos, Quaternion.Euler(0, cell.RotationY, 0),
                 new Vector3(initScale, initScale, initScale));
-            props.gr = Matrix4x4.TRS(relPos, Quaternion.identity, Vector3.one * cell.BaseScale);
+            // gr matrix is NOT modified here — ground tile keeps its fixed size from chunk init
 
             // cropState.x = type id (must match material _Id); cropState.y = growth (>0 = visible)
+            // cropState.z = ground state (0=grass, 1=tilled, 2=watered, 3=fertilized)
             props.cropState.x = 1; // TODO: per-plant-type material _Id when multiple materials supported
             props.cropState.y = InitialGrowth;
+            props.cropState.z = (float)cell.GroundState;
+            props.cropState.w = Time.time; // transition start time (shader animates blend)
             props.color = new Vector4(cell.Color.r, cell.Color.g, cell.Color.b, cell.Color.a);
 
             chunk.Dirty = true;
+            _chunkSystem.UpdateGroundNeighborFlags(chunkCoord, cellX, cellY);
         }
 
         public void Water(Vector2Int chunkCoord, int cellX, int cellY)
@@ -129,6 +134,12 @@ namespace WheatFarm.Farming
             if (!cell.HasPlant) return;
 
             cell.Watered = true;
+            cell.GroundState = GroundState.Watered;
+
+            ref var props = ref chunk.MeshProps[idx];
+            props.cropState.z = (float)GroundState.Watered;
+            props.cropState.w = Time.time;
+            chunk.Dirty = true;
         }
 
         public void Fertilize(Vector2Int chunkCoord, int cellX, int cellY, float multiplier)
@@ -141,6 +152,12 @@ namespace WheatFarm.Farming
             if (!cell.HasPlant) return;
 
             cell.FertilizerMultiplier = multiplier;
+            cell.GroundState = GroundState.Fertilized;
+
+            ref var props = ref chunk.MeshProps[idx];
+            props.cropState.z = (float)GroundState.Fertilized;
+            props.cropState.w = Time.time;
+            chunk.Dirty = true;
         }
 
         public HarvestData? Harvest(Vector2Int chunkCoord, int cellX, int cellY)
@@ -167,8 +184,11 @@ namespace WheatFarm.Farming
                 // Bushes/trees regrow from seedling stage (stay visible, shrink back)
                 cell.Growth = InitialGrowth;
                 cell.Watered = false;
+                cell.GroundState = GroundState.Tilled;
                 ref var props = ref chunk.MeshProps[idx];
                 props.cropState.y = InitialGrowth;
+                props.cropState.z = (float)GroundState.Tilled;
+                props.cropState.w = Time.time;
                 RebuildMatrix(ref cell, ref props);
             }
             else
@@ -178,6 +198,7 @@ namespace WheatFarm.Farming
             }
 
             chunk.Dirty = true;
+            _chunkSystem.UpdateGroundNeighborFlags(chunkCoord, cellX, cellY);
             OnHarvested.OnNext(harvestData);
             return harvestData;
         }
@@ -193,6 +214,7 @@ namespace WheatFarm.Farming
 
             ClearCell(ref cell, ref chunk.MeshProps[idx]);
             chunk.Dirty = true;
+            _chunkSystem.UpdateGroundNeighborFlags(chunkCoord, cellX, cellY);
         }
 
         public void Dye(Vector2Int chunkCoord, int cellX, int cellY, Color color)
@@ -232,8 +254,8 @@ namespace WheatFarm.Farming
         {
             cell = SubCellState.Empty;
             props.m = Matrix4x4.zero;
-            props.gr = Matrix4x4.zero;
-            props.cropState = Vector4.zero;
+            // Keep gr matrix intact — ground tile stays visible after clearing crop
+            props.cropState = new Vector4(0, 0, (float)GroundState.Grass, Time.time);
             props.color = Vector4.zero;
         }
     }

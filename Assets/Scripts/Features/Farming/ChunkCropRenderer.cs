@@ -7,7 +7,10 @@ namespace WheatFarm.Farming
     /// <summary>
     /// Per-chunk GPU instanced indirect renderer.
     /// Each unlocked chunk gets its own ChunkCropRenderer with dedicated ComputeBuffers.
-    /// Uses same shader pipeline as legacy CropRenderer (GetStructedBuffer.hlsl, _PerInstanceData).
+    /// Issues TWO draw calls per frame:
+    ///   1. Ground tiles (flat quads using gr matrix, always visible)
+    ///   2. Crops (plant meshes using m matrix, visible when cropState.y > 0)
+    /// Both passes share the same _PerInstanceData ComputeBuffer.
     /// </summary>
     public class ChunkCropRenderer : IDisposable
     {
@@ -16,22 +19,38 @@ namespace WheatFarm.Farming
         private readonly ChunkData _chunk;
         private readonly Bounds _bounds;
 
+        // Shared buffer (both passes read from this)
         private ComputeBuffer _meshPropsBuffer;
-        private ComputeBuffer _argsBuffer;
-        private Material _material;
-        private Mesh _mesh;
+
+        // Crop pass
+        private ComputeBuffer _cropArgsBuffer;
+        private Material _cropMaterial;
+        private Mesh _cropMesh;
+
+        // Ground tile pass (optional — null if not configured)
+        private ComputeBuffer _groundArgsBuffer;
+        private Material _groundMaterial;
+        private Mesh _groundMesh;
 
         public ChunkData Chunk => _chunk;
 
-        public ChunkCropRenderer(ChunkData chunk, Mesh mesh, Material sharedMaterial, float chunkWorldSize)
+        public ChunkCropRenderer(
+            ChunkData chunk,
+            Mesh cropMesh, Material cropSharedMaterial,
+            Mesh groundMesh, Material groundSharedMaterial,
+            float chunkWorldSize)
         {
             _chunk = chunk;
-            _mesh = mesh;
+            _cropMesh = cropMesh;
+            _cropMaterial = new Material(cropSharedMaterial);
 
-            // Create unique material instance for this chunk's buffer binding
-            _material = new Material(sharedMaterial);
+            if (groundMesh != null && groundSharedMaterial != null)
+            {
+                _groundMesh = groundMesh;
+                _groundMaterial = new Material(groundSharedMaterial);
+            }
 
-            // Bounds centered on the chunk's world position
+            // Bounds centered on the chunk's world position (used for frustum culling)
             var center = new Vector3(
                 (chunk.ChunkCoord.x + 0.5f) * chunkWorldSize,
                 0f,
@@ -45,22 +64,34 @@ namespace WheatFarm.Farming
         {
             int count = _chunk.CellCount;
 
-            // Mesh properties buffer (StructuredBuffer in shader)
+            // Shared mesh properties buffer (StructuredBuffer in shader)
             _meshPropsBuffer = new ComputeBuffer(count, MeshProperties.Size());
             _meshPropsBuffer.SetData(_chunk.MeshProps);
 
-            // Indirect args buffer: [indexCount, instanceCount, indexStart, baseVertex, 0]
+            // Crop indirect args
+            _cropArgsBuffer = CreateArgsBuffer(_cropMesh, count);
+            _cropMaterial.SetBuffer(PerInstanceData, _meshPropsBuffer);
+
+            // Ground indirect args (if ground rendering enabled)
+            if (_groundMesh != null && _groundMaterial != null)
+            {
+                _groundArgsBuffer = CreateArgsBuffer(_groundMesh, count);
+                _groundMaterial.SetBuffer(PerInstanceData, _meshPropsBuffer);
+            }
+        }
+
+        private static ComputeBuffer CreateArgsBuffer(Mesh mesh, int instanceCount)
+        {
             var args = new uint[5];
-            args[0] = _mesh.GetIndexCount(0);
-            args[1] = (uint)count;
-            args[2] = _mesh.GetIndexStart(0);
-            args[3] = _mesh.GetBaseVertex(0);
+            args[0] = mesh.GetIndexCount(0);
+            args[1] = (uint)instanceCount;
+            args[2] = mesh.GetIndexStart(0);
+            args[3] = mesh.GetBaseVertex(0);
             args[4] = 0;
 
-            _argsBuffer = new ComputeBuffer(1, 5 * sizeof(uint), ComputeBufferType.IndirectArguments);
-            _argsBuffer.SetData(args);
-
-            _material.SetBuffer(PerInstanceData, _meshPropsBuffer);
+            var buffer = new ComputeBuffer(1, 5 * sizeof(uint), ComputeBufferType.IndirectArguments);
+            buffer.SetData(args);
+            return buffer;
         }
 
         /// <summary>
@@ -70,18 +101,29 @@ namespace WheatFarm.Farming
         public void SyncIfDirty()
         {
             if (!_chunk.Dirty) return;
+
             _meshPropsBuffer.SetData(_chunk.MeshProps);
-            _material.SetBuffer(PerInstanceData, _meshPropsBuffer);
+            _cropMaterial.SetBuffer(PerInstanceData, _meshPropsBuffer);
+
+            if (_groundMaterial != null)
+                _groundMaterial.SetBuffer(PerInstanceData, _meshPropsBuffer);
+
             _chunk.Dirty = false;
         }
 
         /// <summary>
-        /// Issue the DrawMeshInstancedIndirect call for this chunk.
+        /// Issue DrawMeshInstancedIndirect calls for this chunk.
+        /// Ground tiles are drawn first (render queue 2001), then crops on top (2002).
         /// </summary>
         public void Draw()
         {
-            if (_mesh == null || _material == null) return;
-            Graphics.DrawMeshInstancedIndirect(_mesh, 0, _material, _bounds, _argsBuffer);
+            // Ground pass first (always visible, uses gr matrix via vertInstancingGroundSetup)
+            if (_groundMesh != null && _groundMaterial != null)
+                Graphics.DrawMeshInstancedIndirect(_groundMesh, 0, _groundMaterial, _bounds, _groundArgsBuffer);
+
+            // Crop pass second (visible when cropState.y > 0, uses m matrix via vertInstancingSetup)
+            if (_cropMesh != null && _cropMaterial != null)
+                Graphics.DrawMeshInstancedIndirect(_cropMesh, 0, _cropMaterial, _bounds, _cropArgsBuffer);
         }
 
         public void Dispose()
@@ -89,12 +131,19 @@ namespace WheatFarm.Farming
             _meshPropsBuffer?.Release();
             _meshPropsBuffer = null;
 
-            _argsBuffer?.Release();
-            _argsBuffer = null;
+            _cropArgsBuffer?.Release();
+            _cropArgsBuffer = null;
 
-            if (_material != null)
-                UnityEngine.Object.Destroy(_material);
-            _material = null;
+            _groundArgsBuffer?.Release();
+            _groundArgsBuffer = null;
+
+            if (_cropMaterial != null)
+                UnityEngine.Object.Destroy(_cropMaterial);
+            _cropMaterial = null;
+
+            if (_groundMaterial != null)
+                UnityEngine.Object.Destroy(_groundMaterial);
+            _groundMaterial = null;
         }
     }
 }
