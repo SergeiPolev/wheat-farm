@@ -52,6 +52,10 @@ namespace WheatFarm.Infrastructure
             builder.Register<FarmBootstrap>(Lifetime.Singleton)
                 .As<IStartable>();
 
+            // Phase 5: Harvest → Inventory bridge
+            builder.Register<HarvestRewardHandler>(Lifetime.Singleton)
+                .As<IInitializable, System.IDisposable>();
+
             // Phase 4: Tools
             builder.Register<PlanterTool>(Lifetime.Singleton).As<PlanterTool, ITool>();
             builder.Register<WateringCanTool>(Lifetime.Singleton).As<ITool>();

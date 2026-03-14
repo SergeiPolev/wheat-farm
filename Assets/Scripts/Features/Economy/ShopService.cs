@@ -8,20 +8,28 @@ namespace WheatFarm.Economy
         bool TryBuySeed(PlantData plant, int amount = 1);
         bool TryBuyDye(DyeData dye, int amount = 1);
         bool TryBuyFertilizer(int amount = 1);
+
+        /// <summary>
+        /// Sell a harvest item from inventory for coins.
+        /// Uses PlantDatabase to look up the sell price.
+        /// </summary>
+        bool TrySell(string itemId, int amount = 1);
     }
 
     public class ShopService : IShopService
     {
         private readonly IWalletService _wallet;
         private readonly IInventoryService _inventory;
+        private readonly PlantDatabase _plantDb;
 
         private const int FertilizerCost = 10;
         private const string FertilizerId = "fertilizer";
 
-        public ShopService(IWalletService wallet, IInventoryService inventory)
+        public ShopService(IWalletService wallet, IInventoryService inventory, PlantDatabase plantDb)
         {
             _wallet = wallet;
             _inventory = inventory;
+            _plantDb = plantDb;
         }
 
         public bool TryBuySeed(PlantData plant, int amount = 1)
@@ -33,7 +41,6 @@ namespace WheatFarm.Economy
             var item = new InventoryItem($"seed_{plant.PlantId}", ItemType.Seed, amount);
             if (!_inventory.TryAdd(item))
             {
-                // Refund if inventory full
                 _wallet.Add(totalCost);
                 return false;
             }
@@ -66,6 +73,22 @@ namespace WheatFarm.Economy
                 _wallet.Add(totalCost);
                 return false;
             }
+            return true;
+        }
+
+        public bool TrySell(string itemId, int amount = 1)
+        {
+            if (!_inventory.HasItem(itemId, amount)) return false;
+
+            // Look up sell price from PlantDatabase
+            var plantData = _plantDb.GetById(itemId);
+            if (plantData == null) return false;
+
+            int totalPrice = plantData.SellPrice * amount;
+
+            if (!_inventory.TryConsume(itemId, amount)) return false;
+
+            _wallet.Add(totalPrice);
             return true;
         }
     }
