@@ -82,6 +82,9 @@ namespace WheatFarm.Infrastructure
             builder.Register<BuildingService>(Lifetime.Singleton)
                 .As<IBuildingService>();
 
+            builder.Register<PlacementService>(Lifetime.Singleton)
+                .As<IPlacementService>();
+
             builder.Register<ProductionService>(Lifetime.Singleton)
                 .As<IProductionService, ITickable>();
 
