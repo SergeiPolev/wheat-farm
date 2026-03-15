@@ -42,6 +42,7 @@ public class PlaceableData : ScriptableObject
     public Vector2Int GridSize = Vector2Int.one; // cells occupied
     public bool BlocksPlanting = true;
     public PlacementLevel Level; // Cell, Chunk (buildings use chunk-level)
+    public RotationMode Rotation = RotationMode.Fixed; // Fixed, Step90, Free5
 
     [Header("Visual")]
     public GameObject Prefab; // null for paths (shader-rendered)
@@ -260,8 +261,14 @@ Replaces `PlacedBuildingSaveData`. Paths are saved as part of cell state (Ground
 3. Update FarmScope registrations
 4. Update CLAUDE.md
 
-## Open Questions
+## Resolved Questions
 
-- Ghost preview during placement? (transparent copy of prefab following cursor)
-- Rotation support for placed objects? (R to rotate 90°)
-- Undo/bulldoze tool for removing placed objects?
+**Ghost preview:** Yes — transparent prefab copy follows cursor during placement mode.
+
+**Rotation:** Per-object RotationMode:
+- `Fixed` — no rotation (paths, crops)
+- `Step90` — 90° steps, R key or scroll (buildings, grid-snapped decor like fences)
+- `Free5` — 5° steps via scroll wheel (trees, decorative statues, lamps)
+Grid-snapped objects use Step90 max to avoid ugly misalignment. Free rotation only for objects that don't depend on grid edges.
+
+**Bulldoze:** Yes — dedicated Bulldoze tool in Tools tab. Click on placed object → remove, refund partial cost.
