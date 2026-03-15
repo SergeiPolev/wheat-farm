@@ -1447,14 +1447,14 @@ Phase 1:    VContainer bootstrap                  (~1 session)  ✓ DONE
 Phase 2:    Data layer (ScriptableObjects)         (~1 session)  ✓ DONE
 Phase 3:    Chunk-based farming core               (~2-3 sessions) ✓ DONE
 Phase 4:    Tools & player                         (~1-2 sessions) ✓ DONE
-Phase 4.5:  Auto-water + ground visualization      (~1-2 sessions) ← NEXT
-Phase 5:    Economy                                (~1-2 sessions)
-Phase 6:    Buildings & production                 (~1-2 sessions)
-Phase 7:    Trees & bushes                         (~1 session)
-Phase 8:    Day/night                              (~1 session)
-Phase 9:    UI (MVP)                               (~2-3 sessions)
-Phase 10:   Save/load                              (~1 session)
-Phase 11:   Integration & cleanup                  (~1-2 sessions)
+Phase 4.5:  Auto-water + ground visualization      (~1-2 sessions) ✓ DONE
+Phase 5:    Economy                                (~1-2 sessions) ✓ DONE
+Phase 6:    Buildings & production                 (~1-2 sessions) ✓ DONE
+Phase 7:    Trees & bushes                         (~1 session)   ✓ DONE
+Phase 8:    Day/night                              (~1 session)   ✓ DONE
+Phase 9:    UI (MVP)                               (~2-3 sessions) ✓ DONE
+Phase 10:   Save/load                              (~1 session)   ✓ DONE
+Phase 11:   Integration & cleanup                  (~1-2 sessions) ✓ DONE
 ```
 
 **Each phase delivers a working increment.** After Phase 5, the core loop (plant -> grow -> harvest -> sell -> buy) works. Remaining phases add depth.
