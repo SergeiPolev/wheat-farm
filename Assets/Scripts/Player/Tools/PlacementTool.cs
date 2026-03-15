@@ -153,11 +153,50 @@ namespace WheatFarm.Player.Tools
         /// <summary>IBrushAction implementation — called for each cell in brush radius.</summary>
         public void Apply(ChunkData chunk, int cellX, int cellY)
         {
+            // Path painting mode
+            if (_selectedPlaceable != null && _selectedPlaceable.Category == PlaceableCategory.Path)
+            {
+                ApplyPath(chunk, cellX, cellY);
+                return;
+            }
+
+            // Plant mode
             if (_selectedPlant == null) return;
             int idx = chunk.CellIndex(cellX, cellY);
             if (chunk.Cells[idx].HasPlant || chunk.Cells[idx].Occupied) return;
 
             _plantSystem.Plant(chunk.ChunkCoord, cellX, cellY, _selectedPlant);
+        }
+
+        private void ApplyPath(ChunkData chunk, int cellX, int cellY)
+        {
+            int idx = chunk.CellIndex(cellX, cellY);
+            ref var cell = ref chunk.Cells[idx];
+
+            // Don't paint over plants or existing buildings
+            if (cell.HasPlant) return;
+
+            // Map PathSubtype to GroundState
+            var pathState = _selectedPlaceable.PathSubtype switch
+            {
+                1 => GroundState.PathWood,
+                2 => GroundState.PathBrick,
+                _ => GroundState.PathStone
+            };
+
+            // Skip if already this path type
+            if (cell.GroundState == pathState) return;
+
+            cell.GroundState = pathState;
+            cell.Occupied = true;
+
+            // Sync to GPU
+            ref var props = ref chunk.MeshProps[idx];
+            props.cropState.z = (float)pathState;
+            props.cropState.w = UnityEngine.Time.time;
+
+            chunk.Dirty = true;
+            _chunkSystem.UpdateGroundNeighborFlags(chunk.ChunkCoord, cellX, cellY);
         }
 
         // --- Placeable placement ---
@@ -166,7 +205,8 @@ namespace WheatFarm.Player.Tools
         {
             if (_selectedPlaceable.Category == PlaceableCategory.Path)
             {
-                // Path painting handled via brush in Phase C
+                // Path painting: brush-based ground state change
+                _brush.ApplyAtWorldPos(worldPos, this);
                 return;
             }
 
