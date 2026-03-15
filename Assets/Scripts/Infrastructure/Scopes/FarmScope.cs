@@ -95,9 +95,12 @@ namespace WheatFarm.Infrastructure
                     .As<ITickable, System.IDisposable>();
             }
 
-            // Phase 10: Save/Load manager
+            // Phase 10: Save/Load
             builder.Register<FarmSaveManager>(Lifetime.Singleton)
                 .As<IFarmSaveManager>();
+
+            builder.Register<Save.SaveLoadController>(Lifetime.Singleton)
+                .As<IStartable, ITickable>();
 
             // Player interaction (optional — assign in Inspector when Player GO exists)
             if (_interactionController != null)
