@@ -9,7 +9,7 @@ namespace WheatFarm.Player
     /// <summary>
     /// Handles mouse interaction with the farm grid.
     /// Click/hold left mouse -> raycast to ground plane -> use current tool.
-    /// Number keys 1-6 switch tools. Scroll changes brush size.
+    /// Number keys 1-7 switch tools. Q/E change brush size. Scroll rotates placement.
     /// Registered as component in FarmScope; VContainer injects dependencies.
     /// </summary>
     public class FarmInteractionController : MonoBehaviour
@@ -19,7 +19,7 @@ namespace WheatFarm.Player
 
         private IToolService _toolService;
         private IBrushService _brushService;
-        private Tools.BuildTool _buildTool;
+        private PlacementTool _placementTool;
         private Camera _cam;
         private readonly Plane _groundPlane = new(Vector3.up, Vector3.zero);
 
@@ -29,11 +29,11 @@ namespace WheatFarm.Player
         public event Action<GameObject> OnBuildingClicked;
 
         [Inject]
-        public void Construct(IToolService toolService, IBrushService brushService, Tools.BuildTool buildTool = null)
+        public void Construct(IToolService toolService, IBrushService brushService, PlacementTool placementTool = null)
         {
             _toolService = toolService;
             _brushService = brushService;
-            _buildTool = buildTool;
+            _placementTool = placementTool;
         }
 
         private void Start()
@@ -48,6 +48,8 @@ namespace WheatFarm.Player
             UpdateInteractionPosition();
             HandleToolSwitching();
             HandleBrushSize();
+            HandlePlacementPreview();
+            HandlePlacementRotation();
             HandleToolUse();
         }
 
@@ -84,6 +86,7 @@ namespace WheatFarm.Player
 
         private Vector3? GetGroundHitPoint()
         {
+            if (_cam == null) return null;
             Ray ray = _cam.ScreenPointToRay(Input.mousePosition);
 
             // Raycast against mathematical Y=0 plane (no collider needed)
@@ -98,18 +101,18 @@ namespace WheatFarm.Player
 
         private void HandleToolSwitching()
         {
-            if (Input.GetKeyDown(KeyCode.Alpha1)) _toolService.EquipTool(ToolId.Planter);
+            if (Input.GetKeyDown(KeyCode.Alpha1)) _toolService.EquipTool(ToolId.Placement);
             if (Input.GetKeyDown(KeyCode.Alpha2)) _toolService.EquipTool(ToolId.WateringCan);
             if (Input.GetKeyDown(KeyCode.Alpha3)) _toolService.EquipTool(ToolId.Sickle);
             if (Input.GetKeyDown(KeyCode.Alpha4)) _toolService.EquipTool(ToolId.Dye);
             if (Input.GetKeyDown(KeyCode.Alpha5)) _toolService.EquipTool(ToolId.Fertilizer);
             if (Input.GetKeyDown(KeyCode.Alpha6)) _toolService.EquipTool(ToolId.Uproot);
-            if (Input.GetKeyDown(KeyCode.Alpha7)) _toolService.EquipTool(ToolId.Build);
+            if (Input.GetKeyDown(KeyCode.Alpha7)) _toolService.EquipTool(ToolId.Bulldoze);
 
-            // B to cycle buildings when BuildTool is active
-            if (Input.GetKeyDown(KeyCode.B) && _toolService.CurrentToolId.CurrentValue == ToolId.Build)
+            // Escape: cancel placement selection
+            if (Input.GetKeyDown(KeyCode.Escape) && _placementTool != null)
             {
-                if (_buildTool != null) _buildTool.CycleBuilding();
+                _placementTool.ClearSelection();
             }
         }
 
@@ -117,11 +120,30 @@ namespace WheatFarm.Player
         {
             if (_brushService == null) return;
 
-            // Q/E to cycle brush size, or scroll with Shift held
             if (Input.GetKeyDown(KeyCode.Q))
                 CycleBrushSize(-1);
             if (Input.GetKeyDown(KeyCode.E))
                 CycleBrushSize(1);
+        }
+
+        private void HandlePlacementPreview()
+        {
+            if (_placementTool == null) return;
+            if (_toolService.CurrentToolId.CurrentValue != ToolId.Placement) return;
+
+            Vector3? hitPoint = GetGroundHitPoint();
+            if (hitPoint.HasValue)
+                _placementTool.UpdatePreview(hitPoint.Value);
+        }
+
+        private void HandlePlacementRotation()
+        {
+            if (_placementTool == null) return;
+            if (_toolService.CurrentToolId.CurrentValue != ToolId.Placement) return;
+
+            float scroll = Input.mouseScrollDelta.y;
+            if (Mathf.Abs(scroll) > 0.01f)
+                _placementTool.AdjustRotation(scroll);
         }
 
         private void CycleBrushSize(int direction)
