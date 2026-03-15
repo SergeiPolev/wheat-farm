@@ -33,23 +33,23 @@ RootScope (DontDestroyOnLoad)
     │
     └── FarmScope (farm lifetime)
         ├── ChunkSystem, PlantSystem, BrushService, FarmRenderSystem, FarmBootstrap
-        ├── ToolService, PlanterTool, WateringCanTool, SickleTool, DyeTool, FertilizerTool, UprootTool
-        ├── BuildingService, ProductionService, TreePlacementService
-        └── HUDPresenter, ShopPresenter, InventoryPresenter, ContractBoardPresenter
+        ├── ToolService, PlacementTool, WateringCanTool, SickleTool, DyeTool, FertilizerTool, UprootTool, BulldozeTool
+        ├── PlacementService, BuildingService (legacy), ProductionService, TreePlacementService
+        └── HUDPresenter, ShopPresenter, InventoryPresenter, ContractBoardPresenter, CatalogPresenter
 ```
 
 ### Assembly Structure (9 asmdefs)
 
 ```
-WheatFarm.Core            -- interfaces, base types, MeshProperties, PlantData, PlantDatabase
+WheatFarm.Core            -- interfaces, base types, MeshProperties, PlantData, PlantDatabase, PlaceableData, PlaceableDatabase
 WheatFarm.Infrastructure  -- VContainer scopes (RootScope, GameScope, FarmScope), save/load
 WheatFarm.Farming         -- PlantSystem, ChunkSystem, ChunkCropRenderer, FarmRenderSystem, BrushService
-WheatFarm.Buildings       -- BuildingService, ProductionService
+WheatFarm.Buildings       -- PlacementService, BuildingService (legacy), ProductionService
 WheatFarm.Economy         -- WalletService, ShopService, ContractService
 WheatFarm.Inventory       -- InventoryService
 WheatFarm.DayNight        -- DayNightService
 WheatFarm.UI              -- MVP Views + Presenters (HUD, Shop, Inventory, Contracts)
-WheatFarm.Player          -- PlayerController, FarmInteractionController, Tools, PlantAutoSelector
+WheatFarm.Player          -- PlayerController, FarmInteractionController, Tools (PlacementTool, BulldozeTool, etc.), PlantAutoSelector
 ```
 
 **Dependency rule:** WheatFarm.Player -> WheatFarm.Farming (OK). Farming CANNOT reference Player.
@@ -58,8 +58,12 @@ WheatFarm.Player          -- PlayerController, FarmInteractionController, Tools,
 
 ```
 Input -> FarmInteractionController -> ToolService -> ITool -> BrushService (area)
-  -> PlantSystem/BuildingService (state change) -> ChunkData.Dirty=true
+  -> PlantSystem/PlacementService (state change) -> ChunkData.Dirty=true
   -> FarmRenderSystem.Tick() -> ChunkCropRenderer.SyncIfDirty() -> ComputeBuffer upload -> Draw
+
+CatalogTabBar (UI) -> CatalogPresenter -> PlacementTool.SelectPlant/SelectPlaceable
+  -> PlacementTool.UseAtPosition -> PlantSystem (crops/bushes) / TreePlacementService (trees)
+     / PlacementService (buildings/decor) / BrushService+GroundState (paths)
 ```
 
 ### Core Systems
@@ -71,10 +75,14 @@ Input -> FarmInteractionController -> ToolService -> ITool -> BrushService (area
 | **BrushService** | Brush radius (Small=1, Medium=2, Large=3), area painting | Working |
 | **FarmRenderSystem** | Manages per-chunk ChunkCropRenderers, sync + draw each frame | Working |
 | **FarmBootstrap** | Unlocks 25 starter chunks (5x5 grid, radius 2) | Working |
-| **ToolService** | 6 tools (Planter, WateringCan, Sickle, Dye, Fertilizer, Uproot) | Working |
-| **BuildingService** | Placement, moving, upgrading | Stub |
+| **ToolService** | 8 tools (Placement, WateringCan, Sickle, Dye, Fertilizer, Uproot, Bulldoze) | Working |
+| **PlacementService** | Unified placement/removal for buildings, decor (prefab-based) | Working |
+| **PlacementTool** | Unified tool: plants + placeables, ghost preview, rotation | Working |
+| **BulldozeTool** | Remove buildings/decor/paths/crops with partial refund | Working |
+| **CatalogTabBar** | Category tab UI: Crops/Trees/Buildings/Decor/Paths/Tools | Working |
+| **BuildingService** | Legacy placement (still used by save/load) | Legacy |
 | **ProductionService** | Processing queues, timers, recipes | Stub |
-| **TreePlacementService** | Free placement of trees/bushes | Stub |
+| **TreePlacementService** | Multi-cell tree placement | Working |
 | **WalletService** | Coins add/spend with reactive events | Stub |
 | **ShopService** | Catalog, purchase, unlock | Stub |
 | **ContractService** | Optional contracts, progress tracking | Stub |
@@ -115,7 +123,7 @@ Plants scale from 30% to 100% as they grow (0 -> 1). `RebuildMatrix()` in `Plant
 ## Player & Interaction
 
 - **PlayerController:** WASD camera-relative movement. Player at Y=1.51 (capsule center), Rigidbody + CapsuleCollider.
-- **FarmInteractionController:** Left-click → raycast to Y=0 plane → UseCurrentTool. Keys 1-6 switch tools. Q/E change brush size. Sets `Shader.SetGlobalVector("_Interaction_Position", transform.position)` each frame for grass trampling.
+- **FarmInteractionController:** Left-click → raycast to Y=0 plane → UseCurrentTool. Q/E change brush size. Scroll wheel rotates placement. Escape cancels. No keyboard tool switching (CatalogTabBar UI only). Sets `Shader.SetGlobalVector("_Interaction_Position", transform.position)` each frame for grass trampling.
 - **PlantAutoSelector:** Auto-selects first unlocked plant (wheat) on start.
 - **Camera:** Isometric angle (35.26°, 45°), CinemachineCamera + CinemachineFollow offset (-5, 5, -5).
 - **Raycast** uses mathematical `Plane(Vector3.up, Vector3.zero)`, NOT Physics.Raycast.
@@ -141,7 +149,7 @@ Plants scale from 30% to 100% as they grow (0 -> 1). `RebuildMatrix()` in `Plant
 - **Features:** Each system = IFeatureInstaller + separate asmdef.
 - **Data:** PlantData ScriptableObject per plant type (data-driven, not enums).
 - **Naming:** `Service` suffix for services, `View`/`Presenter` suffix for UI, `Installer` suffix for DI.
-- **Tools:** Implement `ITool` interface, registered in FarmScope. `PlanterTool` registered as `.As<PlanterTool, ITool>()`.
+- **Tools:** Implement `ITool` interface, registered in FarmScope. `PlacementTool` registered as `.As<PlacementTool, ITool>()`.
 
 ## VContainer Critical Notes
 
@@ -184,6 +192,8 @@ Plants scale from 30% to 100% as they grow (0 -> 1). `RebuildMatrix()` in `Plant
 - `Assets/Settings/FarmRenderConfig.asset` — SubCellResolution=16, ChunkWorldSize=4
 - `Assets/Settings/PlantDatabase.asset` — references all 6 PlantData assets
 - `Assets/Settings/Plants/Plant_*.asset` — individual plant data
+- `Assets/Settings/PlaceableDatabase.asset` — references all 7 PlaceableData assets
+- `Assets/Settings/Placeables/Placeable_*.asset` — individual placeable data (Mill, Bakery, Lamp, Fence, 3 paths)
 
 ### Scene
 - `Assets/Project/Scenes/Main.unity` — Player, Cinemachine, Ground, RootScope>GameScope>FarmScope
@@ -195,7 +205,7 @@ Plants scale from 30% to 100% as they grow (0 -> 1). `RebuildMatrix()` in `Plant
 - 25 starter chunks (5x5), 256 cells each = 6,400 total plantable cells
 - Click to plant crops (brush-based), visual growth from 30% to 100% scale
 - WASD movement, isometric camera follow
-- 6 tools switchable with keys 1-6 (Planter, WateringCan, Sickle, Dye, Fertilizer, Uproot)
+- 8 tools switchable via CatalogTabBar UI (Placement, WateringCan, Sickle, Dye, Fertilizer, Uproot, Bulldoze)
 - Q/E to change brush size
 - Grass trampling effect follows player position (global shader property)
 - GPU instanced indirect rendering (per-chunk ComputeBuffers)
@@ -216,6 +226,16 @@ Plants scale from 30% to 100% as they grow (0 -> 1). `RebuildMatrix()` in `Plant
 - **Save/load**: F5=Save, F9=Load, auto-load on start. Saves chunks, cells, inventory, buildings, trees, time
 - Crop rotation restricted to camera-facing range (165° ± 25°)
 
+### Universal Placement System (NEW)
+- **PlaceableData**: ScriptableObject for buildings/decor/paths (7 assets: Mill, Bakery, Lamp, Fence, 3 paths)
+- **PlacementService**: Unified placement/removal for buildings (chunk-level) + decor (cell-level) with ghost preview
+- **PlacementTool**: Single tool handles crops (brush), trees (single), buildings/decor (single+ghost), paths (brush)
+- **BulldozeTool**: Brush-based removal of paths/crops, proximity removal of buildings/decor, 50% refund
+- **CatalogTabBar**: 6 category tabs (Crops/Trees/Buildings/Decor/Paths/Tools) with item panel
+- **Ghost preview**: Transparent prefab follows cursor, green=valid/red=invalid, scroll rotates (Step90/Free5)
+- **Path system**: 3 path types (Stone/Wood/Brick) as GroundState 4-6, brush-painted, shader-rendered with tint colors
+- Save/load extended with PlacedObjectSaveData (buildings+decor via PlacementService)
+
 ### Git History
 ```
 bf28b5f fix: use Shader.SetGlobalVector for _Interaction_Position (global shader property)
@@ -230,12 +250,10 @@ ff6150d fix: GPU instanced crop rendering — proper scale, cropState, TRS matri
 
 ### What's Next (polish & content)
 1. **Per-plant-type meshes** — use Corn1_P.fbx, Sunflower1_P.fbx etc. Requires multi-material rendering.
-2. **Building placement tool/UI** — no way to place buildings from gameplay yet (BuildingService.Place works but needs trigger).
-3. **Contract system UI** — ContractBoardView/Presenter exist, need scene setup + data.
-4. **Ground atlas texture** — actual soil textures instead of flat tint colors.
+2. **Contract system UI** — ContractBoardView/Presenter exist, need scene setup + data.
+3. **Ground atlas texture** — actual soil textures instead of flat tint colors.
 ### Known Issues
 - Graphy FPS counter shows 1 FPS on first frame after entering Play Mode (screenshot artifact, normalizes after).
 - No visual feedback for brush size changes.
-- Building placement has no player-facing tool yet (code works, no UI trigger).
 - Tree growth not saved (hardcoded 0 in FarmSaveManager).
 - Unlocked plants and contracts not persisted in save data.
