@@ -10,7 +10,9 @@ namespace WheatFarm.Player.Tools
         Dye,
         Sickle,
         Uproot,
-        Build
+        Build,
+        Placement,
+        Bulldoze
     }
 
     /// <summary>
