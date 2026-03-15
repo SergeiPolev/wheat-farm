@@ -100,7 +100,9 @@ namespace WheatFarm.Farming
             // Placement data (for matrix reconstruction during growth)
             float baseScale = _chunkSystem.CellWorldSize * ScaleMultiplier;
             cell.BaseScale = baseScale * Random.Range(data.ScaleRange.x, data.ScaleRange.y);
-            cell.RotationY = Random.Range(0f, 360f);
+            // Restrict rotation to front-facing range for flat mesh models
+            // Camera looks from isometric angle; mesh faces need ~135° base + variance
+            cell.RotationY = 165f + Random.Range(-25f, 25f);
 
             // Sync to GPU: positions RELATIVE to chunk bounds center (shader requirement)
             ref var props = ref chunk.MeshProps[idx];

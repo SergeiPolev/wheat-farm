@@ -336,7 +336,7 @@ namespace WheatFarm.Farming
                     var props = new MeshProperties();
                     props.m = Matrix4x4.TRS(
                         relativePos + randomOffset,
-                        Quaternion.Euler(0, Random.Range(0, 360), 0),
+                        Quaternion.Euler(0, 165f + Random.Range(-25f, 25f), 0),
                         Vector3.one * Random.Range(0.8f, 1.2f));
                     // Ground tile: flat quad covering the cell, slightly above ground plane
                     // Quad mesh faces +Z in local space; rotate 90° around X to face +Y (up)
