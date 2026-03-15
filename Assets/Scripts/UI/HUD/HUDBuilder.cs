@@ -15,7 +15,7 @@ namespace WheatFarm.UI
         [Header("Output — set by builder, read by FarmScope")]
         public HUDView BuiltHUDView;
 
-        private static readonly string[] ToolNames = { "Plant", "Water", "Sickle", "Dye", "Fert", "Uproot" };
+        private static readonly string[] ToolNames = { "Plant", "Water", "Sickle", "Dye", "Fert", "Uproot", "Build" };
         private static readonly Color ToolBgColor = new(0.15f, 0.15f, 0.15f, 0.7f);
         private static readonly Color PanelBgColor = new(0.1f, 0.1f, 0.1f, 0.75f);
 

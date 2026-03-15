@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ada93cdf56786fb4ab8b8b3b7646f1e5, type: 3}
+  m_Name: ContractDatabase
+  m_EditorClassIdentifier: 
+  Contracts:
+  - ContractId: wheat_harvest
+    Description: Harvest 5 wheat
+    Required:
+    - ItemId: wheat
+      Amount: 5
+    CoinReward: 50
+    UnlockPlantId: 
+    RewardMultiplier: 1.5
+  - ContractId: big_wheat
+    Description: Harvest 20 wheat
+    Required:
+    - ItemId: wheat
+      Amount: 20
+    CoinReward: 200
+    UnlockPlantId: rose
+    RewardMultiplier: 2
+  - ContractId: flour_delivery
+    Description: Produce 3 flour
+    Required:
+    - ItemId: flour
+      Amount: 3
+    CoinReward: 150
+    UnlockPlantId: 
+    RewardMultiplier: 2

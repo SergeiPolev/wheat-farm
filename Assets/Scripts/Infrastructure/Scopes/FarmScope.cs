@@ -55,9 +55,12 @@ namespace WheatFarm.Infrastructure
             builder.Register<FarmBootstrap>(Lifetime.Singleton)
                 .As<IStartable>();
 
-            // Phase 5: Harvest → Inventory bridge
+            // Phase 5: Harvest → Inventory + Contracts bridge
             builder.Register<HarvestRewardHandler>(Lifetime.Singleton)
                 .As<IInitializable, System.IDisposable>();
+
+            builder.Register<ContractStarter>(Lifetime.Singleton)
+                .As<IStartable>();
 
             // Phase 4: Tools
             builder.Register<PlanterTool>(Lifetime.Singleton).As<PlanterTool, ITool>();
@@ -66,6 +69,7 @@ namespace WheatFarm.Infrastructure
             builder.Register<DyeTool>(Lifetime.Singleton).As<ITool>();
             builder.Register<FertilizerTool>(Lifetime.Singleton).As<ITool>();
             builder.Register<UprootTool>(Lifetime.Singleton).As<ITool>();
+            builder.Register<BuildTool>(Lifetime.Singleton).As<BuildTool, ITool>();
 
             builder.Register<ToolService>(Lifetime.Singleton)
                 .As<IToolService>();
@@ -151,19 +155,22 @@ namespace WheatFarm.Infrastructure
                     .As<IInitializable, System.IDisposable>();
             }
 
-            // Keybinds for panel toggling (Tab=Shop, I=Inventory)
-            if (_shopView != null || _inventoryView != null)
-            {
-                var toggleGo = new UnityEngine.GameObject("UIToggleController");
-                var toggle = toggleGo.AddComponent<UIToggleController>();
-                toggle.Init(_shopView, _inventoryView);
-            }
+            // Build contract panel if not assigned
+            if (_contractBoardView == null && canvasRoot != null)
+                _contractBoardView = PanelBuilder.BuildContractPanel(canvasRoot);
 
             if (_contractBoardView != null)
             {
                 builder.RegisterComponent(_contractBoardView);
                 builder.Register<ContractBoardPresenter>(Lifetime.Singleton)
                     .As<IInitializable, System.IDisposable>();
+            }
+
+            // Keybinds for panel toggling (Tab=Shop, I=Inventory, C=Contracts)
+            {
+                var toggleGo = new UnityEngine.GameObject("UIToggleController");
+                var toggle = toggleGo.AddComponent<UIToggleController>();
+                toggle.Init(_shopView, _inventoryView, _contractBoardView);
             }
         }
     }

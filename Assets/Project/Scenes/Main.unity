@@ -743,6 +743,7 @@ MonoBehaviour:
   autoInjectGameObjects: []
   _plantDatabase: {fileID: 11400000, guid: 75c5887918b92b049b355a6c277f0cfa, type: 2}
   _buildingDatabase: {fileID: 11400000, guid: 01aff41f0f7fa7d4b9d8e18a98fb743d, type: 2}
+  _contractDatabase: {fileID: 11400000, guid: d66f0a7bbc8d8604c9786b93e849f50c, type: 2}
 --- !u!1 &1408991493
 GameObject:
   m_ObjectHideFlags: 0
@@ -825,6 +826,7 @@ MonoBehaviour:
   autoInjectGameObjects: []
   _renderConfig: {fileID: 11400000, guid: e680bb40453325b4f8193ce3a7e6acb2, type: 2}
   _interactionController: {fileID: 973734435}
+  _directionalLight: {fileID: 0}
   _hudView: {fileID: 0}
   _shopView: {fileID: 0}
   _inventoryView: {fileID: 0}

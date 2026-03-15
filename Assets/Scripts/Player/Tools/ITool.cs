@@ -9,7 +9,8 @@ namespace WheatFarm.Player.Tools
         Fertilizer,
         Dye,
         Sickle,
-        Uproot
+        Uproot,
+        Build
     }
 
     /// <summary>

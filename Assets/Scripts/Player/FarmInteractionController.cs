@@ -18,16 +18,18 @@ namespace WheatFarm.Player
 
         private IToolService _toolService;
         private IBrushService _brushService;
+        private Tools.BuildTool _buildTool;
         private Camera _cam;
         private readonly Plane _groundPlane = new(Vector3.up, Vector3.zero);
 
         private static readonly int InteractionPositionId = Shader.PropertyToID("_Interaction_Position");
 
         [Inject]
-        public void Construct(IToolService toolService, IBrushService brushService)
+        public void Construct(IToolService toolService, IBrushService brushService, Tools.BuildTool buildTool = null)
         {
             _toolService = toolService;
             _brushService = brushService;
+            _buildTool = buildTool;
         }
 
         private void Start()
@@ -87,6 +89,13 @@ namespace WheatFarm.Player
             if (Input.GetKeyDown(KeyCode.Alpha4)) _toolService.EquipTool(ToolId.Dye);
             if (Input.GetKeyDown(KeyCode.Alpha5)) _toolService.EquipTool(ToolId.Fertilizer);
             if (Input.GetKeyDown(KeyCode.Alpha6)) _toolService.EquipTool(ToolId.Uproot);
+            if (Input.GetKeyDown(KeyCode.Alpha7)) _toolService.EquipTool(ToolId.Build);
+
+            // B to cycle buildings when BuildTool is active
+            if (Input.GetKeyDown(KeyCode.B) && _toolService.CurrentToolId.CurrentValue == ToolId.Build)
+            {
+                if (_buildTool != null) _buildTool.CycleBuilding();
+            }
         }
 
         private void HandleBrushSize()

@@ -4,6 +4,7 @@
     "references": [
         "WheatFarm.Core",
         "WheatFarm.Farming",
+        "WheatFarm.Buildings",
         "VContainer",
         "UniTask",
         "Unity.InputSystem",

@@ -141,6 +141,145 @@ namespace WheatFarm.UI
             return view;
         }
 
+        public static ContractBoardView BuildContractPanel(Transform canvasRoot)
+        {
+            var panel = CreatePanel(canvasRoot, "ContractPanel", 450, 400);
+            panel.SetActive(false);
+
+            CreateLabel(panel.transform, "Title", "CONTRACTS", 24, TextAnchor.UpperCenter,
+                new Vector2(0, 0), new Vector2(1, 1), new Vector2(10, -10), new Vector2(-10, -40));
+
+            // Contract container
+            var scrollArea = new GameObject("ScrollArea");
+            scrollArea.transform.SetParent(panel.transform, false);
+            var scrollRect = scrollArea.AddComponent<RectTransform>();
+            scrollRect.anchorMin = new Vector2(0, 0.15f);
+            scrollRect.anchorMax = new Vector2(1, 0.85f);
+            scrollRect.offsetMin = new Vector2(10, 0);
+            scrollRect.offsetMax = new Vector2(-10, 0);
+
+            var layout = scrollArea.AddComponent<VerticalLayoutGroup>();
+            layout.spacing = 4;
+            layout.padding = new RectOffset(0, 0, 4, 4);
+            layout.childForceExpandWidth = true;
+            layout.childForceExpandHeight = false;
+
+            // Contract entry prefab: description text + slider + complete button
+            var entryPrefab = CreateContractEntryPrefab();
+            entryPrefab.SetActive(false);
+
+            // Footer: close
+            var footer = new GameObject("Footer");
+            footer.transform.SetParent(panel.transform, false);
+            var footerRect = footer.AddComponent<RectTransform>();
+            footerRect.anchorMin = Vector2.zero;
+            footerRect.anchorMax = new Vector2(1, 0.15f);
+            footerRect.offsetMin = new Vector2(10, 5);
+            footerRect.offsetMax = new Vector2(-10, 0);
+
+            var closeBtn = CreateButton(footer.transform, "Close", "X", CloseColor);
+            var closeBtnRect = closeBtn.GetComponent<RectTransform>();
+            closeBtnRect.anchorMin = new Vector2(0.75f, 0.1f);
+            closeBtnRect.anchorMax = new Vector2(1f, 0.9f);
+            closeBtnRect.offsetMin = Vector2.zero;
+            closeBtnRect.offsetMax = Vector2.zero;
+
+            var view = panel.AddComponent<ContractBoardView>();
+            SetField(view, "_panel", panel);
+            SetField(view, "_contractContainer", scrollArea.transform);
+            SetField(view, "_contractEntryPrefab", entryPrefab);
+            SetField(view, "_closeButton", closeBtn);
+
+            return view;
+        }
+
+        /// <summary>Contract entry: description TMP, Slider for progress, Button for complete.</summary>
+        private static GameObject CreateContractEntryPrefab()
+        {
+            var go = new GameObject("ContractEntry");
+            var rect = go.AddComponent<RectTransform>();
+            rect.sizeDelta = new Vector2(0, 60);
+            go.AddComponent<Image>().color = ItemBg;
+            go.AddComponent<LayoutElement>().preferredHeight = 60;
+
+            // Description label (GetComponentsInChildren<TMP>[0])
+            var desc = new GameObject("Desc");
+            desc.transform.SetParent(go.transform, false);
+            var descRect = desc.AddComponent<RectTransform>();
+            descRect.anchorMin = new Vector2(0, 0.4f);
+            descRect.anchorMax = new Vector2(0.95f, 1);
+            descRect.offsetMin = new Vector2(8, 0);
+            descRect.offsetMax = Vector2.zero;
+            var descTmp = desc.AddComponent<TextMeshProUGUI>();
+            descTmp.fontSize = 13;
+            descTmp.alignment = TextAlignmentOptions.Left;
+            descTmp.color = Color.white;
+
+            // Progress slider (GetComponentsInChildren<Slider>[0])
+            var sliderGo = new GameObject("Progress");
+            sliderGo.transform.SetParent(go.transform, false);
+            var sliderRect = sliderGo.AddComponent<RectTransform>();
+            sliderRect.anchorMin = new Vector2(0.02f, 0.1f);
+            sliderRect.anchorMax = new Vector2(0.6f, 0.38f);
+            sliderRect.offsetMin = Vector2.zero;
+            sliderRect.offsetMax = Vector2.zero;
+
+            var sliderBg = sliderGo.AddComponent<Image>();
+            sliderBg.color = new Color(0.15f, 0.15f, 0.15f, 1);
+
+            var fillArea = new GameObject("Fill Area");
+            fillArea.transform.SetParent(sliderGo.transform, false);
+            var fillAreaRect = fillArea.AddComponent<RectTransform>();
+            fillAreaRect.anchorMin = Vector2.zero;
+            fillAreaRect.anchorMax = Vector2.one;
+            fillAreaRect.offsetMin = Vector2.zero;
+            fillAreaRect.offsetMax = Vector2.zero;
+
+            var fill = new GameObject("Fill");
+            fill.transform.SetParent(fillArea.transform, false);
+            var fillRect = fill.AddComponent<RectTransform>();
+            fillRect.anchorMin = Vector2.zero;
+            fillRect.anchorMax = Vector2.one;
+            fillRect.offsetMin = Vector2.zero;
+            fillRect.offsetMax = Vector2.zero;
+            fill.AddComponent<Image>().color = new Color(0.3f, 0.7f, 0.3f, 1);
+
+            var slider = sliderGo.AddComponent<Slider>();
+            slider.fillRect = fillRect;
+            slider.interactable = false;
+            slider.minValue = 0;
+            slider.maxValue = 1;
+
+            // Complete button (GetComponentsInChildren<Button>[0])
+            var btnGo = new GameObject("CompleteBtn");
+            btnGo.transform.SetParent(go.transform, false);
+            var btnRect = btnGo.AddComponent<RectTransform>();
+            btnRect.anchorMin = new Vector2(0.65f, 0.05f);
+            btnRect.anchorMax = new Vector2(0.95f, 0.38f);
+            btnRect.offsetMin = Vector2.zero;
+            btnRect.offsetMax = Vector2.zero;
+
+            var btnImg = btnGo.AddComponent<Image>();
+            btnImg.color = ButtonColor;
+            var btn = btnGo.AddComponent<Button>();
+            btn.targetGraphic = btnImg;
+
+            var btnLabel = new GameObject("Text");
+            btnLabel.transform.SetParent(btnGo.transform, false);
+            var btnLabelRect = btnLabel.AddComponent<RectTransform>();
+            btnLabelRect.anchorMin = Vector2.zero;
+            btnLabelRect.anchorMax = Vector2.one;
+            btnLabelRect.offsetMin = Vector2.zero;
+            btnLabelRect.offsetMax = Vector2.zero;
+            var btnTmp = btnLabel.AddComponent<TextMeshProUGUI>();
+            btnTmp.text = "Done";
+            btnTmp.fontSize = 12;
+            btnTmp.alignment = TextAlignmentOptions.Center;
+            btnTmp.color = Color.white;
+
+            return go;
+        }
+
         // --- Helpers ---
 
         private static GameObject CreatePanel(Transform parent, string name, float width, float height)
