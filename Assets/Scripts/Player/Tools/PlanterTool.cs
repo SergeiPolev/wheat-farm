@@ -5,12 +5,13 @@ using WheatFarm.Farming;
 namespace WheatFarm.Player.Tools
 {
     /// <summary>
-    /// Plants crops/bushes in brush radius.
+    /// Plants crops/bushes in brush radius, or places trees via TreePlacementService.
     /// Requires a selected PlantData (set via SelectPlant before use).
     /// </summary>
     public class PlanterTool : ITool, IBrushAction
     {
         private readonly IPlantSystem _plantSystem;
+        private readonly ITreePlacementService _treePlacement;
         private readonly IBrushService _brush;
 
         private PlantData _selectedPlant;
@@ -18,9 +19,10 @@ namespace WheatFarm.Player.Tools
         public ToolId Id => ToolId.Planter;
         public bool RequiresResource => true;
 
-        public PlanterTool(IPlantSystem plantSystem, IBrushService brush)
+        public PlanterTool(IPlantSystem plantSystem, ITreePlacementService treePlacement, IBrushService brush)
         {
             _plantSystem = plantSystem;
+            _treePlacement = treePlacement;
             _brush = brush;
         }
 
@@ -34,6 +36,15 @@ namespace WheatFarm.Player.Tools
         public void UseAtPosition(Vector3 worldPos)
         {
             if (_selectedPlant == null) return;
+
+            // Trees: single placement (no brush), uses TreePlacementService for multi-cell trunk
+            if (_selectedPlant.Category == PlantCategory.Tree)
+            {
+                _treePlacement.Place(_selectedPlant, worldPos);
+                return;
+            }
+
+            // Crops and bushes: brush-based placement
             _brush.ApplyAtWorldPos(worldPos, this);
         }
 

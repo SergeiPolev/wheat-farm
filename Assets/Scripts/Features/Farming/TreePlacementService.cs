@@ -84,11 +84,25 @@ namespace WheatFarm.Farming
                 CenterCellY = centerY
             };
 
-            // Instantiate prefab if available
+            // Create visual GameObject from mesh + material
             if (treeData.Mesh != null)
             {
-                // Trees use prefab instantiation, not GPU instancing
-                // TODO: create tree prefab from mesh + material
+                var go = new GameObject($"Tree_{treeData.PlantId}");
+                go.transform.position = worldPos + Vector3.up * 0.01f;
+
+                var mf = go.AddComponent<MeshFilter>();
+                mf.sharedMesh = treeData.Mesh;
+
+                var mr = go.AddComponent<MeshRenderer>();
+                if (treeData.Material != null)
+                    mr.sharedMaterial = treeData.Material;
+
+                // Scale from PlantData range
+                float scale = Random.Range(treeData.ScaleRange.x, treeData.ScaleRange.y);
+                go.transform.localScale = Vector3.one * scale;
+                go.transform.rotation = Quaternion.Euler(0, 165f + Random.Range(-25f, 25f), 0);
+
+                tree.Instance = go;
             }
 
             _trees.Add(tree);
