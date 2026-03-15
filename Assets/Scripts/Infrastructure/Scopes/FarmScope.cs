@@ -21,6 +21,9 @@ namespace WheatFarm.Infrastructure
         [Header("Player (assign when Player GO is set up)")]
         [SerializeField] private FarmInteractionController _interactionController;
 
+        [Header("Lighting")]
+        [SerializeField] private Light _directionalLight;
+
         [Header("UI Views (assign when Canvas is set up)")]
         [SerializeField] private HUDView _hudView;
         [SerializeField] private ShopView _shopView;
@@ -81,6 +84,16 @@ namespace WheatFarm.Infrastructure
             // Phase 7: Tree placement
             builder.Register<TreePlacementService>(Lifetime.Singleton)
                 .As<ITreePlacementService>();
+
+            // Phase 8: Lighting controller (drives Directional Light from DayNightService)
+            if (_directionalLight == null)
+                _directionalLight = FindFirstObjectByType<Light>();
+            if (_directionalLight != null)
+            {
+                builder.RegisterInstance(_directionalLight);
+                builder.Register<DayNight.LightingController>(Lifetime.Singleton)
+                    .As<ITickable, System.IDisposable>();
+            }
 
             // Phase 10: Save/Load manager
             builder.Register<FarmSaveManager>(Lifetime.Singleton)

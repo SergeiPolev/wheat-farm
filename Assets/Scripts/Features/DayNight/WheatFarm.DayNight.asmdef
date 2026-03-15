@@ -4,6 +4,7 @@
     "references": [
         "WheatFarm.Core",
         "VContainer",
+        "VContainer.Unity",
         "UniTask",
         "R3.Unity"
     ],
