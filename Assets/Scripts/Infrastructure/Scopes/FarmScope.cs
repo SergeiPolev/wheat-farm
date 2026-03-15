@@ -127,6 +127,13 @@ namespace WheatFarm.Infrastructure
                     .As<IInitializable, System.IDisposable>();
             }
 
+            // Build Shop/Inventory panels programmatically if not assigned
+            var canvasRoot = _hudView != null ? _hudView.transform.parent : null;
+            if (_shopView == null && canvasRoot != null)
+                _shopView = PanelBuilder.BuildShopPanel(canvasRoot);
+            if (_inventoryView == null && canvasRoot != null)
+                _inventoryView = PanelBuilder.BuildInventoryPanel(canvasRoot);
+
             if (_shopView != null)
             {
                 builder.RegisterComponent(_shopView);
@@ -139,6 +146,14 @@ namespace WheatFarm.Infrastructure
                 builder.RegisterComponent(_inventoryView);
                 builder.Register<InventoryPresenter>(Lifetime.Singleton)
                     .As<IInitializable, System.IDisposable>();
+            }
+
+            // Keybinds for panel toggling (Tab=Shop, I=Inventory)
+            if (_shopView != null || _inventoryView != null)
+            {
+                var toggleGo = new UnityEngine.GameObject("UIToggleController");
+                var toggle = toggleGo.AddComponent<UIToggleController>();
+                toggle.Init(_shopView, _inventoryView);
             }
 
             if (_contractBoardView != null)
