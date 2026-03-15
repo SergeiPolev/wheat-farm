@@ -7,6 +7,9 @@ Shader "WheatFarm/Ground Instanced"
         [HDR] _TintTilled ("Tilled Tint", Color) = (0.35, 0.22, 0.1, 1)
         [HDR] _TintWatered ("Watered Tint", Color) = (0.2, 0.14, 0.08, 1)
         [HDR] _TintFertilized ("Fertilized Tint", Color) = (0.45, 0.35, 0.15, 1)
+        [HDR] _TintPathStone ("Path Stone Tint", Color) = (0.55, 0.55, 0.5, 1)
+        [HDR] _TintPathWood ("Path Wood Tint", Color) = (0.5, 0.35, 0.2, 1)
+        [HDR] _TintPathBrick ("Path Brick Tint", Color) = (0.6, 0.3, 0.25, 1)
         _TransitionDuration ("Transition Duration (s)", Float) = 0.6
         _EdgeSoftness ("Edge Softness", Range(0.01, 0.5)) = 0.15
         _CornerRadius ("Corner Radius", Range(0.0, 0.5)) = 0.25
@@ -48,6 +51,9 @@ Shader "WheatFarm/Ground Instanced"
                 half4 _TintTilled;
                 half4 _TintWatered;
                 half4 _TintFertilized;
+                half4 _TintPathStone;
+                half4 _TintPathWood;
+                half4 _TintPathBrick;
                 float _TransitionDuration;
                 float _EdgeSoftness;
                 float _CornerRadius;
@@ -125,9 +131,10 @@ Shader "WheatFarm/Ground Instanced"
                 output.proximity = prox;
                 output.farmDir = fDir;
 
-                // Compute atlas UV: 2x2 grid
-                float col = fmod(state, 2.0);
-                float row = floor(state / 2.0);
+                // Compute atlas UV: 2x2 grid (states 0-3 map to atlas tiles, paths 4-6 reuse Tilled tile)
+                float atlasState = (state > 3.5) ? 1.0 : state; // paths reuse Tilled atlas tile
+                float col = fmod(atlasState, 2.0);
+                float row = floor(atlasState / 2.0);
                 float2 atlasOffset = float2(col * 0.5, (1.0 - row) * 0.5);
                 output.atlasUV = input.uv * 0.5 + atlasOffset;
 
@@ -178,11 +185,14 @@ Shader "WheatFarm/Ground Instanced"
                     return half4(grassLit, 1.0);
                 }
 
-                // Farmed states — full solid fill, no edge softening
+                // Farmed/path states — full solid fill, no edge softening
                 // (proximity fade on neighboring grass tiles handles the visual transition)
                 half4 stateTint = _TintTilled;
                 if (state == 2) stateTint = _TintWatered;
                 else if (state == 3) stateTint = _TintFertilized;
+                else if (state == 4) stateTint = _TintPathStone;
+                else if (state == 5) stateTint = _TintPathWood;
+                else if (state == 6) stateTint = _TintPathBrick;
 
                 half3 stateColor = texColor.rgb * stateTint.rgb;
                 half3 stateLit = stateColor * NdotL * mainLight.color + stateColor * 0.4;

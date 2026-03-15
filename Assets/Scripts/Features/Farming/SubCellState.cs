@@ -8,7 +8,10 @@ namespace WheatFarm.Farming
         Grass = 0,
         Tilled = 1,
         Watered = 2,
-        Fertilized = 3
+        Fertilized = 3,
+        PathStone = 4,
+        PathWood = 5,
+        PathBrick = 6
     }
 
     /// <summary>

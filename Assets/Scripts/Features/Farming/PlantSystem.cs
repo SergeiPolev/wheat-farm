@@ -95,6 +95,7 @@ namespace WheatFarm.Farming
             int idx = chunk.CellIndex(cellX, cellY);
             ref var cell = ref chunk.Cells[idx];
             if (cell.Occupied || cell.HasPlant) return;
+            if (cell.GroundState >= GroundState.PathStone) return; // paths block planting
 
             // Gameplay state
             cell.PlantId = data.PlantId;
