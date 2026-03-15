@@ -28,8 +28,10 @@ namespace WheatFarm.Player.Tools
                 _tools[tool.Id] = tool;
             }
 
-            // Default to planter
-            if (_tools.ContainsKey(ToolId.Planter))
+            // Default to placement tool
+            if (_tools.ContainsKey(ToolId.Placement))
+                EquipTool(ToolId.Placement);
+            else if (_tools.ContainsKey(ToolId.Planter))
                 EquipTool(ToolId.Planter);
         }
 

@@ -63,13 +63,12 @@ namespace WheatFarm.Infrastructure
                 .As<IStartable>();
 
             // Phase 4: Tools
-            builder.Register<PlanterTool>(Lifetime.Singleton).As<PlanterTool, ITool>();
+            builder.Register<PlacementTool>(Lifetime.Singleton).As<PlacementTool, ITool>();
             builder.Register<WateringCanTool>(Lifetime.Singleton).As<ITool>();
             builder.Register<SickleTool>(Lifetime.Singleton).As<ITool>();
             builder.Register<DyeTool>(Lifetime.Singleton).As<ITool>();
             builder.Register<FertilizerTool>(Lifetime.Singleton).As<ITool>();
             builder.Register<UprootTool>(Lifetime.Singleton).As<ITool>();
-            builder.Register<BuildTool>(Lifetime.Singleton).As<BuildTool, ITool>();
 
             builder.Register<ToolService>(Lifetime.Singleton)
                 .As<IToolService>();
