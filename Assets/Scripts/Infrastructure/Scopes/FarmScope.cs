@@ -168,6 +168,18 @@ namespace WheatFarm.Infrastructure
                     .As<IInitializable, System.IDisposable>();
             }
 
+            // Catalog tab bar (bottom of screen — category selection)
+            if (canvasRoot != null)
+            {
+                var catalogGo = new UnityEngine.GameObject("CatalogTabBarHost");
+                var catalogTabBar = catalogGo.AddComponent<CatalogTabBar>();
+                catalogTabBar.Build(canvasRoot, new[] { "Crops", "Trees", "Buildings", "Decor", "Paths", "Tools" });
+
+                builder.RegisterComponent(catalogTabBar);
+                builder.Register<CatalogPresenter>(Lifetime.Singleton)
+                    .As<IInitializable, System.IDisposable>();
+            }
+
             // Building interaction panel (click building → recipe UI)
             if (canvasRoot != null)
             {
