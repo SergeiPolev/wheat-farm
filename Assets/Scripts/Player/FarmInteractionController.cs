@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using VContainer;
 using WheatFarm.Farming;
@@ -23,6 +24,9 @@ namespace WheatFarm.Player
         private readonly Plane _groundPlane = new(Vector3.up, Vector3.zero);
 
         private static readonly int InteractionPositionId = Shader.PropertyToID("_Interaction_Position");
+
+        /// <summary>Fired when player clicks on a building collider. Subscribers handle UI.</summary>
+        public event Action<GameObject> OnBuildingClicked;
 
         [Inject]
         public void Construct(IToolService toolService, IBrushService brushService, Tools.BuildTool buildTool = null)
@@ -61,6 +65,17 @@ namespace WheatFarm.Player
             if (UnityEngine.EventSystems.EventSystem.current != null &&
                 UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())
                 return;
+
+            // Single click: check if we hit a building first (Physics.Raycast)
+            if (Input.GetMouseButtonDown(0) && _cam != null)
+            {
+                Ray ray = _cam.ScreenPointToRay(Input.mousePosition);
+                if (Physics.Raycast(ray, out RaycastHit hit, maxRayDistance))
+                {
+                    OnBuildingClicked?.Invoke(hit.collider.gameObject);
+                    return;
+                }
+            }
 
             Vector3? hitPoint = GetGroundHitPoint();
             if (hitPoint.HasValue)

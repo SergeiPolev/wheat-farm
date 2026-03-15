@@ -86,6 +86,10 @@ namespace WheatFarm.Buildings
             {
                 var worldPos = _chunkSystem.CellToWorld(chunkCoord, 0, 0);
                 building.Instance = Object.Instantiate(data.Prefab, worldPos, Quaternion.identity);
+
+                // Tag instance for raycast identification
+                var marker = building.Instance.AddComponent<BuildingMarker>();
+                marker.Building = building;
             }
 
             Buildings.Add(building);

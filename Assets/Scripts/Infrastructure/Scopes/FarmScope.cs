@@ -166,6 +166,15 @@ namespace WheatFarm.Infrastructure
                     .As<IInitializable, System.IDisposable>();
             }
 
+            // Building interaction panel (click building → recipe UI)
+            if (canvasRoot != null)
+            {
+                var buildPanel = BuildingInteractionPanel.Create(canvasRoot);
+                builder.RegisterInstance(buildPanel);
+                builder.Register<BuildingClickHandler>(Lifetime.Singleton)
+                    .As<IInitializable, System.IDisposable>();
+            }
+
             // Keybinds for panel toggling (Tab=Shop, I=Inventory, C=Contracts)
             {
                 var toggleGo = new UnityEngine.GameObject("UIToggleController");
