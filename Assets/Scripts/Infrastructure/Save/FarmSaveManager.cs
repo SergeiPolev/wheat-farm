@@ -29,9 +29,11 @@ namespace WheatFarm.Infrastructure.Save
         private readonly IInventoryService _inventory;
         private readonly IDayNightService _dayNight;
         private readonly IBuildingService _buildings;
+        private readonly IPlacementService _placement;
         private readonly ITreePlacementService _trees;
         private readonly PlantDatabase _plantDb;
         private readonly BuildingDatabase _buildingDb;
+        private readonly PlaceableDatabase _placeableDb;
 
         public bool HasSave => _saveService.HasSave();
 
@@ -42,9 +44,11 @@ namespace WheatFarm.Infrastructure.Save
             IInventoryService inventory,
             IDayNightService dayNight,
             IBuildingService buildings,
+            IPlacementService placement,
             ITreePlacementService trees,
             PlantDatabase plantDb,
-            BuildingDatabase buildingDb = null)
+            BuildingDatabase buildingDb = null,
+            PlaceableDatabase placeableDb = null)
         {
             _saveService = saveService;
             _chunkSystem = chunkSystem;
@@ -52,9 +56,11 @@ namespace WheatFarm.Infrastructure.Save
             _inventory = inventory;
             _dayNight = dayNight;
             _buildings = buildings;
+            _placement = placement;
             _trees = trees;
             _plantDb = plantDb;
             _buildingDb = buildingDb;
+            _placeableDb = placeableDb;
         }
 
         public async UniTask SaveGame()
@@ -119,6 +125,21 @@ namespace WheatFarm.Infrastructure.Save
                     ChunkCoordX = b.ChunkCoord.x,
                     ChunkCoordY = b.ChunkCoord.y,
                     Level = b.Level
+                });
+            }
+
+            // Placed objects (buildings/decor via PlacementService)
+            foreach (var obj in _placement.PlacedObjects)
+            {
+                data.PlacedObjects.Add(new PlacedObjectSaveData
+                {
+                    PlaceableId = obj.Data.PlaceableId,
+                    ChunkCoordX = obj.ChunkCoord.x,
+                    ChunkCoordY = obj.ChunkCoord.y,
+                    CellX = obj.CellX,
+                    CellY = obj.CellY,
+                    RotationY = obj.RotationY,
+                    Level = obj.Level
                 });
             }
 
@@ -261,9 +282,24 @@ namespace WheatFarm.Infrastructure.Save
                 }
             }
 
+            // Placed objects (restore via PlaceableDatabase lookup)
+            if (_placeableDb != null)
+            {
+                foreach (var poSave in data.PlacedObjects)
+                {
+                    var placeableData = _placeableDb.GetById(poSave.PlaceableId);
+                    if (placeableData == null) continue;
+
+                    var coord = new Vector2Int(poSave.ChunkCoordX, poSave.ChunkCoordY);
+                    ((PlacementService)_placement).RestorePlace(
+                        placeableData, coord, poSave.CellX, poSave.CellY,
+                        poSave.RotationY, poSave.Level);
+                }
+            }
+
             Debug.Log($"[FarmSaveManager] Restored: {data.Chunks.Count} chunks, " +
-                      $"{data.Buildings.Count} buildings, {data.Trees.Count} trees, " +
-                      $"{data.Inventory.Count} items, {data.Coins} coins");
+                      $"{data.Buildings.Count} buildings, {data.PlacedObjects.Count} placed objects, " +
+                      $"{data.Trees.Count} trees, {data.Inventory.Count} items, {data.Coins} coins");
         }
     }
 }

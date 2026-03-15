@@ -14,6 +14,7 @@ namespace WheatFarm.Infrastructure.Save
         public float DayNightTime;
         public List<ChunkSaveData> Chunks = new();
         public List<PlacedBuildingSaveData> Buildings = new();
+        public List<PlacedObjectSaveData> PlacedObjects = new();
         public List<TreeSaveData> Trees = new();
         public List<InventoryItemSaveData> Inventory = new();
         public List<ContractSaveData> ActiveContracts = new();
@@ -54,13 +55,26 @@ namespace WheatFarm.Infrastructure.Save
         public int GroundState;
     }
 
-    /// <summary>Serializable placed building.</summary>
+    /// <summary>Serializable placed building (legacy — kept for backwards compat).</summary>
     [System.Serializable]
     public struct PlacedBuildingSaveData
     {
         public string BuildingId;
         public int ChunkCoordX;
         public int ChunkCoordY;
+        public int Level;
+    }
+
+    /// <summary>Serializable placed object (buildings, decor via PlacementService).</summary>
+    [System.Serializable]
+    public struct PlacedObjectSaveData
+    {
+        public string PlaceableId;
+        public int ChunkCoordX;
+        public int ChunkCoordY;
+        public int CellX;
+        public int CellY;
+        public float RotationY;
         public int Level;
     }
 
