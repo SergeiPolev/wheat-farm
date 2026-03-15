@@ -1,3 +1,4 @@
+using System;
 using R3;
 using UnityEngine;
 using VContainer.Unity;
@@ -24,7 +25,7 @@ namespace WheatFarm.Farming
         void Dye(Vector2Int chunkCoord, int cellX, int cellY, Color color);
     }
 
-    public class PlantSystem : IPlantSystem, ITickable
+    public class PlantSystem : IPlantSystem, ITickable, IDisposable
     {
         /// <summary>
         /// Multiplier applied to CellWorldSize to get base crop scale.
@@ -47,6 +48,11 @@ namespace WheatFarm.Farming
         {
             _chunkSystem = chunkSystem;
             _plantDb = plantDb;
+        }
+
+        public void Dispose()
+        {
+            OnHarvested.Dispose();
         }
 
         public void Tick()
@@ -99,10 +105,10 @@ namespace WheatFarm.Farming
 
             // Placement data (for matrix reconstruction during growth)
             float baseScale = _chunkSystem.CellWorldSize * ScaleMultiplier;
-            cell.BaseScale = baseScale * Random.Range(data.ScaleRange.x, data.ScaleRange.y);
+            cell.BaseScale = baseScale * UnityEngine.Random.Range(data.ScaleRange.x, data.ScaleRange.y);
             // Restrict rotation to front-facing range for flat mesh models
-            // Camera looks from isometric angle; mesh faces need ~135° base + variance
-            cell.RotationY = 165f + Random.Range(-25f, 25f);
+            // Camera looks from isometric angle; mesh faces need ~165° base + variance
+            cell.RotationY = CropRotation.BaseAngle + UnityEngine.Random.Range(-CropRotation.Variance, CropRotation.Variance);
 
             // Sync to GPU: positions RELATIVE to chunk bounds center (shader requirement)
             ref var props = ref chunk.MeshProps[idx];

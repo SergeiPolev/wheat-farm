@@ -100,7 +100,7 @@ namespace WheatFarm.Farming
                 // Scale from PlantData range
                 float scale = Random.Range(treeData.ScaleRange.x, treeData.ScaleRange.y);
                 go.transform.localScale = Vector3.one * scale;
-                go.transform.rotation = Quaternion.Euler(0, 165f + Random.Range(-25f, 25f), 0);
+                go.transform.rotation = Quaternion.Euler(0, CropRotation.BaseAngle + Random.Range(-CropRotation.Variance, CropRotation.Variance), 0);
 
                 tree.Instance = go;
             }

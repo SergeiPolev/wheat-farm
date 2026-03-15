@@ -46,6 +46,12 @@ namespace WheatFarm.Infrastructure.Save
         public Color32 Color;
         /// <summary>Blocked by building/tree trunk.</summary>
         public bool Occupied;
+        /// <summary>Randomized base scale set at planting time.</summary>
+        public float BaseScale;
+        /// <summary>Random Y-axis rotation (degrees) set at planting time.</summary>
+        public float RotationY;
+        /// <summary>Visual state of the ground tile (Grass=0, Tilled=1, Watered=2, Fertilized=3).</summary>
+        public int GroundState;
     }
 
     /// <summary>Serializable placed building.</summary>

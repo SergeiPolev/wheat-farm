@@ -103,11 +103,6 @@ namespace WheatFarm.Farming
             if (!_chunk.Dirty) return;
 
             _meshPropsBuffer.SetData(_chunk.MeshProps);
-            _cropMaterial.SetBuffer(PerInstanceData, _meshPropsBuffer);
-
-            if (_groundMaterial != null)
-                _groundMaterial.SetBuffer(PerInstanceData, _meshPropsBuffer);
-
             _chunk.Dirty = false;
         }
 

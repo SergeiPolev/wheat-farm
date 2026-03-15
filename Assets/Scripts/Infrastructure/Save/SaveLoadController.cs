@@ -1,3 +1,4 @@
+using System;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using VContainer.Unity;
@@ -23,7 +24,7 @@ namespace WheatFarm.Infrastructure.Save
             if (_saveManager.HasSave)
             {
                 Debug.Log("[Save] Auto-loading save...");
-                _saveManager.LoadGame().Forget();
+                LoadAsync().Forget();
             }
         }
 
@@ -32,13 +33,39 @@ namespace WheatFarm.Infrastructure.Save
             if (Input.GetKeyDown(KeyCode.F5))
             {
                 Debug.Log("[Save] Saving...");
-                _saveManager.SaveGame().Forget();
+                SaveAsync().Forget();
             }
 
             if (Input.GetKeyDown(KeyCode.F9))
             {
                 Debug.Log("[Save] Loading...");
-                _saveManager.LoadGame().Forget();
+                LoadAsync().Forget();
+            }
+        }
+
+        private async UniTaskVoid SaveAsync()
+        {
+            try
+            {
+                await _saveManager.SaveGame();
+                Debug.Log("[Save] Save complete.");
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[Save] Save failed: {e}");
+            }
+        }
+
+        private async UniTaskVoid LoadAsync()
+        {
+            try
+            {
+                await _saveManager.LoadGame();
+                Debug.Log("[Save] Load complete.");
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[Save] Load failed: {e}");
             }
         }
     }

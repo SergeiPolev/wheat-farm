@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using R3;
 using UnityEngine;
@@ -5,6 +6,17 @@ using WheatFarm.Core.Data;
 
 namespace WheatFarm.Farming
 {
+    /// <summary>
+    /// Camera-facing rotation constants for flat crop/tree meshes.
+    /// Isometric camera looks from ~(35°, 45°); meshes need ~165° base rotation
+    /// with ±25° variance to appear front-facing without obvious uniformity.
+    /// </summary>
+    public static class CropRotation
+    {
+        public const float BaseAngle = 165f;
+        public const float Variance = 25f;
+    }
+
     public interface IChunkSystem
     {
         ReadOnlyReactiveProperty<int> UnlockedChunkCount { get; }
@@ -15,9 +27,7 @@ namespace WheatFarm.Farming
         ChunkData GetChunk(Vector2Int coord);
         ChunkData GetOrCreateChunk(Vector2Int coord);
         bool TryUnlockChunk(Vector2Int coord);
-        IEnumerable<ChunkData> GetAllUnlockedChunks();
-        IEnumerable<ChunkData> GetDirtyChunks();
-        void ClearDirtyFlags();
+        IReadOnlyList<ChunkData> GetAllUnlockedChunks();
 
         Vector2Int WorldToChunkCoord(Vector3 worldPos);
         (Vector2Int chunkCoord, int cellX, int cellY) WorldToCell(Vector3 worldPos);
@@ -39,10 +49,15 @@ namespace WheatFarm.Farming
         void UpdateGroundNeighborFlags(Vector2Int chunkCoord, int cellX, int cellY);
     }
 
-    public class ChunkSystem : IChunkSystem
+    public class ChunkSystem : IChunkSystem, IDisposable
     {
         private readonly Dictionary<Vector2Int, ChunkData> _chunks = new();
         private readonly ReactiveProperty<int> _unlockedCount = new(0);
+        private readonly List<ChunkData> _unlockedChunksCache = new();
+        private readonly List<(Vector2Int chunkCoord, int cellX, int cellY)> _cellsInRadiusCache = new();
+
+        private static readonly int[] DxArr = { 0, 1, 0, -1, 1, 1, -1, -1 };
+        private static readonly int[] DyArr = { 1, 0, -1, 0, 1, -1, -1, 1 };
 
         public ReadOnlyReactiveProperty<int> UnlockedChunkCount => _unlockedCount;
         public float ChunkWorldSize { get; }
@@ -53,6 +68,11 @@ namespace WheatFarm.Farming
         {
             ChunkWorldSize = chunkWorldSize;
             SubCellResolution = subCellResolution;
+        }
+
+        public void Dispose()
+        {
+            _unlockedCount.Dispose();
         }
 
         public ChunkData GetChunk(Vector2Int coord)
@@ -78,26 +98,14 @@ namespace WheatFarm.Farming
 
             chunk.Unlocked = true;
             chunk.Dirty = true;
+            _unlockedChunksCache.Add(chunk);
             _unlockedCount.Value++;
             return true;
         }
 
-        public IEnumerable<ChunkData> GetAllUnlockedChunks()
+        public IReadOnlyList<ChunkData> GetAllUnlockedChunks()
         {
-            foreach (var chunk in _chunks.Values)
-                if (chunk.Unlocked) yield return chunk;
-        }
-
-        public IEnumerable<ChunkData> GetDirtyChunks()
-        {
-            foreach (var chunk in _chunks.Values)
-                if (chunk.Dirty) yield return chunk;
-        }
-
-        public void ClearDirtyFlags()
-        {
-            foreach (var chunk in _chunks.Values)
-                chunk.Dirty = false;
+            return _unlockedChunksCache;
         }
 
         public Vector2Int WorldToChunkCoord(Vector3 worldPos)
@@ -134,7 +142,7 @@ namespace WheatFarm.Farming
 
         public List<(Vector2Int chunkCoord, int cellX, int cellY)> GetCellsInRadius(Vector3 worldPos, float radius)
         {
-            var result = new List<(Vector2Int, int, int)>();
+            _cellsInRadiusCache.Clear();
             float sqrRadius = radius * radius;
 
             // Find chunk range that the radius covers
@@ -158,14 +166,14 @@ namespace WheatFarm.Farming
                             float dz = cellWorld.z - worldPos.z;
                             if (dx * dx + dz * dz <= sqrRadius)
                             {
-                                result.Add((coord, x, y));
+                                _cellsInRadiusCache.Add((coord, x, y));
                             }
                         }
                     }
                 }
             }
 
-            return result;
+            return _cellsInRadiusCache;
         }
 
         /// <summary>Radius (in cells) for grass proximity blending around farmland.</summary>
@@ -236,13 +244,9 @@ namespace WheatFarm.Farming
         {
             int flags = 0;
 
-            // Direction offsets: N, E, S, W, NE, SE, SW, NW
-            int[] dxArr = { 0, 1, 0, -1, 1, 1, -1, -1 };
-            int[] dyArr = { 1, 0, -1, 0, 1, -1, -1, 1 };
-
             for (int bit = 0; bit < 8; bit++)
             {
-                ResolveCell(chunkCoord, cellX + dxArr[bit], cellY + dyArr[bit],
+                ResolveCell(chunkCoord, cellX + DxArr[bit], cellY + DyArr[bit],
                     out var nChunkCoord, out int nx, out int ny);
 
                 var nChunk = GetChunk(nChunkCoord);
@@ -329,15 +333,15 @@ namespace WheatFarm.Farming
 
                     // Small random offset for natural look
                     var randomOffset = new Vector3(
-                        Random.Range(-cellSize * 0.2f, cellSize * 0.2f),
+                        UnityEngine.Random.Range(-cellSize * 0.2f, cellSize * 0.2f),
                         0f,
-                        Random.Range(-cellSize * 0.2f, cellSize * 0.2f));
+                        UnityEngine.Random.Range(-cellSize * 0.2f, cellSize * 0.2f));
 
                     var props = new MeshProperties();
                     props.m = Matrix4x4.TRS(
                         relativePos + randomOffset,
-                        Quaternion.Euler(0, 165f + Random.Range(-25f, 25f), 0),
-                        Vector3.one * Random.Range(0.8f, 1.2f));
+                        Quaternion.Euler(0, CropRotation.BaseAngle + UnityEngine.Random.Range(-CropRotation.Variance, CropRotation.Variance), 0),
+                        Vector3.one * UnityEngine.Random.Range(0.8f, 1.2f));
                     // Ground tile: flat quad covering the cell, slightly above ground plane
                     // Quad mesh faces +Z in local space; rotate 90° around X to face +Y (up)
                     // Exact cell size — edge softening is done in UV space within the tile

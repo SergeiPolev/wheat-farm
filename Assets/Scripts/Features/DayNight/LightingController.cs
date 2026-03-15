@@ -1,5 +1,3 @@
-using System;
-using R3;
 using UnityEngine;
 using VContainer.Unity;
 
@@ -10,11 +8,10 @@ namespace WheatFarm.DayNight
     /// Rotates sun through an arc, adjusts color temperature and intensity.
     /// Pure aesthetic — no gameplay effect.
     /// </summary>
-    public class LightingController : ITickable, IDisposable
+    public class LightingController : ITickable
     {
         private readonly IDayNightService _dayNight;
         private readonly Light _sun;
-        private readonly CompositeDisposable _disposables = new();
 
         // Sun arc: rotates from East (dawn) to overhead (noon) to West (dusk)
         // X rotation = altitude (0=horizon, 90=overhead)
@@ -113,11 +110,6 @@ namespace WheatFarm.DayNight
 
             // Night (0.71-1.0): hold below horizon
             return -10f;
-        }
-
-        public void Dispose()
-        {
-            _disposables.Dispose();
         }
     }
 }

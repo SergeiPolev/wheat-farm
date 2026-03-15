@@ -41,13 +41,13 @@ namespace WheatFarm.Infrastructure
             builder.Register<ChunkSystem>(Lifetime.Singleton)
                 .WithParameter<float>(_renderConfig.ChunkWorldSize)
                 .WithParameter<int>(_renderConfig.SubCellResolution)
-                .As<IChunkSystem>();
+                .As<IChunkSystem, System.IDisposable>();
 
             builder.Register<PlantSystem>(Lifetime.Singleton)
-                .As<IPlantSystem, ITickable>();
+                .As<IPlantSystem, ITickable, System.IDisposable>();
 
             builder.Register<BrushService>(Lifetime.Singleton)
-                .As<IBrushService>();
+                .As<IBrushService, System.IDisposable>();
 
             builder.Register<FarmRenderSystem>(Lifetime.Singleton)
                 .As<ITickable, System.IDisposable>();
@@ -96,7 +96,7 @@ namespace WheatFarm.Infrastructure
             {
                 builder.RegisterInstance(_directionalLight);
                 builder.Register<DayNight.LightingController>(Lifetime.Singleton)
-                    .As<ITickable, System.IDisposable>();
+                    .As<ITickable>();
             }
 
             // Phase 10: Save/Load

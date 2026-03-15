@@ -99,8 +99,11 @@ namespace WheatFarm.Infrastructure.Save
                         Growth = cell.Growth,
                         Watered = cell.Watered,
                         FertilizerMultiplier = cell.FertilizerMultiplier,
-                        Color = cell.Color,
-                        Occupied = cell.Occupied
+                        Color = (Color32)cell.Color, // explicit Color→Color32 (0..1 → 0..255)
+                        Occupied = cell.Occupied,
+                        BaseScale = cell.BaseScale,
+                        RotationY = cell.RotationY,
+                        GroundState = (int)cell.GroundState
                     };
                 }
 
@@ -178,27 +181,46 @@ namespace WheatFarm.Infrastructure.Save
                 if (chunk == null) continue;
 
                 int count = Mathf.Min(chunkSave.SubCells?.Length ?? 0, chunk.CellCount);
+                int res = _chunkSystem.SubCellResolution;
                 for (int i = 0; i < count; i++)
                 {
                     var saved = chunkSave.SubCells[i];
+                    // Color32→Color implicit conversion (0..255 → 0..1) — no manual /255 needed
+                    Color restoredColor = saved.Color;
                     chunk.Cells[i] = new SubCellState
                     {
                         PlantId = string.IsNullOrEmpty(saved.PlantId) ? null : saved.PlantId,
                         Growth = saved.Growth,
                         Watered = saved.Watered,
                         FertilizerMultiplier = saved.FertilizerMultiplier,
-                        Color = saved.Color,
-                        Occupied = saved.Occupied
+                        Color = restoredColor,
+                        Occupied = saved.Occupied,
+                        BaseScale = saved.BaseScale,
+                        RotationY = saved.RotationY,
+                        GroundState = (GroundState)saved.GroundState
                     };
 
                     // Sync GPU data
                     if (!string.IsNullOrEmpty(saved.PlantId))
                     {
-                        var props = chunk.MeshProps[i];
-                        props.cropState = new Vector4(1f, saved.Growth, 0f, 0f);
-                        props.color = new Vector4(saved.Color.r / 255f, saved.Color.g / 255f,
-                            saved.Color.b / 255f, saved.Color.a / 255f);
-                        chunk.MeshProps[i] = props;
+                        ref var props = ref chunk.MeshProps[i];
+
+                        // Rebuild TRS matrix: position relative to chunk bounds center (shader requirement)
+                        int cellX = i % res;
+                        int cellY = i / res;
+                        Vector3 worldPos = _chunkSystem.CellToWorld(coord, cellX, cellY);
+                        Vector3 relPos = worldPos - _chunkSystem.ChunkBoundsCenter(coord);
+
+                        float growthFraction = Mathf.InverseLerp(0f, 1f, saved.Growth);
+                        float visualScale = saved.BaseScale * Mathf.Lerp(0.3f, 1f, growthFraction);
+                        props.m = Matrix4x4.TRS(
+                            relPos,
+                            Quaternion.Euler(0, saved.RotationY, 0),
+                            new Vector3(visualScale, visualScale, visualScale));
+
+                        props.cropState = new Vector4(1f, saved.Growth, saved.GroundState, 0f);
+                        props.color = new Vector4(restoredColor.r, restoredColor.g,
+                            restoredColor.b, restoredColor.a);
                     }
                 }
                 chunk.Dirty = true;
@@ -223,13 +245,19 @@ namespace WheatFarm.Infrastructure.Save
                     if (buildingData == null) continue;
 
                     var coord = new Vector2Int(bSave.ChunkCoordX, bSave.ChunkCoordY);
-                    // Use Place which handles chunk occupation; wallet is already set so cost check
-                    // may fail. For restore, we temporarily add the cost then place.
+                    // Temporarily add cost so Place()'s wallet check passes, then undo if it fails.
                     int tempCost = buildingData.Cost;
                     _wallet.Add(tempCost);
                     var placed = _buildings.Place(buildingData, coord);
                     if (placed != null)
+                    {
                         placed.Level = bSave.Level;
+                    }
+                    else
+                    {
+                        // Place failed — undo the temporary coins so wallet stays correct
+                        _wallet.TrySpend(tempCost);
+                    }
                 }
             }
 

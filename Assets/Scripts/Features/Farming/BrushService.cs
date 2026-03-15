@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using R3;
 
@@ -25,7 +26,7 @@ namespace WheatFarm.Farming
         void ApplyAtWorldPos(UnityEngine.Vector3 worldPos, IBrushAction action);
     }
 
-    public class BrushService : IBrushService
+    public class BrushService : IBrushService, IDisposable
     {
         private readonly IChunkSystem _chunkSystem;
 
@@ -36,6 +37,11 @@ namespace WheatFarm.Farming
         public BrushService(IChunkSystem chunkSystem)
         {
             _chunkSystem = chunkSystem;
+        }
+
+        public void Dispose()
+        {
+            CurrentSize.Dispose();
         }
 
         public void ApplyAtWorldPos(UnityEngine.Vector3 worldPos, IBrushAction action)

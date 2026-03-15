@@ -134,79 +134,6 @@ Shader "WheatFarm/Ground Instanced"
                 return output;
             }
 
-            // Compute distance from pixel to the nearest exposed edge.
-            // Uses min-distance approach (not multiply) so diagonal edges stay smooth.
-            float ComputeEdgeMask(float2 uv, uint flags, float softness, float cornerRadius)
-            {
-                bool hasN  = (flags & (1u << 0)) != 0;
-                bool hasE  = (flags & (1u << 1)) != 0;
-                bool hasS  = (flags & (1u << 2)) != 0;
-                bool hasW  = (flags & (1u << 3)) != 0;
-                bool hasNE = (flags & (1u << 4)) != 0;
-                bool hasSE = (flags & (1u << 5)) != 0;
-                bool hasSW = (flags & (1u << 6)) != 0;
-                bool hasNW = (flags & (1u << 7)) != 0;
-
-                // Distance from each edge (0 = at edge, 0.5 = at center)
-                float dN = 1.0 - uv.y;  // distance from top edge
-                float dS = uv.y;        // distance from bottom edge
-                float dE = 1.0 - uv.x;  // distance from right edge
-                float dW = uv.x;        // distance from left edge
-
-                // Minimum distance to any EXPOSED edge
-                // Start with large value; only consider edges without neighbors
-                float minDist = 10.0;
-                if (!hasN) minDist = min(minDist, dN);
-                if (!hasS) minDist = min(minDist, dS);
-                if (!hasE) minDist = min(minDist, dE);
-                if (!hasW) minDist = min(minDist, dW);
-
-                // For exposed convex corners (both adjacent cardinals missing),
-                // use circular distance from corner point instead of axis-aligned
-                float r = cornerRadius;
-                if (!hasN && !hasE)
-                {
-                    float2 fromCorner = uv - float2(1.0 - r, 1.0 - r);
-                    if (fromCorner.x > 0.0 && fromCorner.y > 0.0)
-                        minDist = min(minDist, r - length(fromCorner));
-                }
-                if (!hasN && !hasW)
-                {
-                    float2 fromCorner = uv - float2(r, 1.0 - r);
-                    if (fromCorner.x < 0.0 && fromCorner.y > 0.0)
-                        minDist = min(minDist, r - length(fromCorner));
-                }
-                if (!hasS && !hasE)
-                {
-                    float2 fromCorner = uv - float2(1.0 - r, r);
-                    if (fromCorner.x > 0.0 && fromCorner.y < 0.0)
-                        minDist = min(minDist, r - length(fromCorner));
-                }
-                if (!hasS && !hasW)
-                {
-                    float2 fromCorner = uv - float2(r, r);
-                    if (fromCorner.x < 0.0 && fromCorner.y < 0.0)
-                        minDist = min(minDist, r - length(fromCorner));
-                }
-
-                // Concave corners: both cardinals present but diagonal missing
-                float cr = cornerRadius * 0.7;
-                if (hasN && hasE && !hasNE)
-                    minDist = min(minDist, length(uv - float2(1.0, 1.0)) - cr);
-                if (hasN && hasW && !hasNW)
-                    minDist = min(minDist, length(uv - float2(0.0, 1.0)) - cr);
-                if (hasS && hasE && !hasSE)
-                    minDist = min(minDist, length(uv - float2(1.0, 0.0)) - cr);
-                if (hasS && hasW && !hasSW)
-                    minDist = min(minDist, length(uv - float2(0.0, 0.0)) - cr);
-
-                // If no exposed edges at all, full opaque
-                if (minDist > 9.0) return 1.0;
-
-                // Smooth falloff: 0 at edge, 1 at softness distance inside
-                return smoothstep(0.0, softness, minDist);
-            }
-
             half4 frag(Varyings input) : SV_Target
             {
                 UNITY_SETUP_INSTANCE_ID(input);
@@ -274,7 +201,7 @@ Shader "WheatFarm/Ground Instanced"
             Tags { "LightMode" = "DepthOnly" }
 
             ZWrite On
-            ColorMask R
+            ColorMask 0
             Cull Back
 
             HLSLPROGRAM
