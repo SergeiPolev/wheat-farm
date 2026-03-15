@@ -101,15 +101,8 @@ namespace WheatFarm.Player
 
         private void HandleToolSwitching()
         {
-            if (Input.GetKeyDown(KeyCode.Alpha1)) _toolService.EquipTool(ToolId.Placement);
-            if (Input.GetKeyDown(KeyCode.Alpha2)) _toolService.EquipTool(ToolId.WateringCan);
-            if (Input.GetKeyDown(KeyCode.Alpha3)) _toolService.EquipTool(ToolId.Sickle);
-            if (Input.GetKeyDown(KeyCode.Alpha4)) _toolService.EquipTool(ToolId.Dye);
-            if (Input.GetKeyDown(KeyCode.Alpha5)) _toolService.EquipTool(ToolId.Fertilizer);
-            if (Input.GetKeyDown(KeyCode.Alpha6)) _toolService.EquipTool(ToolId.Uproot);
-            if (Input.GetKeyDown(KeyCode.Alpha7)) _toolService.EquipTool(ToolId.Bulldoze);
-
-            // Escape: cancel placement selection
+            // Tool/item selection is now handled by CatalogTabBar UI.
+            // Only Escape remains as a keyboard shortcut for cancel.
             if (Input.GetKeyDown(KeyCode.Escape) && _placementTool != null)
             {
                 _placementTool.ClearSelection();
