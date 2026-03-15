@@ -16,6 +16,7 @@ namespace WheatFarm.Infrastructure
     {
         [SerializeField] private PlantDatabase _plantDatabase;
         [SerializeField] private BuildingDatabase _buildingDatabase;
+        [SerializeField] private PlaceableDatabase _placeableDatabase;
         [SerializeField] private ContractDatabase _contractDatabase;
 
         protected override void Configure(IContainerBuilder builder)
@@ -27,6 +28,9 @@ namespace WheatFarm.Infrastructure
 
             if (_buildingDatabase != null)
                 builder.RegisterInstance(_buildingDatabase);
+
+            if (_placeableDatabase != null)
+                builder.RegisterInstance(_placeableDatabase);
 
             if (_contractDatabase != null)
                 builder.RegisterInstance(_contractDatabase);
