@@ -98,6 +98,15 @@ namespace WheatFarm.Infrastructure
 
         private void RegisterUI(IContainerBuilder builder)
         {
+            // Build HUD programmatically if not assigned in Inspector
+            if (_hudView == null)
+            {
+                var builderGo = new UnityEngine.GameObject("HUDBuilder");
+                var hudBuilder = builderGo.AddComponent<HUDBuilder>();
+                _hudView = hudBuilder.BuiltHUDView;
+                // Builder GO can stay — it's just a container, Canvas is separate
+            }
+
             if (_hudView != null)
             {
                 builder.RegisterComponent(_hudView);

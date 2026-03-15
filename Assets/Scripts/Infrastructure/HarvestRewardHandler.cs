@@ -30,10 +30,8 @@ namespace WheatFarm.Infrastructure
 
         private void OnHarvested(HarvestData data)
         {
-            // Add harvested crop to inventory (e.g. "wheat" x1)
             var item = new InventoryItem(data.PlantId, ItemType.Harvest, 1);
-            bool added = _inventory.TryAdd(item);
-            UnityEngine.Debug.Log($"[Harvest] {data.PlantId} x1 (sell={data.Yield}) → inventory {(added ? "OK" : "FULL")} | items: {_inventory.Items.Count}, slots: {_inventory.UsedSlots}/{_inventory.Capacity.CurrentValue}");
+            _inventory.TryAdd(item);
         }
 
         public void Dispose()
