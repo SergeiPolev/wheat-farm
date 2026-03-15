@@ -16,7 +16,7 @@ MonoBehaviour:
   DisplayName: Bakery
   Type: 0
   GridSize: {x: 1, y: 1}
-  Prefab: {fileID: 7173776556071990701, guid: 929decea87420fe45b9ec12f573afecd, type: 3}
+  Prefab: {fileID: 4177370927147541522, guid: 929decea87420fe45b9ec12f573afecd, type: 3}
   Cost: 80
   PlanksRequired: 0
   MaxLevel: 3

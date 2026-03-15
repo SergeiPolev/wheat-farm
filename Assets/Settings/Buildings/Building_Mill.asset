@@ -16,7 +16,7 @@ MonoBehaviour:
   DisplayName: Mill
   Type: 0
   GridSize: {x: 1, y: 1}
-  Prefab: {fileID: 7173776556071990701, guid: f368e5f161d77f34fb96cfeba4fd081b, type: 3}
+  Prefab: {fileID: 5200165061132342746, guid: f368e5f161d77f34fb96cfeba4fd081b, type: 3}
   Cost: 50
   PlanksRequired: 0
   MaxLevel: 3
