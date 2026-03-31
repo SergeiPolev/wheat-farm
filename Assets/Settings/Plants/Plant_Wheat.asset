@@ -16,9 +16,10 @@ MonoBehaviour:
   DisplayName: Wheat
   Category: 0
   Mesh: {fileID: -462981019419857548, guid: 38abb676afed0fa4b91ee74564a7a010, type: 3}
-  Material: {fileID: 2100000, guid: bb3d9ee94807c004c86c7914e846158c, type: 2}
+  Material: {fileID: 2100000, guid: bfb1947c6982fe545a7ce6ad4f4f1849, type: 2}
+  MeshId: 1
   ScaleRange: {x: 0.8, y: 1.2}
-  GrowthDuration: 5
+  GrowthDuration: 1
   NeedsWatering: 1
   SeedCost: 3
   SellPrice: 8

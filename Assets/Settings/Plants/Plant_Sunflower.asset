@@ -15,8 +15,9 @@ MonoBehaviour:
   PlantId: sunflower
   DisplayName: Sunflower
   Category: 0
-  Mesh: {fileID: -462981019419857548, guid: 38abb676afed0fa4b91ee74564a7a010, type: 3}
-  Material: {fileID: 2100000, guid: bfb1947c6982fe545a7ce6ad4f4f1849, type: 2}
+  Mesh: {fileID: 2939617724276802617, guid: 292707b5e336fb64fa86fb27a83ed176, type: 3}
+  Material: {fileID: 2100000, guid: 79c0e878adb34ef48ac7633d31e01c6c, type: 2}
+  MeshId: 3
   ScaleRange: {x: 0.9, y: 1.4}
   GrowthDuration: 40
   NeedsWatering: 1
