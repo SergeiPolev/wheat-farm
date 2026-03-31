@@ -13,6 +13,8 @@ namespace WheatFarm.Core.Data
         [Header("Visuals")]
         public Mesh Mesh;
         public Material Material;
+        [Tooltip("Must match the material's _Id property. Each unique MeshId = separate draw call.")]
+        public int MeshId = 1;
         public Vector2 ScaleRange = new(0.8f, 1.2f);
 
         [Header("Growth")]
