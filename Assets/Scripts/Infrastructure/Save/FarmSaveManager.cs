@@ -239,7 +239,9 @@ namespace WheatFarm.Infrastructure.Save
                             Quaternion.Euler(0, saved.RotationY, 0),
                             new Vector3(visualScale, visualScale, visualScale));
 
-                        props.cropState = new Vector4(1f, saved.Growth, saved.GroundState, 0f);
+                        var plantData = _plantDb?.GetById(saved.PlantId);
+                        int meshId = plantData?.MeshId ?? 1;
+                        props.cropState = new Vector4(meshId, saved.Growth, saved.GroundState, 0f);
                         props.color = new Vector4(restoredColor.r, restoredColor.g,
                             restoredColor.b, restoredColor.a);
                     }
