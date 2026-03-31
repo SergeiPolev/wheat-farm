@@ -7,11 +7,12 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Corn
+  m_Name: Sunflower
   m_Shader: {fileID: -6465566751694194690, guid: 71142b22ecf8b3149b6116debc70a689, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
+  - PROCEDURAL_INSTANCING_ON
   - _ALPHATEST_ON
   - _SURFACE_TYPE_TRANSPARENT
   m_InvalidKeywords:
@@ -58,7 +59,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _Mask:
-        m_Texture: {fileID: 2800000, guid: f49cc3e2beb0c964d88cbf4318735321, type: 3}
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MetallicGlossMap:
@@ -74,7 +75,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _Picture:
-        m_Texture: {fileID: 2800000, guid: 5054ba3830853354bae6238847a20a13, type: 3}
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _SpecGlossMap:
@@ -99,7 +100,7 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - PROCEDURAL_INSTANCING: 0
+    - PROCEDURAL_INSTANCING: 1
     - _AddPrecomputedVelocity: 0
     - _AlphaClip: 1
     - _AlphaToMask: 0
@@ -124,7 +125,7 @@ Material:
     - _Grass_Height_Divider: 1
     - _Height: 0
     - _HiddenHeight: -2
-    - _Id: 2
+    - _Id: 3
     - _Interaction_Power: 7.24
     - _Interaction_Radius: 1.2
     - _MaxHeight: 3.8
@@ -157,7 +158,7 @@ Material:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0.8, g: 0.8, b: 0.8, a: 1}
-    - _Interaction_Position: {r: 0, g: 0, b: 0, a: 0}
+    - _Interaction_Position: {r: 1.3515341, g: 1.0000001, b: 2.0413756, a: 0}
     - _Normal: {r: 0.2, g: 0.8, b: 0, a: 0}
     - _Shadow_Color: {r: 0.07157437, g: 0.335849, b: 0, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
