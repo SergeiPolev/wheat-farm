@@ -14,6 +14,7 @@ namespace WheatFarm.Farming
         private readonly IChunkSystem _chunkSystem;
         private readonly FarmRenderConfig _config;
         private readonly Dictionary<Vector2Int, ChunkCropRenderer> _renderers = new();
+        private CropMeshEntry[] _entries;
         private bool _loggedOnce;
 
         public FarmRenderSystem(IChunkSystem chunkSystem, FarmRenderConfig config)
@@ -24,8 +25,9 @@ namespace WheatFarm.Farming
 
         public void Tick()
         {
-            if (_config.CropMesh == null || _config.CropMaterial == null)
-                return;
+            // Lazy-init entries (config may not be ready at construction time)
+            _entries ??= _config.GetEntries();
+            if (_entries.Length == 0) return;
 
             // Create renderers for newly unlocked chunks
             foreach (var chunk in _chunkSystem.GetAllUnlockedChunks())
@@ -34,8 +36,7 @@ namespace WheatFarm.Farming
                 {
                     var renderer = new ChunkCropRenderer(
                         chunk,
-                        _config.CropMesh,
-                        _config.CropMaterial,
+                        _entries,
                         _config.GroundMesh,
                         _config.GroundMaterial,
                         _chunkSystem.ChunkWorldSize);
@@ -46,7 +47,7 @@ namespace WheatFarm.Farming
             if (!_loggedOnce)
             {
                 bool hasGround = _config.GroundMesh != null && _config.GroundMaterial != null;
-                Debug.Log($"[FarmRenderSystem] crop={_config.CropMesh.name}, ground={hasGround}, renderers={_renderers.Count}");
+                Debug.Log($"[FarmRenderSystem] entries={_entries.Length}, ground={hasGround}, renderers={_renderers.Count}");
                 _loggedOnce = true;
             }
 
