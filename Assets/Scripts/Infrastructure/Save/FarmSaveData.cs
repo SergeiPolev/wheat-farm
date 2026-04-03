@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using WheatFarm.Buildings;
 
 namespace WheatFarm.Infrastructure.Save
 {
@@ -19,6 +20,7 @@ namespace WheatFarm.Infrastructure.Save
         public List<InventoryItemSaveData> Inventory = new();
         public List<ContractSaveData> ActiveContracts = new();
         public List<string> UnlockedPlants = new();
+        public List<ProductionSlotSaveData> ProductionSlots = new();
     }
 
     /// <summary>Serializable chunk state.</summary>
