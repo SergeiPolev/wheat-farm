@@ -166,6 +166,18 @@ namespace WheatFarm.Infrastructure
                     .As<IInitializable, System.IDisposable>();
             }
 
+            // Build building panel programmatically
+            if (canvasRoot != null)
+            {
+                var buildingPanel = PanelBuilder.BuildBuildingPanel(canvasRoot);
+                if (buildingPanel != null)
+                {
+                    builder.RegisterComponent(buildingPanel);
+                    builder.Register<BuildingPanelPresenter>(Lifetime.Singleton)
+                        .As<IInitializable, ITickable, System.IDisposable>();
+                }
+            }
+
             // Catalog tab bar (bottom of screen — category selection)
             if (canvasRoot != null)
             {
