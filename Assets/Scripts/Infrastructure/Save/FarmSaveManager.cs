@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using WheatFarm.Buildings;
@@ -28,11 +29,10 @@ namespace WheatFarm.Infrastructure.Save
         private readonly IWalletService _wallet;
         private readonly IInventoryService _inventory;
         private readonly IDayNightService _dayNight;
-        private readonly IBuildingService _buildings;
         private readonly IPlacementService _placement;
+        private readonly IProductionService _production;
         private readonly ITreePlacementService _trees;
         private readonly PlantDatabase _plantDb;
-        private readonly BuildingDatabase _buildingDb;
         private readonly PlaceableDatabase _placeableDb;
 
         public bool HasSave => _saveService.HasSave();
@@ -43,11 +43,10 @@ namespace WheatFarm.Infrastructure.Save
             IWalletService wallet,
             IInventoryService inventory,
             IDayNightService dayNight,
-            IBuildingService buildings,
             IPlacementService placement,
+            IProductionService production,
             ITreePlacementService trees,
             PlantDatabase plantDb,
-            BuildingDatabase buildingDb = null,
             PlaceableDatabase placeableDb = null)
         {
             _saveService = saveService;
@@ -55,11 +54,10 @@ namespace WheatFarm.Infrastructure.Save
             _wallet = wallet;
             _inventory = inventory;
             _dayNight = dayNight;
-            _buildings = buildings;
             _placement = placement;
+            _production = production;
             _trees = trees;
             _plantDb = plantDb;
-            _buildingDb = buildingDb;
             _placeableDb = placeableDb;
         }
 
@@ -116,18 +114,6 @@ namespace WheatFarm.Infrastructure.Save
                 data.Chunks.Add(chunkSave);
             }
 
-            // Buildings
-            foreach (var b in _buildings.Buildings)
-            {
-                data.Buildings.Add(new PlacedBuildingSaveData
-                {
-                    BuildingId = b.Data.BuildingId,
-                    ChunkCoordX = b.ChunkCoord.x,
-                    ChunkCoordY = b.ChunkCoord.y,
-                    Level = b.Level
-                });
-            }
-
             // Placed objects (buildings/decor via PlacementService)
             foreach (var obj in _placement.PlacedObjects)
             {
@@ -168,8 +154,11 @@ namespace WheatFarm.Infrastructure.Save
                 });
             }
 
+            // Production slots
+            data.ProductionSlots = ((ProductionService)_production).GetSaveData();
+
             Debug.Log($"[FarmSaveManager] Collected: {data.Chunks.Count} chunks, " +
-                      $"{data.Buildings.Count} buildings, {data.Trees.Count} trees, " +
+                      $"{data.PlacedObjects.Count} placed objects, {data.Trees.Count} trees, " +
                       $"{data.Inventory.Count} items, {data.Coins} coins");
             return data;
         }
@@ -259,31 +248,6 @@ namespace WheatFarm.Infrastructure.Save
                 _trees.Place(plantData, worldPos);
             }
 
-            // Buildings (restore via BuildingDatabase lookup)
-            if (_buildingDb != null)
-            {
-                foreach (var bSave in data.Buildings)
-                {
-                    var buildingData = _buildingDb.GetById(bSave.BuildingId);
-                    if (buildingData == null) continue;
-
-                    var coord = new Vector2Int(bSave.ChunkCoordX, bSave.ChunkCoordY);
-                    // Temporarily add cost so Place()'s wallet check passes, then undo if it fails.
-                    int tempCost = buildingData.Cost;
-                    _wallet.Add(tempCost);
-                    var placed = _buildings.Place(buildingData, coord);
-                    if (placed != null)
-                    {
-                        placed.Level = bSave.Level;
-                    }
-                    else
-                    {
-                        // Place failed — undo the temporary coins so wallet stays correct
-                        _wallet.TrySpend(tempCost);
-                    }
-                }
-            }
-
             // Placed objects (restore via PlaceableDatabase lookup)
             if (_placeableDb != null)
             {
@@ -299,9 +263,28 @@ namespace WheatFarm.Infrastructure.Save
                 }
             }
 
+            // Production slots (restore after placed objects exist)
+            if (data.ProductionSlots != null)
+            {
+                foreach (var slotData in data.ProductionSlots)
+                {
+                    var building = _placement.PlacedObjects
+                        .FirstOrDefault(po => po.Data.PlaceableId == slotData.PlaceableId
+                            && po.ChunkCoord == slotData.ChunkCoord);
+                    if (building == null) continue;
+
+                    var recipe = building.Data.Recipes?
+                        .FirstOrDefault(r => r != null && r.RecipeId == slotData.RecipeId);
+                    if (recipe == null) continue;
+
+                    ((ProductionService)_production).RestoreSlot(
+                        building, recipe, slotData.TimeRemaining, slotData.AutoRepeat);
+                }
+            }
+
             Debug.Log($"[FarmSaveManager] Restored: {data.Chunks.Count} chunks, " +
-                      $"{data.Buildings.Count} buildings, {data.PlacedObjects.Count} placed objects, " +
-                      $"{data.Trees.Count} trees, {data.Inventory.Count} items, {data.Coins} coins");
+                      $"{data.PlacedObjects.Count} placed objects, {data.Trees.Count} trees, " +
+                      $"{data.Inventory.Count} items, {data.Coins} coins");
         }
     }
 }
