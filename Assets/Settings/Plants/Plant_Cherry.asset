@@ -26,3 +26,5 @@ MonoBehaviour:
   RenewableHarvest: 1
   TrunkSize: {x: 3, y: 3}
   UnlockedByDefault: 0
+  UprootYieldId: wood
+  UprootYieldAmount: 3
