@@ -79,9 +79,6 @@ namespace WheatFarm.Infrastructure
                 .As<IStartable>();
 
             // Phase 6: Buildings & Production
-            builder.Register<BuildingService>(Lifetime.Singleton)
-                .As<IBuildingService>();
-
             builder.Register<PlacementService>(Lifetime.Singleton)
                 .As<IPlacementService>();
 
@@ -178,15 +175,6 @@ namespace WheatFarm.Infrastructure
 
                 builder.RegisterComponent(catalogTabBar);
                 builder.Register<CatalogPresenter>(Lifetime.Singleton)
-                    .As<IInitializable, System.IDisposable>();
-            }
-
-            // Building interaction panel (click building → recipe UI)
-            if (canvasRoot != null)
-            {
-                var buildPanel = BuildingInteractionPanel.Create(canvasRoot);
-                builder.RegisterInstance(buildPanel);
-                builder.Register<BuildingClickHandler>(Lifetime.Singleton)
                     .As<IInitializable, System.IDisposable>();
             }
 

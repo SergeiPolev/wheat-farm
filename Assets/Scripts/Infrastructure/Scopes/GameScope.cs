@@ -15,7 +15,6 @@ namespace WheatFarm.Infrastructure
     public class GameScope : LifetimeScope
     {
         [SerializeField] private PlantDatabase _plantDatabase;
-        [SerializeField] private BuildingDatabase _buildingDatabase;
         [SerializeField] private PlaceableDatabase _placeableDatabase;
         [SerializeField] private ContractDatabase _contractDatabase;
 
@@ -25,9 +24,6 @@ namespace WheatFarm.Infrastructure
 
             // Data: databases (available to all child scopes)
             builder.RegisterInstance(_plantDatabase);
-
-            if (_buildingDatabase != null)
-                builder.RegisterInstance(_buildingDatabase);
 
             if (_placeableDatabase != null)
                 builder.RegisterInstance(_placeableDatabase);
