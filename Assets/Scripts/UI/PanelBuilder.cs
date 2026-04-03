@@ -5,7 +5,7 @@ using UnityEngine.UI;
 namespace WheatFarm.UI
 {
     /// <summary>
-    /// Programmatically creates Shop and Inventory panels at runtime.
+    /// Programmatically creates Shop, Inventory, Contract, and Building panels at runtime.
     /// Called from FarmScope.Configure if views not assigned.
     /// </summary>
     public static class PanelBuilder
@@ -188,6 +188,152 @@ namespace WheatFarm.UI
             SetField(view, "_panel", panel);
             SetField(view, "_contractContainer", scrollArea.transform);
             SetField(view, "_contractEntryPrefab", entryPrefab);
+            SetField(view, "_closeButton", closeBtn);
+
+            return view;
+        }
+
+        public static BuildingPanelView BuildBuildingPanel(Transform canvasRoot)
+        {
+            var panel = CreatePanel(canvasRoot, "BuildingPanel", 420, 500);
+            panel.SetActive(false);
+
+            // Title
+            var titleTmp = CreateLabel(panel.transform, "Title", "BUILDING", 22, TextAnchor.UpperCenter,
+                new Vector2(0, 0), new Vector2(1, 1), new Vector2(10, -10), new Vector2(-10, -40));
+
+            // --- "Recipes" section header ---
+            CreateLabel(panel.transform, "RecipesHeader", "Recipes", 15, TextAnchor.MiddleLeft,
+                new Vector2(0, 0.72f), new Vector2(1, 0.78f), new Vector2(14, 0), new Vector2(-10, 0));
+
+            // Recipe container (vertical layout, scrollable area)
+            var recipeArea = new GameObject("RecipeArea");
+            recipeArea.transform.SetParent(panel.transform, false);
+            var recipeRect = recipeArea.AddComponent<RectTransform>();
+            recipeRect.anchorMin = new Vector2(0, 0.42f);
+            recipeRect.anchorMax = new Vector2(1, 0.72f);
+            recipeRect.offsetMin = new Vector2(10, 0);
+            recipeRect.offsetMax = new Vector2(-10, 0);
+
+            var recipeLayout = recipeArea.AddComponent<VerticalLayoutGroup>();
+            recipeLayout.spacing = 3;
+            recipeLayout.padding = new RectOffset(0, 0, 2, 2);
+            recipeLayout.childForceExpandWidth = true;
+            recipeLayout.childForceExpandHeight = false;
+
+            // --- "Active Production" section header ---
+            CreateLabel(panel.transform, "SlotsHeader", "Active Production", 15, TextAnchor.MiddleLeft,
+                new Vector2(0, 0.36f), new Vector2(1, 0.42f), new Vector2(14, 0), new Vector2(-10, 0));
+
+            // Slot container (vertical layout)
+            var slotArea = new GameObject("SlotArea");
+            slotArea.transform.SetParent(panel.transform, false);
+            var slotRect = slotArea.AddComponent<RectTransform>();
+            slotRect.anchorMin = new Vector2(0, 0.16f);
+            slotRect.anchorMax = new Vector2(1, 0.36f);
+            slotRect.offsetMin = new Vector2(10, 0);
+            slotRect.offsetMax = new Vector2(-10, 0);
+
+            var slotLayout = slotArea.AddComponent<VerticalLayoutGroup>();
+            slotLayout.spacing = 3;
+            slotLayout.padding = new RectOffset(0, 0, 2, 2);
+            slotLayout.childForceExpandWidth = true;
+            slotLayout.childForceExpandHeight = false;
+
+            // --- Footer: auto-repeat toggle, upgrade button, close button ---
+            var footer = new GameObject("Footer");
+            footer.transform.SetParent(panel.transform, false);
+            var footerRect = footer.AddComponent<RectTransform>();
+            footerRect.anchorMin = Vector2.zero;
+            footerRect.anchorMax = new Vector2(1, 0.16f);
+            footerRect.offsetMin = new Vector2(10, 5);
+            footerRect.offsetMax = new Vector2(-10, 0);
+
+            // Auto-repeat toggle (left)
+            var toggleGo = new GameObject("AutoRepeatToggle");
+            toggleGo.transform.SetParent(footer.transform, false);
+            var toggleRect = toggleGo.AddComponent<RectTransform>();
+            toggleRect.anchorMin = new Vector2(0, 0.1f);
+            toggleRect.anchorMax = new Vector2(0.35f, 0.9f);
+            toggleRect.offsetMin = Vector2.zero;
+            toggleRect.offsetMax = Vector2.zero;
+
+            // Toggle background
+            var toggleBg = new GameObject("Background");
+            toggleBg.transform.SetParent(toggleGo.transform, false);
+            var toggleBgRect = toggleBg.AddComponent<RectTransform>();
+            toggleBgRect.anchorMin = new Vector2(0, 0.15f);
+            toggleBgRect.anchorMax = new Vector2(0.25f, 0.85f);
+            toggleBgRect.offsetMin = Vector2.zero;
+            toggleBgRect.offsetMax = Vector2.zero;
+            var toggleBgImg = toggleBg.AddComponent<Image>();
+            toggleBgImg.color = new Color(0.25f, 0.25f, 0.25f, 1f);
+
+            // Toggle checkmark
+            var checkmark = new GameObject("Checkmark");
+            checkmark.transform.SetParent(toggleBg.transform, false);
+            var checkRect = checkmark.AddComponent<RectTransform>();
+            checkRect.anchorMin = new Vector2(0.15f, 0.15f);
+            checkRect.anchorMax = new Vector2(0.85f, 0.85f);
+            checkRect.offsetMin = Vector2.zero;
+            checkRect.offsetMax = Vector2.zero;
+            var checkImg = checkmark.AddComponent<Image>();
+            checkImg.color = new Color(0.3f, 0.7f, 0.3f, 1f);
+
+            var toggle = toggleGo.AddComponent<Toggle>();
+            toggle.targetGraphic = toggleBgImg;
+            toggle.graphic = checkImg;
+            toggle.isOn = true;
+
+            // Toggle label
+            var toggleLabel = new GameObject("Label");
+            toggleLabel.transform.SetParent(toggleGo.transform, false);
+            var toggleLabelRect = toggleLabel.AddComponent<RectTransform>();
+            toggleLabelRect.anchorMin = new Vector2(0.28f, 0);
+            toggleLabelRect.anchorMax = Vector2.one;
+            toggleLabelRect.offsetMin = Vector2.zero;
+            toggleLabelRect.offsetMax = Vector2.zero;
+            var toggleTmp = toggleLabel.AddComponent<TextMeshProUGUI>();
+            toggleTmp.text = "Auto-repeat";
+            toggleTmp.fontSize = 12;
+            toggleTmp.alignment = TextAlignmentOptions.Left;
+            toggleTmp.color = Color.white;
+
+            // Upgrade button (center)
+            var upgradeBtn = CreateButton(footer.transform, "Upgrade", "Upgrade", ButtonColor);
+            var upgradeBtnRect = upgradeBtn.GetComponent<RectTransform>();
+            upgradeBtnRect.anchorMin = new Vector2(0.36f, 0);
+            upgradeBtnRect.anchorMax = new Vector2(0.74f, 0.45f);
+            upgradeBtnRect.offsetMin = Vector2.zero;
+            upgradeBtnRect.offsetMax = Vector2.zero;
+
+            // Upgrade cost text (above upgrade button)
+            var upgradeCostTmp = CreateTMP(footer.transform, "UpgradeCost", "Upgrade: 100c + 5 planks", 11);
+            var upgradeCostRect = upgradeCostTmp.GetComponent<RectTransform>();
+            upgradeCostRect.anchorMin = new Vector2(0.36f, 0.5f);
+            upgradeCostRect.anchorMax = new Vector2(0.74f, 0.95f);
+            upgradeCostRect.offsetMin = Vector2.zero;
+            upgradeCostRect.offsetMax = Vector2.zero;
+            upgradeCostTmp.alignment = TextAlignmentOptions.Center;
+            upgradeCostTmp.fontSize = 11;
+
+            // Close button (right)
+            var closeBtn = CreateButton(footer.transform, "Close", "X", CloseColor);
+            var closeBtnRect = closeBtn.GetComponent<RectTransform>();
+            closeBtnRect.anchorMin = new Vector2(0.8f, 0.1f);
+            closeBtnRect.anchorMax = new Vector2(1f, 0.9f);
+            closeBtnRect.offsetMin = Vector2.zero;
+            closeBtnRect.offsetMax = Vector2.zero;
+
+            // Attach BuildingPanelView and wire fields
+            var view = panel.AddComponent<BuildingPanelView>();
+            SetField(view, "_panel", panel);
+            SetField(view, "_titleText", titleTmp);
+            SetField(view, "_recipeContainer", recipeArea.transform);
+            SetField(view, "_slotContainer", slotArea.transform);
+            SetField(view, "_autoRepeatToggle", toggle);
+            SetField(view, "_upgradeButton", upgradeBtn);
+            SetField(view, "_upgradeCostText", upgradeCostTmp);
             SetField(view, "_closeButton", closeBtn);
 
             return view;
