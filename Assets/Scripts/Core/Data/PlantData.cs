@@ -29,6 +29,11 @@ namespace WheatFarm.Core.Data
         [Header("Placement")]
         public Vector2Int TrunkSize = Vector2Int.one;
 
+        [Header("Uproot")]
+        [Tooltip("Item ID yielded when uprooting a fully grown plant (e.g. 'wood'). Empty = no yield.")]
+        public string UprootYieldId;
+        public int UprootYieldAmount;
+
         [Header("Unlock")]
         public bool UnlockedByDefault;
     }
