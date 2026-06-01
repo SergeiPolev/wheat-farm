@@ -33,20 +33,20 @@ namespace WheatFarm.Infrastructure
 
             // Phase 5: Economy
             builder.Register<WalletService>(Lifetime.Singleton)
-                .As<IWalletService>();
+                .As<IWalletService, System.IDisposable>();
 
             builder.Register<InventoryService>(Lifetime.Singleton)
-                .As<IInventoryService>();
+                .As<IInventoryService, System.IDisposable>();
 
             builder.Register<ShopService>(Lifetime.Singleton)
                 .As<IShopService>();
 
             builder.Register<ContractService>(Lifetime.Singleton)
-                .As<IContractService>();
+                .As<IContractService, System.IDisposable>();
 
             // Phase 8: Day/Night cycle
             builder.Register<DayNightService>(Lifetime.Singleton)
-                .As<IDayNightService, ITickable>();
+                .As<IDayNightService, ITickable, System.IDisposable>();
 
             // TODO: InputService, CameraService
         }

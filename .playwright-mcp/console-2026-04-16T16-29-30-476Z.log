@@ -1,0 +1,12 @@
+[  197657ms] TypeError: Cannot read properties of null (reading 'x')
+    at Object.use (http://localhost:8765/game.js:77:124)
+    at Game.activateSkill (http://localhost:8765/game.js:745:12)
+    at http://localhost:8765/game.js:980:26
+[  293826ms] TypeError: Cannot read properties of null (reading 'x')
+    at Object.onComplete (http://localhost:8765/game.js:446:70)
+    at Game.onTypedChar (http://localhost:8765/game.js:689:36)
+    at http://localhost:8765/game.js:986:31
+[  338461ms] TypeError: Cannot read properties of null (reading 'x')
+    at Object.use (http://localhost:8765/game.js:77:124)
+    at Game.activateSkill (http://localhost:8765/game.js:745:12)
+    at http://localhost:8765/game.js:980:26

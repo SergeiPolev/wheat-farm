@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace WheatFarm.Core.Data
@@ -7,11 +8,17 @@ namespace WheatFarm.Core.Data
     {
         public PlantData[] Plants;
 
+        private Dictionary<string, PlantData> _cache;
+
         public PlantData GetById(string id)
         {
-            foreach (var p in Plants)
-                if (p.PlantId == id) return p;
-            return null;
+            if (_cache == null)
+            {
+                _cache = new Dictionary<string, PlantData>();
+                foreach (var p in Plants)
+                    if (p != null) _cache[p.PlantId] = p;
+            }
+            return _cache.GetValueOrDefault(id);
         }
 
         public PlantData[] GetByCategory(PlantCategory category)

@@ -25,6 +25,26 @@
         "stdio"
       ],
       "enabled": true
+    },
+    "unity-ui-mcp": {
+      "type": "remote",
+      "url": "http://localhost:7890/sse",
+      "enabled": true,
+      "timeout": 10000
+    },
+    "obsidian": {
+      "type": "local",
+      "command": [
+        "cmd",
+        "/c",
+        "npx",
+        "-y",
+        "obsidian-mcp",
+        "D:\\ObsidianVaults\\Vaults\\wheat-farm",
+        "D:\\ObsidianVaults\\Vaults\\dev-knowledge"
+      ],
+      "enabled": true,
+      "timeout": 30000
     }
   }
 }

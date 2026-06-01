@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using ObservableCollections;
 using R3;
@@ -22,7 +23,7 @@ namespace WheatFarm.Economy
         }
     }
 
-    public interface IContractService
+    public interface IContractService : IDisposable
     {
         ObservableList<ActiveContract> ActiveContracts { get; }
         Subject<ActiveContract> OnContractCompleted { get; }
@@ -84,6 +85,11 @@ namespace WheatFarm.Economy
             _wallet.Add(contract.Data.CoinReward);
             OnContractCompleted.OnNext(contract);
             ActiveContracts.RemoveAt(index);
+        }
+
+        public void Dispose()
+        {
+            OnContractCompleted.Dispose();
         }
     }
 }

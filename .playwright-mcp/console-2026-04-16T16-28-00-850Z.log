@@ -1,0 +1,4 @@
+[     105ms] [ERROR] Failed to load resource: the server responded with a status of 404 (File not found) @ http://localhost:8765/favicon.ico:0
+[   26226ms] TypeError: Cannot read properties of null (reading 'atkTimer')
+    at Game.update (http://localhost:8765/game.js:344:22)
+    at loop (http://localhost:8765/game.js:1027:11)

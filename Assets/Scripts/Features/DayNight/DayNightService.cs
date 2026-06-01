@@ -6,7 +6,7 @@ namespace WheatFarm.DayNight
 {
     public enum TimeOfDay { Dawn, Day, Dusk, Night }
 
-    public interface IDayNightService
+    public interface IDayNightService : System.IDisposable
     {
         ReadOnlyReactiveProperty<float> TimeNormalized { get; }
         ReadOnlyReactiveProperty<TimeOfDay> CurrentPhase { get; }
@@ -53,6 +53,13 @@ namespace WheatFarm.DayNight
                 < 0.71f => TimeOfDay.Dusk,
                 _ => TimeOfDay.Night
             };
+        }
+
+        public void Dispose()
+        {
+            _time.Dispose();
+            _phase.Dispose();
+            TimeScale.Dispose();
         }
     }
 }

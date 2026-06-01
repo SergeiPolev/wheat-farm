@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using ObservableCollections;
 using R3;
@@ -5,7 +6,7 @@ using WheatFarm.Core.Data;
 
 namespace WheatFarm.Inventory
 {
-    public interface IInventoryService
+    public interface IInventoryService : IDisposable
     {
         ObservableList<InventoryItem> Items { get; }
         ReadOnlyReactiveProperty<int> Capacity { get; }
@@ -85,5 +86,10 @@ namespace WheatFarm.Inventory
         public void Clear() => Items.Clear();
 
         public void SetCapacity(int capacity) => _capacity.Value = capacity;
+
+        public void Dispose()
+        {
+            _capacity.Dispose();
+        }
     }
 }

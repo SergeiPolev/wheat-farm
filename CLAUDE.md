@@ -19,6 +19,25 @@ Farm creative sandbox for Steam (PC). Isometric top-down perspective. Player bui
 - **Rendering:** GPU Instanced Indirect (DrawMeshInstancedIndirect + ComputeBuffers)
 - **Other:** DOTween, LeanPool, NaughtyAttributes, Graphy
 
+## Agent Instructions
+
+When spawning sub-agents (Task tool) to explore or modify this codebase, **always include these instructions in the prompt:**
+
+> **Do NOT use Glob or Grep to search C# code.** This project has a Roslyn-based `csharp-analyzer` MCP server loaded. Use its tools instead:
+> - `search_symbols` — find types by name pattern (e.g. `*Service`, `Contract*`)
+> - `get_class_info` — full class details: fields, properties, methods, base types, DI dependencies
+> - `get_method_body` — read source of a specific method without opening the whole file
+> - `find_usages` — find all references to a symbol across the project
+> - `get_feature_overview` — high-level view of a feature (installer, types, views, services)
+> - `get_di_registrations` — see how types are registered in VContainer
+> - `get_call_graph` — what calls a method / what a method calls
+> - `batch_execute` — run multiple analyzer queries in one call (max 10)
+> - `find_implementations` — find all classes implementing an interface
+> - `get_constructor_dependencies` — quick DI dependency check
+>
+> Use Glob/Grep only for non-C# files (assets, configs, shaders, markdown).
+> After editing C# files, call `reload_project` to refresh the analyzer cache.
+
 ## Architecture
 
 ### Scope Hierarchy (VContainer)

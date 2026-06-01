@@ -17,6 +17,10 @@ namespace WheatFarm.UI
     /// </summary>
     public class BuildingPanelPresenter : IInitializable, IDisposable, ITickable
     {
+        private const int UpgradeCoinCostPerLevel = 100;
+        private const int UpgradePlankCostPerLevel = 5;
+        private const string PlankItemId = "planks";
+
         private readonly BuildingPanelView _view;
         private readonly IProductionService _production;
         private readonly IInventoryService _inventory;
@@ -124,11 +128,11 @@ namespace WheatFarm.UI
             _view.SetRecipes(data.Recipes, CanStartRecipe);
             _view.SetActiveSlots(_production.GetSlots(_currentBuilding));
 
-            // Upgrade info: cost = 100 * level coins + 5 * level planks (simple formula)
-            int coinCost = 100 * _currentBuilding.Level;
-            int plankCost = 5 * _currentBuilding.Level;
+            // Upgrade info
+            int coinCost = UpgradeCoinCostPerLevel * _currentBuilding.Level;
+            int plankCost = UpgradePlankCostPerLevel * _currentBuilding.Level;
             bool isMaxLevel = _currentBuilding.Level >= data.MaxLevel;
-            bool canAfford = _wallet.CanAfford(coinCost) && _inventory.HasItem("planks", plankCost);
+            bool canAfford = _wallet.CanAfford(coinCost) && _inventory.HasItem(PlankItemId, plankCost);
             _view.SetUpgradeInfo(coinCost, plankCost, canAfford, isMaxLevel);
 
             // Auto-repeat state: check first active slot, default true
@@ -178,11 +182,11 @@ namespace WheatFarm.UI
             if (_currentBuilding?.Data == null) return;
             if (_currentBuilding.Level >= _currentBuilding.Data.MaxLevel) return;
 
-            int coinCost = 100 * _currentBuilding.Level;
-            int plankCost = 5 * _currentBuilding.Level;
+            int coinCost = UpgradeCoinCostPerLevel * _currentBuilding.Level;
+            int plankCost = UpgradePlankCostPerLevel * _currentBuilding.Level;
 
             if (!_wallet.TrySpend(coinCost)) return;
-            if (!_inventory.TryConsume("planks", plankCost))
+            if (!_inventory.TryConsume(PlankItemId, plankCost))
             {
                 // Refund coins if planks insufficient
                 _wallet.Add(coinCost);

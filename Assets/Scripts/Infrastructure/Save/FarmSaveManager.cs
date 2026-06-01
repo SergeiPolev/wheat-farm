@@ -35,6 +35,9 @@ namespace WheatFarm.Infrastructure.Save
         private readonly PlantDatabase _plantDb;
         private readonly PlaceableDatabase _placeableDb;
 
+        /// <summary>Must match PlantSystem.MinGrowthScale</summary>
+        private const float MinGrowthScale = 0.3f;
+
         public bool HasSave => _saveService.HasSave();
 
         public FarmSaveManager(
@@ -155,7 +158,7 @@ namespace WheatFarm.Infrastructure.Save
             }
 
             // Production slots
-            data.ProductionSlots = ((ProductionService)_production).GetSaveData();
+            data.ProductionSlots = _production.GetSaveData();
 
             Debug.Log($"[FarmSaveManager] Collected: {data.Chunks.Count} chunks, " +
                       $"{data.PlacedObjects.Count} placed objects, {data.Trees.Count} trees, " +
@@ -222,7 +225,7 @@ namespace WheatFarm.Infrastructure.Save
                         Vector3 relPos = worldPos - _chunkSystem.ChunkBoundsCenter(coord);
 
                         float growthFraction = Mathf.InverseLerp(0f, 1f, saved.Growth);
-                        float visualScale = saved.BaseScale * Mathf.Lerp(0.3f, 1f, growthFraction);
+                        float visualScale = saved.BaseScale * Mathf.Lerp(MinGrowthScale, 1f, growthFraction);
                         props.m = Matrix4x4.TRS(
                             relPos,
                             Quaternion.Euler(0, saved.RotationY, 0),
@@ -257,7 +260,7 @@ namespace WheatFarm.Infrastructure.Save
                     if (placeableData == null) continue;
 
                     var coord = new Vector2Int(poSave.ChunkCoordX, poSave.ChunkCoordY);
-                    ((PlacementService)_placement).RestorePlace(
+                    _placement.RestorePlace(
                         placeableData, coord, poSave.CellX, poSave.CellY,
                         poSave.RotationY, poSave.Level);
                 }
@@ -277,7 +280,7 @@ namespace WheatFarm.Infrastructure.Save
                         .FirstOrDefault(r => r != null && r.RecipeId == slotData.RecipeId);
                     if (recipe == null) continue;
 
-                    ((ProductionService)_production).RestoreSlot(
+                    _production.RestoreSlot(
                         building, recipe, slotData.TimeRemaining, slotData.AutoRepeat);
                 }
             }

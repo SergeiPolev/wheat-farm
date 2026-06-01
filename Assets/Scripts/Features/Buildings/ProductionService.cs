@@ -1,5 +1,5 @@
+using System;
 using System.Collections.Generic;
-using System.Linq;
 using R3;
 using UnityEngine;
 using VContainer.Unity;
@@ -18,7 +18,7 @@ namespace WheatFarm.Buildings
         public bool IsComplete => TimeRemaining <= 0f;
     }
 
-    public interface IProductionService
+    public interface IProductionService : IDisposable
     {
         Subject<RecipeData> OnProductionCompleted { get; }
         Subject<PlacedObject> OnSlotsChanged { get; }
@@ -28,12 +28,16 @@ namespace WheatFarm.Buildings
         int GetMaxSlots(PlacedObject building);
         bool IsProducing(PlacedObject building);
         void SetAutoRepeat(PlacedObject building, bool enabled);
+        List<ProductionSlotSaveData> GetSaveData();
+        void RestoreSlot(PlacedObject building, RecipeData recipe, float timeRemaining, bool autoRepeat);
     }
 
     public class ProductionService : IProductionService, ITickable
     {
         private readonly IInventoryService _inventory;
         private readonly Dictionary<PlacedObject, List<ProductionSlot>> _active = new();
+        private readonly List<(PlacedObject building, ProductionSlot slot)> _completedBuffer = new();
+        private readonly List<PlacedObject> _emptyKeysBuffer = new();
 
         public Subject<RecipeData> OnProductionCompleted { get; } = new();
         public Subject<PlacedObject> OnSlotsChanged { get; } = new();
@@ -130,7 +134,7 @@ namespace WheatFarm.Buildings
         public void Tick()
         {
             float dt = Time.deltaTime;
-            var completed = new List<(PlacedObject building, ProductionSlot slot)>();
+            _completedBuffer.Clear();
 
             foreach (var (building, slots) in _active)
             {
@@ -144,14 +148,14 @@ namespace WheatFarm.Buildings
                         var output = slot.Recipe.Output;
                         _inventory.TryAdd(new InventoryItem(output.ItemId, ItemType.Product, output.Amount));
                         OnProductionCompleted.OnNext(slot.Recipe);
-                        completed.Add((building, slot));
+                        _completedBuffer.Add((building, slot));
                         slots.RemoveAt(i);
                     }
                 }
             }
 
             // Auto-repeat for completed slots
-            foreach (var (building, slot) in completed)
+            foreach (var (building, slot) in _completedBuffer)
             {
                 if (slot.AutoRepeat)
                 {
@@ -161,8 +165,13 @@ namespace WheatFarm.Buildings
             }
 
             // Clean up empty entries and disable smoke
-            var emptyKeys = _active.Where(kv => kv.Value.Count == 0).Select(kv => kv.Key).ToList();
-            foreach (var key in emptyKeys)
+            _emptyKeysBuffer.Clear();
+            foreach (var kv in _active)
+            {
+                if (kv.Value.Count == 0)
+                    _emptyKeysBuffer.Add(kv.Key);
+            }
+            foreach (var key in _emptyKeysBuffer)
             {
                 _active.Remove(key);
                 EnableSmoke(key, false);
@@ -225,6 +234,12 @@ namespace WheatFarm.Buildings
             });
 
             EnableSmoke(building, true);
+        }
+
+        public void Dispose()
+        {
+            OnProductionCompleted.Dispose();
+            OnSlotsChanged.Dispose();
         }
     }
 

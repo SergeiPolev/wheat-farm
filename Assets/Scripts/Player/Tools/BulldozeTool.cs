@@ -12,6 +12,9 @@ namespace WheatFarm.Player.Tools
     /// </summary>
     public class BulldozeTool : ITool, IBrushAction
     {
+        private const float BuildingProximityThreshold = 3f;
+        private const float DecorProximityThreshold = 0.5f;
+
         private readonly IPlacementService _placementService;
         private readonly IPlantSystem _plantSystem;
         private readonly IChunkSystem _chunkSystem;
@@ -82,7 +85,7 @@ namespace WheatFarm.Player.Tools
 
                 float dist = Vector3.Distance(obj.Instance.transform.position, worldPos);
                 // Use chunk size as proximity threshold for buildings, cell size for decor
-                float threshold = obj.Data.Level == PlacementLevel.Chunk ? 3f : 0.5f;
+                float threshold = obj.Data.Level == PlacementLevel.Chunk ? BuildingProximityThreshold : DecorProximityThreshold;
 
                 if (dist <= threshold)
                 {

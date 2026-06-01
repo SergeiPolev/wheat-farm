@@ -143,37 +143,64 @@ namespace WheatFarm.UI
 
         public static ContractBoardView BuildContractPanel(Transform canvasRoot)
         {
-            var panel = CreatePanel(canvasRoot, "ContractPanel", 450, 400);
+            var panel = CreatePanel(canvasRoot, "ContractPanel", 450, 520);
             panel.SetActive(false);
 
             CreateLabel(panel.transform, "Title", "CONTRACTS", 24, TextAnchor.UpperCenter,
                 new Vector2(0, 0), new Vector2(1, 1), new Vector2(10, -10), new Vector2(-10, -40));
 
-            // Contract container
-            var scrollArea = new GameObject("ScrollArea");
-            scrollArea.transform.SetParent(panel.transform, false);
-            var scrollRect = scrollArea.AddComponent<RectTransform>();
-            scrollRect.anchorMin = new Vector2(0, 0.15f);
-            scrollRect.anchorMax = new Vector2(1, 0.85f);
-            scrollRect.offsetMin = new Vector2(10, 0);
-            scrollRect.offsetMax = new Vector2(-10, 0);
+            // --- "Available" section header ---
+            CreateLabel(panel.transform, "AvailableHeader", "Available", 15, TextAnchor.MiddleLeft,
+                new Vector2(0, 0.82f), new Vector2(1, 0.87f), new Vector2(14, 0), new Vector2(-10, 0));
 
-            var layout = scrollArea.AddComponent<VerticalLayoutGroup>();
-            layout.spacing = 4;
-            layout.padding = new RectOffset(0, 0, 4, 4);
-            layout.childForceExpandWidth = true;
-            layout.childForceExpandHeight = false;
+            // Available contracts container
+            var availableArea = new GameObject("AvailableArea");
+            availableArea.transform.SetParent(panel.transform, false);
+            var availableRect = availableArea.AddComponent<RectTransform>();
+            availableRect.anchorMin = new Vector2(0, 0.52f);
+            availableRect.anchorMax = new Vector2(1, 0.82f);
+            availableRect.offsetMin = new Vector2(10, 0);
+            availableRect.offsetMax = new Vector2(-10, 0);
 
-            // Contract entry prefab: description text + slider + complete button
-            var entryPrefab = CreateContractEntryPrefab();
-            entryPrefab.SetActive(false);
+            var availableLayout = availableArea.AddComponent<VerticalLayoutGroup>();
+            availableLayout.spacing = 3;
+            availableLayout.padding = new RectOffset(0, 0, 2, 2);
+            availableLayout.childForceExpandWidth = true;
+            availableLayout.childForceExpandHeight = false;
+
+            // Available entry prefab: description + accept button (no slider)
+            var availablePrefab = CreateAvailableEntryPrefab();
+            availablePrefab.SetActive(false);
+
+            // --- "Active" section header ---
+            CreateLabel(panel.transform, "ActiveHeader", "Active", 15, TextAnchor.MiddleLeft,
+                new Vector2(0, 0.46f), new Vector2(1, 0.52f), new Vector2(14, 0), new Vector2(-10, 0));
+
+            // Active contracts container
+            var activeArea = new GameObject("ActiveArea");
+            activeArea.transform.SetParent(panel.transform, false);
+            var activeRect = activeArea.AddComponent<RectTransform>();
+            activeRect.anchorMin = new Vector2(0, 0.12f);
+            activeRect.anchorMax = new Vector2(1, 0.46f);
+            activeRect.offsetMin = new Vector2(10, 0);
+            activeRect.offsetMax = new Vector2(-10, 0);
+
+            var activeLayout = activeArea.AddComponent<VerticalLayoutGroup>();
+            activeLayout.spacing = 3;
+            activeLayout.padding = new RectOffset(0, 0, 2, 2);
+            activeLayout.childForceExpandWidth = true;
+            activeLayout.childForceExpandHeight = false;
+
+            // Active entry prefab: description + slider + complete button
+            var activePrefab = CreateContractEntryPrefab();
+            activePrefab.SetActive(false);
 
             // Footer: close
             var footer = new GameObject("Footer");
             footer.transform.SetParent(panel.transform, false);
             var footerRect = footer.AddComponent<RectTransform>();
             footerRect.anchorMin = Vector2.zero;
-            footerRect.anchorMax = new Vector2(1, 0.15f);
+            footerRect.anchorMax = new Vector2(1, 0.12f);
             footerRect.offsetMin = new Vector2(10, 5);
             footerRect.offsetMax = new Vector2(-10, 0);
 
@@ -186,8 +213,10 @@ namespace WheatFarm.UI
 
             var view = panel.AddComponent<ContractBoardView>();
             SetField(view, "_panel", panel);
-            SetField(view, "_contractContainer", scrollArea.transform);
-            SetField(view, "_contractEntryPrefab", entryPrefab);
+            SetField(view, "_availableContainer", availableArea.transform);
+            SetField(view, "_availableEntryPrefab", availablePrefab);
+            SetField(view, "_contractContainer", activeArea.transform);
+            SetField(view, "_contractEntryPrefab", activePrefab);
             SetField(view, "_closeButton", closeBtn);
 
             return view;
@@ -337,6 +366,58 @@ namespace WheatFarm.UI
             SetField(view, "_closeButton", closeBtn);
 
             return view;
+        }
+
+        /// <summary>Available contract entry: description TMP + Accept button (no slider).</summary>
+        private static GameObject CreateAvailableEntryPrefab()
+        {
+            var go = new GameObject("AvailableEntry");
+            var rect = go.AddComponent<RectTransform>();
+            rect.sizeDelta = new Vector2(0, 44);
+            go.AddComponent<Image>().color = ItemBg;
+            go.AddComponent<LayoutElement>().preferredHeight = 44;
+
+            // Description label
+            var desc = new GameObject("Desc");
+            desc.transform.SetParent(go.transform, false);
+            var descRect = desc.AddComponent<RectTransform>();
+            descRect.anchorMin = new Vector2(0, 0);
+            descRect.anchorMax = new Vector2(0.7f, 1);
+            descRect.offsetMin = new Vector2(8, 0);
+            descRect.offsetMax = Vector2.zero;
+            var descTmp = desc.AddComponent<TextMeshProUGUI>();
+            descTmp.fontSize = 12;
+            descTmp.alignment = TextAlignmentOptions.Left;
+            descTmp.color = Color.white;
+
+            // Accept button
+            var btnGo = new GameObject("AcceptBtn");
+            btnGo.transform.SetParent(go.transform, false);
+            var btnRect = btnGo.AddComponent<RectTransform>();
+            btnRect.anchorMin = new Vector2(0.72f, 0.12f);
+            btnRect.anchorMax = new Vector2(0.97f, 0.88f);
+            btnRect.offsetMin = Vector2.zero;
+            btnRect.offsetMax = Vector2.zero;
+
+            var btnImg = btnGo.AddComponent<Image>();
+            btnImg.color = ButtonColor;
+            var btn = btnGo.AddComponent<Button>();
+            btn.targetGraphic = btnImg;
+
+            var btnLabel = new GameObject("Text");
+            btnLabel.transform.SetParent(btnGo.transform, false);
+            var btnLabelRect = btnLabel.AddComponent<RectTransform>();
+            btnLabelRect.anchorMin = Vector2.zero;
+            btnLabelRect.anchorMax = Vector2.one;
+            btnLabelRect.offsetMin = Vector2.zero;
+            btnLabelRect.offsetMax = Vector2.zero;
+            var btnTmp = btnLabel.AddComponent<TextMeshProUGUI>();
+            btnTmp.text = "Accept";
+            btnTmp.fontSize = 12;
+            btnTmp.alignment = TextAlignmentOptions.Center;
+            btnTmp.color = Color.white;
+
+            return go;
         }
 
         /// <summary>Contract entry: description TMP, Slider for progress, Button for complete.</summary>

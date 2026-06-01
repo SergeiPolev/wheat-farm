@@ -24,10 +24,13 @@ namespace WheatFarm.Buildings
         PlacedObject Place(PlaceableData data, Vector3 worldPos, float rotationY = 0f);
         bool CanPlace(PlaceableData data, Vector3 worldPos);
         bool Remove(PlacedObject obj);
+        PlacedObject RestorePlace(PlaceableData data, Vector2Int chunkCoord, int cellX, int cellY, float rotationY, int level);
     }
 
     public class PlacementService : IPlacementService
     {
+        private const float RefundRatio = 0.5f;
+
         private readonly IChunkSystem _chunkSystem;
         private readonly IWalletService _wallet;
         private readonly HashSet<Vector2Int> _occupiedChunks = new();
@@ -77,8 +80,8 @@ namespace WheatFarm.Buildings
 
             PlacedObjects.Remove(obj);
 
-            // Partial refund (50%)
-            int refund = Mathf.FloorToInt(obj.Data.Cost * 0.5f);
+            // Partial refund
+            int refund = Mathf.FloorToInt(obj.Data.Cost * RefundRatio);
             if (refund > 0) _wallet.Add(refund);
 
             return true;

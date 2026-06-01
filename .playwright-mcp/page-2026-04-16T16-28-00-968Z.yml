@@ -1,0 +1,67 @@
+- generic [ref=e3]:
+  - heading "🏰 Dungeon Typer" [level=1] [ref=e4]
+  - generic [ref=e5]:
+    - generic [ref=e6]: "💰 Монеты: 0"
+    - generic [ref=e7]: "💎 Кристаллы: 0"
+    - generic [ref=e8]: "🏆 Лучшая дистанция: 0"
+  - generic [ref=e9]:
+    - generic [ref=e10]:
+      - heading "Апгрейды (монеты)" [level=2] [ref=e11]
+      - generic [ref=e12]:
+        - generic [ref=e13]:
+          - generic [ref=e14]: ❤️ HP
+          - generic [ref=e15]: → 100
+          - generic [ref=e16]: Ур. 0
+          - button "💰 10" [disabled] [ref=e17]
+        - generic [ref=e18]:
+          - generic [ref=e19]: 🛡️ Броня
+          - generic [ref=e20]: → 0
+          - generic [ref=e21]: Ур. 0
+          - button "💰 12" [disabled] [ref=e22]
+        - generic [ref=e23]:
+          - generic [ref=e24]: ⚔️ Урон атаки
+          - generic [ref=e25]: → 0
+          - generic [ref=e26]: Ур. 0
+          - button "💰 12" [disabled] [ref=e27]
+        - generic [ref=e28]:
+          - generic [ref=e29]: ⚡ Скорость атаки
+          - generic [ref=e30]: → 0.00
+          - generic [ref=e31]: Ур. 0
+          - button "💰 18" [disabled] [ref=e32]
+        - generic [ref=e33]:
+          - generic [ref=e34]: 👟 Скорость движения
+          - generic [ref=e35]: → 0
+          - generic [ref=e36]: Ур. 0
+          - button "💰 14" [disabled] [ref=e37]
+        - generic [ref=e38]:
+          - generic [ref=e39]: 🔥 Множитель комбо
+          - generic [ref=e40]: → 1.00
+          - generic [ref=e41]: Ур. 0
+          - button "💰 25" [disabled] [ref=e42]
+    - generic [ref=e43]:
+      - heading "Герой" [level=2] [ref=e44]
+      - generic [ref=e45]:
+        - generic [ref=e46]:
+          - generic [ref=e47]: 🛡️ Рыцарь
+          - button "Выбран" [ref=e48] [cursor=pointer]
+        - generic [ref=e49]:
+          - generic [ref=e50]: 🏹 Лучник
+          - button "Выбрать" [ref=e51] [cursor=pointer]
+      - heading "Prestige" [level=2] [ref=e52]
+      - paragraph [ref=e53]: Сброс монет и апгрейдов в обмен на кристаллы.
+      - paragraph [ref=e54]: "Получите: 0 💎"
+      - button "⭐ Prestige" [disabled] [ref=e55]
+      - heading "Магазин разблокировок" [level=2] [ref=e56]
+      - generic [ref=e57]:
+        - generic [ref=e58]:
+          - generic [ref=e59]:
+            - text: 🏪 Магазин в забеге
+            - text: Появляется как энкаунтер
+          - button "💎 5" [disabled] [ref=e60]
+        - generic [ref=e61]:
+          - generic [ref=e62]:
+            - text: 💎 Бонус кристаллов
+            - text: +0% к получаемым кристаллам
+          - button "💎 10" [disabled] [ref=e63]
+  - button "▶ Начать забег" [ref=e64] [cursor=pointer]
+  - paragraph [ref=e65]: "Подсказка: жми любые клавиши для комбо. Слова появляются над целями — печатай для бонусов. 1/2/3 — активные скиллы. ESC — пауза."

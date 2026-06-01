@@ -20,6 +20,7 @@ namespace WheatFarm.Infrastructure
 
         [Header("Player (assign when Player GO is set up)")]
         [SerializeField] private FarmInteractionController _interactionController;
+        [SerializeField] private PlayerController _playerController;
 
         [Header("Lighting")]
         [SerializeField] private Light _directionalLight;
@@ -72,7 +73,7 @@ namespace WheatFarm.Infrastructure
             builder.Register<BulldozeTool>(Lifetime.Singleton).As<ITool>();
 
             builder.Register<ToolService>(Lifetime.Singleton)
-                .As<IToolService>();
+                .As<IToolService, System.IDisposable>();
 
             // Auto-select first unlocked plant on start
             builder.Register<PlantAutoSelector>(Lifetime.Singleton)
@@ -83,7 +84,7 @@ namespace WheatFarm.Infrastructure
                 .As<IPlacementService>();
 
             builder.Register<ProductionService>(Lifetime.Singleton)
-                .As<IProductionService, ITickable>();
+                .As<IProductionService, ITickable, System.IDisposable>();
 
             // Phase 7: Tree placement
             builder.Register<TreePlacementService>(Lifetime.Singleton)
@@ -110,6 +111,12 @@ namespace WheatFarm.Infrastructure
             if (_interactionController != null)
             {
                 builder.RegisterComponent(_interactionController);
+            }
+
+            // Player controller (needs IToolService to decide facing direction)
+            if (_playerController != null)
+            {
+                builder.RegisterComponent(_playerController);
             }
 
             // Phase 9: UI (MVP) — Views are optional; Presenters only created when View is assigned
