@@ -3,6 +3,7 @@
     "rootNamespace": "WheatFarm.Farming",
     "references": [
         "WheatFarm.Core",
+        "WheatFarm.Inventory",
         "VContainer",
         "UniTask",
         "R3.Unity"

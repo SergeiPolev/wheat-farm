@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using WheatFarm.Core.Data;
 
@@ -7,10 +8,10 @@ namespace WheatFarm.Farming
     /// <summary>
     /// Per-chunk GPU instanced indirect renderer.
     /// Each unlocked chunk gets its own ChunkCropRenderer with dedicated ComputeBuffers.
-    /// Issues TWO draw calls per frame:
-    ///   1. Ground tiles (flat quads using gr matrix, always visible)
-    ///   2. Crops (plant meshes using m matrix, visible when cropState.y > 0)
-    /// Both passes share the same _PerInstanceData ComputeBuffer.
+    /// Issues multiple draw calls per frame:
+    ///   1. Ground tiles (flat quads using gr matrix, always visible) — 1 call
+    ///   2. Crops — one call per CropMeshEntry (plant meshes using m matrix, filtered by cropState.x == _Id)
+    /// All passes share the same _PerInstanceData ComputeBuffer.
     /// </summary>
     public class ChunkCropRenderer : IDisposable
     {
@@ -19,13 +20,11 @@ namespace WheatFarm.Farming
         private readonly ChunkData _chunk;
         private readonly Bounds _bounds;
 
-        // Shared buffer (both passes read from this)
+        // Shared buffer (all passes read from this)
         private ComputeBuffer _meshPropsBuffer;
 
-        // Crop pass
-        private ComputeBuffer _cropArgsBuffer;
-        private Material _cropMaterial;
-        private Mesh _cropMesh;
+        // Crop passes (one per mesh type)
+        private readonly List<CropPass> _cropPasses = new();
 
         // Ground tile pass (optional — null if not configured)
         private ComputeBuffer _groundArgsBuffer;
@@ -34,15 +33,21 @@ namespace WheatFarm.Farming
 
         public ChunkData Chunk => _chunk;
 
+        private struct CropPass
+        {
+            public int MeshId;
+            public Mesh Mesh;
+            public Material Material;
+            public ComputeBuffer ArgsBuffer;
+        }
+
         public ChunkCropRenderer(
             ChunkData chunk,
-            Mesh cropMesh, Material cropSharedMaterial,
+            CropMeshEntry[] cropEntries,
             Mesh groundMesh, Material groundSharedMaterial,
             float chunkWorldSize)
         {
             _chunk = chunk;
-            _cropMesh = cropMesh;
-            _cropMaterial = new Material(cropSharedMaterial);
 
             if (groundMesh != null && groundSharedMaterial != null)
             {
@@ -57,10 +62,10 @@ namespace WheatFarm.Farming
                 (chunk.ChunkCoord.y + 0.5f) * chunkWorldSize);
             _bounds = new Bounds(center, new Vector3(chunkWorldSize, 2f, chunkWorldSize));
 
-            InitializeBuffers();
+            InitializeBuffers(cropEntries);
         }
 
-        private void InitializeBuffers()
+        private void InitializeBuffers(CropMeshEntry[] cropEntries)
         {
             int count = _chunk.CellCount;
 
@@ -68,9 +73,21 @@ namespace WheatFarm.Farming
             _meshPropsBuffer = new ComputeBuffer(count, MeshProperties.Size());
             _meshPropsBuffer.SetData(_chunk.MeshProps);
 
-            // Crop indirect args
-            _cropArgsBuffer = CreateArgsBuffer(_cropMesh, count);
-            _cropMaterial.SetBuffer(PerInstanceData, _meshPropsBuffer);
+            // Crop passes — one per mesh entry
+            foreach (var entry in cropEntries)
+            {
+                if (entry.Mesh == null || entry.Material == null) continue;
+
+                var pass = new CropPass
+                {
+                    MeshId = entry.MeshId,
+                    Mesh = entry.Mesh,
+                    Material = new Material(entry.Material),
+                    ArgsBuffer = CreateArgsBuffer(entry.Mesh, count)
+                };
+                pass.Material.SetBuffer(PerInstanceData, _meshPropsBuffer);
+                _cropPasses.Add(pass);
+            }
 
             // Ground indirect args (if ground rendering enabled)
             if (_groundMesh != null && _groundMaterial != null)
@@ -108,7 +125,7 @@ namespace WheatFarm.Farming
 
         /// <summary>
         /// Issue DrawMeshInstancedIndirect calls for this chunk.
-        /// Ground tiles are drawn first (render queue 2001), then crops on top (2002).
+        /// Ground tiles drawn first (render queue 2001), then crop passes on top.
         /// </summary>
         public void Draw()
         {
@@ -116,9 +133,9 @@ namespace WheatFarm.Farming
             if (_groundMesh != null && _groundMaterial != null)
                 Graphics.DrawMeshInstancedIndirect(_groundMesh, 0, _groundMaterial, _bounds, _groundArgsBuffer);
 
-            // Crop pass second (visible when cropState.y > 0, uses m matrix via vertInstancingSetup)
-            if (_cropMesh != null && _cropMaterial != null)
-                Graphics.DrawMeshInstancedIndirect(_cropMesh, 0, _cropMaterial, _bounds, _cropArgsBuffer);
+            // Crop passes (each material's _Id filters which instances are visible via ShaderGraph)
+            foreach (var pass in _cropPasses)
+                Graphics.DrawMeshInstancedIndirect(pass.Mesh, 0, pass.Material, _bounds, pass.ArgsBuffer);
         }
 
         public void Dispose()
@@ -126,15 +143,16 @@ namespace WheatFarm.Farming
             _meshPropsBuffer?.Release();
             _meshPropsBuffer = null;
 
-            _cropArgsBuffer?.Release();
-            _cropArgsBuffer = null;
+            foreach (var pass in _cropPasses)
+            {
+                pass.ArgsBuffer?.Release();
+                if (pass.Material != null)
+                    UnityEngine.Object.Destroy(pass.Material);
+            }
+            _cropPasses.Clear();
 
             _groundArgsBuffer?.Release();
             _groundArgsBuffer = null;
-
-            if (_cropMaterial != null)
-                UnityEngine.Object.Destroy(_cropMaterial);
-            _cropMaterial = null;
 
             if (_groundMaterial != null)
                 UnityEngine.Object.Destroy(_groundMaterial);

@@ -1,9 +1,10 @@
+using System;
 using R3;
 using UnityEngine;
 
 namespace WheatFarm.Economy
 {
-    public interface IWalletService
+    public interface IWalletService : IDisposable
     {
         ReadOnlyReactiveProperty<int> Coins { get; }
         bool CanAfford(int amount);
@@ -33,5 +34,10 @@ namespace WheatFarm.Economy
         }
 
         public void SetCoins(int amount) => _coins.Value = Mathf.Max(0, amount);
+
+        public void Dispose()
+        {
+            _coins.Dispose();
+        }
     }
 }

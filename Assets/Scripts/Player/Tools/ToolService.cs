@@ -1,10 +1,11 @@
+using System;
 using System.Collections.Generic;
 using R3;
 using UnityEngine;
 
 namespace WheatFarm.Player.Tools
 {
-    public interface IToolService
+    public interface IToolService : IDisposable
     {
         ReadOnlyReactiveProperty<ITool> CurrentTool { get; }
         ReadOnlyReactiveProperty<ToolId> CurrentToolId { get; }
@@ -52,6 +53,12 @@ namespace WheatFarm.Player.Tools
         public void UseCurrentTool(Vector3 worldPos)
         {
             _currentTool.Value?.UseAtPosition(worldPos);
+        }
+
+        public void Dispose()
+        {
+            _currentTool.Dispose();
+            _currentToolId.Dispose();
         }
     }
 }

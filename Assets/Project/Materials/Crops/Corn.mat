@@ -124,7 +124,7 @@ Material:
     - _Grass_Height_Divider: 1
     - _Height: 0
     - _HiddenHeight: -2
-    - _Id: 3
+    - _Id: 2
     - _Interaction_Power: 7.24
     - _Interaction_Radius: 1.2
     - _MaxHeight: 3.8

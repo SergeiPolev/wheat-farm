@@ -21,6 +21,7 @@ namespace WheatFarm.Player
         private IBrushService _brushService;
         private PlacementTool _placementTool;
         private Camera _cam;
+        private PlayerAnimationController _animController;
         private readonly Plane _groundPlane = new(Vector3.up, Vector3.zero);
 
         private static readonly int InteractionPositionId = Shader.PropertyToID("_Interaction_Position");
@@ -39,6 +40,7 @@ namespace WheatFarm.Player
         private void Start()
         {
             _cam = Camera.main;
+            _animController = GetComponentInChildren<PlayerAnimationController>();
         }
 
         private void Update()
@@ -81,7 +83,34 @@ namespace WheatFarm.Player
 
             Vector3? hitPoint = GetGroundHitPoint();
             if (hitPoint.HasValue)
+            {
+                if (_animController != null && !_animController.IsActing)
+                {
+                    int actionId = GetToolActionId();
+                    if (actionId > 0)
+                        _animController.PlayAction(actionId);
+                }
+
                 _toolService.UseCurrentTool(hitPoint.Value);
+            }
+        }
+
+        private int GetToolActionId()
+        {
+            if (_toolService?.CurrentToolId?.CurrentValue == null) return 0;
+            return _toolService.CurrentToolId.CurrentValue switch
+            {
+                ToolId.WateringCan => 1,  // Water animation
+                ToolId.Planter => 1,      // Same watering motion for planting
+                ToolId.Fertilizer => 1,   // Same watering motion for fertilizing
+                ToolId.Dye => 1,          // Same watering motion for dyeing
+                ToolId.Sickle => 3,       // Harvest animation
+                ToolId.Uproot => 4,       // Uproot animation
+                ToolId.Placement => 2,    // Plant/dig animation for buildings
+                ToolId.Build => 2,
+                ToolId.Bulldoze => 4,     // Uproot animation for demolishing
+                _ => 0,
+            };
         }
 
         private Vector3? GetGroundHitPoint()

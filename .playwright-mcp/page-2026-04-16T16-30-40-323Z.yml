@@ -1,0 +1,33 @@
+- generic [ref=e2]:
+  - generic [ref=e66]:
+    - generic:
+      - generic:
+        - generic: ❤️ HP
+        - generic:
+          - generic: 0/100
+      - generic:
+        - generic: ⚡ Комбо x1.10
+        - generic:
+          - generic: 10%
+      - generic:
+        - generic: "📏 Дистанция: 303"
+        - generic: 🌍 Горы
+        - generic: 🪙 16
+        - generic: 🎮 🎮 Геймер
+    - generic [ref=e68]:
+      - generic [ref=e69]:
+        - generic [ref=e70]: "1"
+        - generic [ref=e71]: 🛡️ Щит
+      - generic [ref=e72]:
+        - generic [ref=e73]: "2"
+        - generic [ref=e74]: 💨 Рывок
+      - generic [ref=e75]:
+        - generic [ref=e76]: "3"
+        - generic [ref=e77]: 💚 Лечение
+  - generic [ref=e79]:
+    - heading "💀 Забег окончен" [level=2] [ref=e80]
+    - paragraph [ref=e81]: "Дистанция: 303"
+    - paragraph [ref=e82]: "Убито врагов: 1"
+    - paragraph [ref=e83]: "Заработано монет: 16"
+    - paragraph [ref=e84]: "Получено кристаллов: 0"
+    - button "В хаб" [ref=e85] [cursor=pointer]

@@ -3,11 +3,11 @@ using UnityEngine;
 namespace WheatFarm.Buildings
 {
     /// <summary>
-    /// Attached to building GameObjects at instantiation time.
-    /// Allows raycasting to identify which PlacedBuilding was clicked.
+    /// Attached to building/decor GameObjects at instantiation time.
+    /// Allows raycasting to identify which PlacedObject was clicked.
     /// </summary>
     public class BuildingMarker : MonoBehaviour
     {
-        public PlacedBuilding Building { get; set; }
+        public PlacedObject PlacedObject { get; set; }
     }
 }

@@ -5,8 +5,8 @@ using WheatFarm.Economy;
 namespace WheatFarm.Infrastructure
 {
     /// <summary>
-    /// Auto-accepts the first contract on game start and
-    /// bridges harvest events to contract progress.
+    /// Placeholder for future contract auto-generation or rotation logic.
+    /// Previously auto-accepted the first contract; now players choose via UI.
     /// </summary>
     public class ContractStarter : IStartable
     {
@@ -21,13 +21,8 @@ namespace WheatFarm.Infrastructure
 
         public void Start()
         {
-            if (_contractDb == null || _contractDb.Contracts == null) return;
-
-            // Auto-accept first contract if none active
-            if (_contracts.ActiveContracts.Count == 0 && _contractDb.Contracts.Length > 0)
-            {
-                _contracts.AcceptContract(_contractDb.Contracts[0]);
-            }
+            // Contracts are now accepted by the player via ContractBoardView (press C).
+            // This class is kept as a hook for future logic (e.g. daily rotation, unlock gating).
         }
     }
 }

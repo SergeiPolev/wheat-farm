@@ -16,7 +16,8 @@ MonoBehaviour:
   DisplayName: Rose Bush
   Category: 1
   Mesh: {fileID: -462981019419857548, guid: 38abb676afed0fa4b91ee74564a7a010, type: 3}
-  Material: {fileID: 2100000, guid: c480bfe2f0153084abdbff4176496d2b, type: 2}
+  Material: {fileID: 2100000, guid: bfb1947c6982fe545a7ce6ad4f4f1849, type: 2}
+  MeshId: 1
   ScaleRange: {x: 0.8, y: 1.2}
   GrowthDuration: 90
   NeedsWatering: 1

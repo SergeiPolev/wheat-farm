@@ -24,10 +24,13 @@ namespace WheatFarm.Buildings
         PlacedObject Place(PlaceableData data, Vector3 worldPos, float rotationY = 0f);
         bool CanPlace(PlaceableData data, Vector3 worldPos);
         bool Remove(PlacedObject obj);
+        PlacedObject RestorePlace(PlaceableData data, Vector2Int chunkCoord, int cellX, int cellY, float rotationY, int level);
     }
 
     public class PlacementService : IPlacementService
     {
+        private const float RefundRatio = 0.5f;
+
         private readonly IChunkSystem _chunkSystem;
         private readonly IWalletService _wallet;
         private readonly HashSet<Vector2Int> _occupiedChunks = new();
@@ -77,8 +80,8 @@ namespace WheatFarm.Buildings
 
             PlacedObjects.Remove(obj);
 
-            // Partial refund (50%)
-            int refund = Mathf.FloorToInt(obj.Data.Cost * 0.5f);
+            // Partial refund
+            int refund = Mathf.FloorToInt(obj.Data.Cost * RefundRatio);
             if (refund > 0) _wallet.Add(refund);
 
             return true;
@@ -137,13 +140,7 @@ namespace WheatFarm.Buildings
                 if (data.Interactable)
                 {
                     var marker = placed.Instance.AddComponent<BuildingMarker>();
-                    marker.Building = new PlacedBuilding
-                    {
-                        Data = FindBuildingDataFallback(data),
-                        ChunkCoord = chunkCoord,
-                        Level = 1,
-                        Instance = placed.Instance
-                    };
+                    marker.PlacedObject = placed;
                 }
             }
 
@@ -267,17 +264,6 @@ namespace WheatFarm.Buildings
         }
 
         /// <summary>
-        /// Temporary bridge: PlacementService uses PlaceableData, but BuildingMarker needs PlacedBuilding
-        /// with BuildingData. This returns null — to be removed when BuildingService is fully replaced in E2.
-        /// </summary>
-        private BuildingData FindBuildingDataFallback(PlaceableData data)
-        {
-            // BuildingMarker.Building.Data will be null until E2 migration replaces this.
-            // ProductionService reads recipes from BuildingData, so we need a bridge.
-            return null;
-        }
-
-        /// <summary>
         /// Restore a placed object during save-load without spending coins or validation.
         /// </summary>
         public PlacedObject RestorePlace(PlaceableData data, Vector2Int chunkCoord, int cellX, int cellY,
@@ -333,6 +319,12 @@ namespace WheatFarm.Buildings
                     spawnPos = _chunkSystem.CellToWorld(chunkCoord, cellX, cellY);
 
                 placed.Instance = Object.Instantiate(data.Prefab, spawnPos, Quaternion.Euler(0, rotationY, 0));
+
+                if (data.Interactable)
+                {
+                    var marker = placed.Instance.AddComponent<BuildingMarker>();
+                    marker.PlacedObject = placed;
+                }
             }
 
             PlacedObjects.Add(placed);

@@ -1,0 +1,28 @@
+- generic [ref=e66]:
+  - generic:
+    - generic:
+      - generic: ❤️ HP
+      - generic:
+        - generic: 70/100
+    - generic:
+      - generic: ⚡ Комбо x1.01
+      - generic:
+        - generic: 1%
+    - generic:
+      - generic: "📏 Дистанция: 83"
+      - generic: 🌍 Горы
+      - generic: 🪙 16
+      - generic: 🎮 ⌨️ Обычный
+  - generic [ref=e68]:
+    - generic [ref=e69]:
+      - generic [ref=e70]: "1"
+      - generic [ref=e71]: 🛡️ Щит
+    - generic [ref=e72]:
+      - generic [ref=e73]: "2"
+      - generic [ref=e74]: 💨 Рывок
+    - generic [ref=e75]:
+      - generic [ref=e76]: "3"
+      - generic [ref=e77]: 💚 Лечение
+  - generic:
+    - generic: "8"
+    - generic: +16🪙

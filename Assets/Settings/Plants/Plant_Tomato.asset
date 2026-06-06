@@ -15,8 +15,9 @@ MonoBehaviour:
   PlantId: tomato
   DisplayName: Tomato
   Category: 0
-  Mesh: {fileID: -462981019419857548, guid: 38abb676afed0fa4b91ee74564a7a010, type: 3}
+  Mesh: {fileID: 6920483055174219420, guid: 200cfe386437b5b4e8b245f9d7406243, type: 3}
   Material: {fileID: 2100000, guid: c480bfe2f0153084abdbff4176496d2b, type: 2}
+  MeshId: 4
   ScaleRange: {x: 0.7, y: 1.1}
   GrowthDuration: 50
   NeedsWatering: 1

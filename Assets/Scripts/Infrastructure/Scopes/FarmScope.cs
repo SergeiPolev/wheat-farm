@@ -20,6 +20,7 @@ namespace WheatFarm.Infrastructure
 
         [Header("Player (assign when Player GO is set up)")]
         [SerializeField] private FarmInteractionController _interactionController;
+        [SerializeField] private PlayerController _playerController;
 
         [Header("Lighting")]
         [SerializeField] private Light _directionalLight;
@@ -72,21 +73,18 @@ namespace WheatFarm.Infrastructure
             builder.Register<BulldozeTool>(Lifetime.Singleton).As<ITool>();
 
             builder.Register<ToolService>(Lifetime.Singleton)
-                .As<IToolService>();
+                .As<IToolService, System.IDisposable>();
 
             // Auto-select first unlocked plant on start
             builder.Register<PlantAutoSelector>(Lifetime.Singleton)
                 .As<IStartable>();
 
             // Phase 6: Buildings & Production
-            builder.Register<BuildingService>(Lifetime.Singleton)
-                .As<IBuildingService>();
-
             builder.Register<PlacementService>(Lifetime.Singleton)
                 .As<IPlacementService>();
 
             builder.Register<ProductionService>(Lifetime.Singleton)
-                .As<IProductionService, ITickable>();
+                .As<IProductionService, ITickable, System.IDisposable>();
 
             // Phase 7: Tree placement
             builder.Register<TreePlacementService>(Lifetime.Singleton)
@@ -113,6 +111,12 @@ namespace WheatFarm.Infrastructure
             if (_interactionController != null)
             {
                 builder.RegisterComponent(_interactionController);
+            }
+
+            // Player controller (needs IToolService to decide facing direction)
+            if (_playerController != null)
+            {
+                builder.RegisterComponent(_playerController);
             }
 
             // Phase 9: UI (MVP) — Views are optional; Presenters only created when View is assigned
@@ -169,6 +173,18 @@ namespace WheatFarm.Infrastructure
                     .As<IInitializable, System.IDisposable>();
             }
 
+            // Build building panel programmatically
+            if (canvasRoot != null)
+            {
+                var buildingPanel = PanelBuilder.BuildBuildingPanel(canvasRoot);
+                if (buildingPanel != null)
+                {
+                    builder.RegisterComponent(buildingPanel);
+                    builder.Register<BuildingPanelPresenter>(Lifetime.Singleton)
+                        .As<IInitializable, ITickable, System.IDisposable>();
+                }
+            }
+
             // Catalog tab bar (bottom of screen — category selection)
             if (canvasRoot != null)
             {
@@ -178,15 +194,6 @@ namespace WheatFarm.Infrastructure
 
                 builder.RegisterComponent(catalogTabBar);
                 builder.Register<CatalogPresenter>(Lifetime.Singleton)
-                    .As<IInitializable, System.IDisposable>();
-            }
-
-            // Building interaction panel (click building → recipe UI)
-            if (canvasRoot != null)
-            {
-                var buildPanel = BuildingInteractionPanel.Create(canvasRoot);
-                builder.RegisterInstance(buildPanel);
-                builder.Register<BuildingClickHandler>(Lifetime.Singleton)
                     .As<IInitializable, System.IDisposable>();
             }
 

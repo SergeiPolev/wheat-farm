@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using WheatFarm.Buildings;
 
 namespace WheatFarm.Infrastructure.Save
 {
@@ -13,12 +14,14 @@ namespace WheatFarm.Infrastructure.Save
         public int Coins;
         public float DayNightTime;
         public List<ChunkSaveData> Chunks = new();
+        [System.Obsolete("Legacy — kept for backwards compat with old saves. Use PlacedObjects instead.")]
         public List<PlacedBuildingSaveData> Buildings = new();
         public List<PlacedObjectSaveData> PlacedObjects = new();
         public List<TreeSaveData> Trees = new();
         public List<InventoryItemSaveData> Inventory = new();
         public List<ContractSaveData> ActiveContracts = new();
         public List<string> UnlockedPlants = new();
+        public List<ProductionSlotSaveData> ProductionSlots = new();
     }
 
     /// <summary>Serializable chunk state.</summary>
@@ -55,8 +58,8 @@ namespace WheatFarm.Infrastructure.Save
         public int GroundState;
     }
 
-    /// <summary>Serializable placed building (legacy — kept for backwards compat).</summary>
-    [System.Serializable]
+    /// <summary>Serializable placed building (legacy — kept for backwards compat with old saves).</summary>
+    [System.Serializable, System.Obsolete("Legacy — use PlacedObjectSaveData instead.")]
     public struct PlacedBuildingSaveData
     {
         public string BuildingId;

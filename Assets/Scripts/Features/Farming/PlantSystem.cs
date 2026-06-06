@@ -3,6 +3,7 @@ using R3;
 using UnityEngine;
 using VContainer.Unity;
 using WheatFarm.Core.Data;
+using WheatFarm.Inventory;
 
 namespace WheatFarm.Farming
 {
@@ -41,13 +42,15 @@ namespace WheatFarm.Farming
 
         private readonly IChunkSystem _chunkSystem;
         private readonly PlantDatabase _plantDb;
+        private readonly IInventoryService _inventory;
 
         public Subject<HarvestData> OnHarvested { get; } = new();
 
-        public PlantSystem(IChunkSystem chunkSystem, PlantDatabase plantDb)
+        public PlantSystem(IChunkSystem chunkSystem, PlantDatabase plantDb, IInventoryService inventory)
         {
             _chunkSystem = chunkSystem;
             _plantDb = plantDb;
+            _inventory = inventory;
         }
 
         public void Dispose()
@@ -121,9 +124,9 @@ namespace WheatFarm.Farming
                 new Vector3(initScale, initScale, initScale));
             // gr matrix is NOT modified here — ground tile keeps its fixed size from chunk init
 
-            // cropState.x = type id (must match material _Id); cropState.y = growth (>0 = visible)
+            // cropState.x = MeshId (must match material _Id); cropState.y = growth (>0 = visible)
             // cropState.z = ground state (0=grass, 1=tilled, 2=watered, 3=fertilized)
-            props.cropState.x = 1; // TODO: per-plant-type material _Id when multiple materials supported
+            props.cropState.x = data.MeshId;
             props.cropState.y = InitialGrowth;
             props.cropState.z = (float)cell.GroundState;
             props.cropState.w = Time.time; // transition start time (shader animates blend)
@@ -220,6 +223,19 @@ namespace WheatFarm.Farming
             int idx = chunk.CellIndex(cellX, cellY);
             ref var cell = ref chunk.Cells[idx];
             if (!cell.HasPlant) return;
+
+            // Yield uproot resource before clearing (e.g., wood from trees)
+            var plantData = _plantDb.GetById(cell.PlantId);
+            if (plantData != null
+                && !string.IsNullOrEmpty(plantData.UprootYieldId)
+                && plantData.UprootYieldAmount > 0
+                && cell.Growth >= 1f) // only fully grown plants yield resources
+            {
+                _inventory.TryAdd(new InventoryItem(
+                    plantData.UprootYieldId,
+                    ItemType.Harvest,
+                    plantData.UprootYieldAmount));
+            }
 
             ClearCell(ref cell, ref chunk.MeshProps[idx]);
             chunk.Dirty = true;
