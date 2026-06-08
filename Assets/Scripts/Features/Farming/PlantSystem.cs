@@ -12,7 +12,8 @@ namespace WheatFarm.Farming
     {
         public string PlantId;
         public int Yield;
-        public Vector3 WorldPosition;
+        public Vector3 WorldPosition;        public int SeedYield;
+
     }
 
     public interface IPlantSystem
@@ -194,7 +195,8 @@ namespace WheatFarm.Farming
             {
                 PlantId = cell.PlantId,
                 Yield = plantData.SellPrice,
-                WorldPosition = _chunkSystem.CellToWorld(chunkCoord, cellX, cellY)
+                WorldPosition = _chunkSystem.CellToWorld(chunkCoord, cellX, cellY),
+                SeedYield = plantData.RenewableHarvest ? 0 : plantData.HarvestSeedYield
             };
 
             if (plantData.RenewableHarvest)
@@ -279,6 +281,4 @@ namespace WheatFarm.Farming
 
             float growthFraction = Mathf.InverseLerp(0f, 1f, cell.Growth);
             float visualScale = cell.BaseScale * Mathf.Lerp(MinGrowthScale, 1f, growthFraction);
-            var scale = new Vector3(visualScale, visualScale, visualScale);
-
-            props.m = Matrix4x4.TRS(pos, Quaternion.Euler(
+            var sc

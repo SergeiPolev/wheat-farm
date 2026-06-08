@@ -24,17 +24,13 @@ namespace WheatFarm.Core.Data
         [Header("Economy")]
         public int SeedCost = 5;
         public int SellPrice = 10;
-        public bool RenewableHarvest;
+        public bool RenewableHarvest;        /// <summary>Seeds returned to inventory when harvesting a (non-renewable) crop.</summary>
+        public int HarvestSeedYield = 1;
+
 
         [Header("Placement")]
         public Vector2Int TrunkSize = Vector2Int.one;
 
         [Header("Uproot")]
         [Tooltip("Item ID yielded when uprooting a fully grown plant (e.g. 'wood'). Empty = no yield.")]
-        public string UprootYieldId;
-        public int UprootYieldAmount;
-
-        [Header("Unlock")]
-        public bool UnlockedByDefault;
-    }
-}
+        pu

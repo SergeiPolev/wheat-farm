@@ -24,5 +24,6 @@ MonoBehaviour:
   SeedCost: 10
   SellPrice: 20
   RenewableHarvest: 1
+  HarvestSeedYield: 0
   TrunkSize: {x: 1, y: 1}
-  UnlockedByDefault: 0
+ 

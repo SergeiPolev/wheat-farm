@@ -36,12 +36,7 @@ namespace WheatFarm.Infrastructure
             var item = new InventoryItem(data.PlantId, ItemType.Harvest, 1);
             _inventory.TryAdd(item);
             _contracts.ContributeItem(data.PlantId, 1);
-        }
 
-        public void Dispose()
-        {
-            _subscription?.Dispose();
-            _subscription = null;
-        }
-    }
-}
+            // Return seeds so farming is self-sustaining (buying is for expansion)
+            if (data.SeedYield > 0)
+                _inv
