@@ -133,7 +133,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 177638, guid: 0abab5bb77339e4428787a870eb31bd3, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 22451668, guid: 0abab5bb77339e4428787a870eb31bd3, type: 3}
       propertyPath: m_Pivot.x
@@ -751,7 +751,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6fd280a6600630949a98e9f7325184ed, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveBlendDamping: 12
+  blendDamping: 12
 --- !u!1 &1408991493
 GameObject:
   m_ObjectHideFlags: 0
@@ -1352,3 +1352,4 @@ SceneRoots:
   - {fileID: 7909107814393779804}
   - {fileID: 1818528260}
   - {fileID: 1728861291}
+    

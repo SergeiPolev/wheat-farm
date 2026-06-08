@@ -56,7 +56,12 @@ namespace WheatFarm.Infrastructure
             builder.Register<FarmBootstrap>(Lifetime.Singleton)
                 .As<IStartable>();
 
-            // Phase 5: Harvest → Inventory + Contracts bridge
+            // Crop status markers (needs-water / ready-to-harvest overlay)
+            builder.Register<CropIndicatorSystem>(Lifetime.Singleton)
+                .As<ITickable, System.IDisposable>();
+
+            
+// Phase 5: Harvest → Inventory + Contracts bridge
             builder.Register<HarvestRewardHandler>(Lifetime.Singleton)
                 .As<IInitializable, System.IDisposable>();
 
@@ -146,7 +151,11 @@ namespace WheatFarm.Infrastructure
             }
 
             // Build Shop/Inventory panels programmatically if not assigned
-            var canvasRoot = _hudView != null ? _hudView.transform.parent : null;
+            // HUDView may sit on the Canvas root (programmatic build) or be a child (Inspector).
+            // Use the actual Canvas transform so panels parent under it.
+            var canvasRoot = _hudView != null
+                ? (_hudView.GetComponentInParent<Canvas>()?.transform ?? _hudView.transform)
+                : null;
             if (_shopView == null && canvasRoot != null)
                 _shopView = PanelBuilder.BuildShopPanel(canvasRoot);
             if (_inventoryView == null && canvasRoot != null)
@@ -209,16 +218,4 @@ namespace WheatFarm.Infrastructure
                 catalogTabBar.Build(canvasRoot, new[] { "Crops", "Trees", "Buildings", "Decor", "Paths", "Tools" });
 
                 builder.RegisterComponent(catalogTabBar);
-                builder.Register<CatalogPresenter>(Lifetime.Singleton)
-                    .As<IInitializable, System.IDisposable>();
-            }
-
-            // Keybinds for panel toggling (Tab=Shop, I=Inventory, C=Contracts)
-            {
-                var toggleGo = new UnityEngine.GameObject("UIToggleController");
-                var toggle = toggleGo.AddComponent<UIToggleController>();
-                toggle.Init(_shopView, _inventoryView, _contractBoardView);
-            }
-        }
-    }
-}
+                builder.Register<CatalogPresenter>(Lifetime.Sing
