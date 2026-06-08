@@ -837,6 +837,7 @@ MonoBehaviour:
   autoRun: 1
   autoInjectGameObjects: []
   _renderConfig: {fileID: 11400000, guid: e680bb40453325b4f8193ce3a7e6acb2, type: 2}
+  _feedbackConfig: {fileID: 11400000, guid: 131212dc9d06803479c3d641bd4c44d0, type: 2}
   _interactionController: {fileID: 973734435}
   _playerController: {fileID: 973734436}
   _directionalLight: {fileID: 0}
@@ -1345,8 +1346,4 @@ PrefabInstance:
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 929decea87420fe45b9ec12f573afecd, type: 3}
 --- !u!1660057539 &9223372036854775807
-SceneRoots:
-  m_ObjectHideFlags: 0
-  m_Roots:
-  - {fileID: 2015629738}
-  - {fileID: 18908426
+Scene

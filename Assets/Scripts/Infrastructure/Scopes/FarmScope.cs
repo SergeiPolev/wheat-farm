@@ -17,7 +17,8 @@ namespace WheatFarm.Infrastructure
     /// </summary>
     public class FarmScope : LifetimeScope
     {
-        [SerializeField] private FarmRenderConfig _renderConfig;
+        [SerializeField] private FarmRenderConfig _renderConfig;        [SerializeField] private FeedbackConfig _feedbackConfig;
+
 
         [Header("Player (assign when Player GO is set up)")]
         [SerializeField] private FarmInteractionController _interactionController;
@@ -53,6 +54,7 @@ namespace WheatFarm.Infrastructure
 
             // Action feedback (particles) — hook point for plant/water/harvest/build effects
             builder.Register<FeedbackService>(Lifetime.Singleton)
+                .WithParameter<FeedbackConfig>(_feedbackConfig)
                 .As<IFeedbackService, System.IDisposable>();
 
 
@@ -90,7 +92,12 @@ namespace WheatFarm.Infrastructure
             builder.Register<PlantAutoSelector>(Lifetime.Singleton)
                 .As<IStartable>();
 
-            // Phase 6: Buildings & Production
+            // Harvest "resource collected" fly-to-player feedback
+            builder.Register<HarvestCollectFX>(Lifetime.Singleton)
+                .As<IInitializable, ITickable, System.IDisposable>();
+
+            
+// Phase 6: Buildings & Production
             builder.Register<PlacementService>(Lifetime.Singleton)
                 .As<IPlacementService>();
 
@@ -212,12 +219,4 @@ namespace WheatFarm.Infrastructure
                 {
                     builder.RegisterComponent(marketView);
                     builder.Register<MarketPresenter>(Lifetime.Singleton)
-                        .As<IInitializable, System.IDisposable>();
-                }
-            }
-
-            // Catalog tab bar (bottom of screen — category selection)
-            if (canvasRoot != null)
-            {
-                var catalogGo = new UnityEngine.GameObject("CatalogTabBarHost");
-                var catalogTabBar = catalogGo.AddComponent<CatalogTabBar>(
+                        .As<IInitializable, Sys

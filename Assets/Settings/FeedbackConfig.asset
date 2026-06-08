@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 965a18955bfda3f41af6f445727f5d61, type: 3}
+  m_Name: FeedbackConfig
+  m_EditorClassIdentifier: 
+  EffectPrefabs:
+  - {fileID: 5943824261518618609, guid: 8ff5972e1645db64a9cac67a5214b7aa, type: 3}
+  - {fileID: 6154242138650352407, guid: aacfadef790a2524b8919610ae844ce3, type: 3}
+  - {fileID: 7667328379806662271, guid: a59009cb6472ab5439224dee6f7f9309, type: 3}
+  - {fileID: 7563926913442375119, guid: c2bdc60e3fae5994c8b48ba51c3d17ff, type: 3}
+  - {fileID: 3937219864337163055, guid: 1aed536c8e98a684b83127b665fd2a5c, type: 3}
+  - {fileID: 7585142349694021703, guid: c633ac91ababe4d4b92c4d3761010c52, type: 3}

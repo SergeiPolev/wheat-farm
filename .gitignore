@@ -62,3 +62,6 @@ crashlytics-build.properties
 # CSharp Analyzer MCP tool — allow tracking despite *.csproj rule
 !tools/
 !tools/**
+
+# Editor screenshots (local only)
+/Assets/Screenshots/
