@@ -18,6 +18,10 @@ namespace WheatFarm.Infrastructure
     public class FarmScope : LifetimeScope
     {
         [SerializeField] private FarmRenderConfig _renderConfig;        [SerializeField] private FeedbackConfig _feedbackConfig;
+        [Header("Debug")]
+        [Tooltip("Master switch for all in-game debug tooling (F1 cheat menu + B/I/C panel hotkeys).")]
+        [SerializeField] private bool _enableDebug = true;
+
 
 
         [Header("Player (assign when Player GO is set up)")]
@@ -254,10 +258,4 @@ namespace WheatFarm.Infrastructure
                 radial.Build(canvasRoot);
 
                 builder.RegisterComponent(radial);
-                builder.Register<RadialToolPresenter>(Lifetime.Singleton)
-                    .As<ITickable, System.IDisposable>();
-            }
-
-            
-// Debug / god-mode menu (F1)
      

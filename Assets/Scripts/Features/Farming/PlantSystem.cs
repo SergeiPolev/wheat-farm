@@ -44,16 +44,18 @@ namespace WheatFarm.Farming
 
         private readonly IChunkSystem _chunkSystem;
         private readonly PlantDatabase _plantDb;
-        private readonly IInventoryService _inventory;        private readonly IFeedbackService _feedback;
+        private readonly IInventoryService _inventory;        private readonly IFeedbackService _feedback;        private readonly IDebugFlags _debug;
+
 
 
         public Subject<HarvestData> OnHarvested { get; } = new();
 
-        public PlantSystem(IChunkSystem chunkSystem, PlantDatabase plantDb, IInventoryService inventory, IFeedbackService feedback = null)
+        public PlantSystem(IChunkSystem chunkSystem, PlantDatabase plantDb, IInventoryService inventory, IFeedbackService feedback = null, IDebugFlags debug = null)
         {
             _chunkSystem = chunkSystem;
             _plantDb = plantDb;
-            _inventory = inventory;            _feedback = feedback;
+            _inventory = inventory;            _feedback = feedback;            _debug = debug;
+
 
         }
 
@@ -65,6 +67,7 @@ namespace WheatFarm.Farming
         public void Tick()
         {
             float dt = Time.deltaTime;
+            bool instant = _debug != null && _debug.InstantGrowth;
 
             foreach (var chunk in _chunkSystem.GetAllUnlockedChunks())
             {
@@ -72,16 +75,22 @@ namespace WheatFarm.Farming
                 for (int i = 0; i < chunk.CellCount; i++)
                 {
                     ref var cell = ref chunk.Cells[i];
-                    if (!cell.HasPlant || !cell.Watered || cell.Growth >= 1f)
-                        continue;
+                    if (!cell.HasPlant || cell.Growth >= 1f) continue;
+                    if (!cell.Watered && !instant) continue;
 
                     var plantData = _plantDb.GetById(cell.PlantId);
                     if (plantData == null) continue;
 
-                    float growthRate = cell.FertilizerMultiplier / plantData.GrowthDuration;
-                    cell.Growth = Mathf.Min(1f, cell.Growth + growthRate * dt);
+                    if (instant)
+                    {
+                        cell.Growth = 1f;
+                    }
+                    else
+                    {
+                        float growthRate = cell.FertilizerMultiplier / plantData.GrowthDuration;
+                        cell.Growth = Mathf.Min(1f, cell.Growth + growthRate * dt);
+                    }
 
-                    // Update GPU data: growth value + visual scale
                     ref var props = ref chunk.MeshProps[i];
                     props.cropState.y = cell.Growth;
                     RebuildMatrix(ref cell, ref props);
@@ -288,11 +297,4 @@ namespace WheatFarm.Farming
 
         private static void ClearCell(ref SubCellState cell, ref MeshProperties props)
         {
-            cell = SubCellState.Empty;
-            props.m = Matrix4x4.zero;
-            // Keep gr matrix intact — ground tile stays visible after clearing crop
-            props.cropState = new Vector4(0, 0, (float)GroundState.Grass, Time.time);
-            props.color = Vector4.zero;
-        }
-    }
-}
+            cell = SubCellState.

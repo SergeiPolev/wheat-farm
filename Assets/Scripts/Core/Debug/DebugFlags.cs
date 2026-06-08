@@ -1,8 +1,8 @@
 namespace WheatFarm.Core
 {
     /// <summary>
-    /// Central debug/cheat state. GodMode is a master switch that implies all others.
-    /// Read by WalletService and InventoryService to make spends/consumes free.
+    /// Central debug/cheat state. GodMode is a master switch that implies the resource cheats.
+    /// Read by WalletService, InventoryService and PlantSystem.
     /// </summary>
     public interface IDebugFlags
     {
@@ -10,6 +10,7 @@ namespace WheatFarm.Core
         bool InfiniteSeeds { get; set; }
         bool InfiniteCoins { get; set; }
         bool InfiniteResources { get; set; }
+        bool InstantGrowth { get; set; }
 
         /// <summary>Seeds never deplete.</summary>
         bool SeedsAreFree { get; }
@@ -25,9 +26,7 @@ namespace WheatFarm.Core
         public bool InfiniteSeeds { get; set; }
         public bool InfiniteCoins { get; set; }
         public bool InfiniteResources { get; set; }
+        public bool InstantGrowth { get; set; }
 
         public bool SeedsAreFree => GodMode || InfiniteResources || InfiniteSeeds;
-        public bool ResourcesAreFree => GodMode || InfiniteResources;
-        public bool CoinsAreFree => GodMode || InfiniteCoins;
-    }
-}
+        public bool ResourcesAreFree => GodMode || Infinit

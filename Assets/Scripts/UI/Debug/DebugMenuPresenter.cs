@@ -26,6 +26,8 @@ namespace WheatFarm.UI
             _view.SetToggle("seeds", _flags.InfiniteSeeds);
             _view.SetToggle("coins", _flags.InfiniteCoins);
             _view.SetToggle("resources", _flags.InfiniteResources);
+            _view.SetToggle("growth", _flags.InstantGrowth);
+
         }
 
         public void Dispose()
@@ -49,8 +51,4 @@ namespace WheatFarm.UI
                 case "god": _flags.GodMode = value; break;
                 case "seeds": _flags.InfiniteSeeds = value; break;
                 case "coins": _flags.InfiniteCoins = value; break;
-                case "resources": _flags.InfiniteResources = value; break;
-            }
-        }
-    }
-}
+                case "resources": _flags.Infi
