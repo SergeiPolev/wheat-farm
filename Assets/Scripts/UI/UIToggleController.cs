@@ -11,6 +11,10 @@ namespace WheatFarm.UI
         private ShopView _shopView;
         private InventoryView _inventoryView;
         private ContractBoardView _contractView;
+        [Header("Debug")]
+        [Tooltip("Disable to turn off all debug panel hotkeys (B/I/C).")]
+        [SerializeField] private bool _enabled = true;
+
 
         public void Init(ShopView shop, InventoryView inventory, ContractBoardView contracts = null)
         {
@@ -21,6 +25,8 @@ namespace WheatFarm.UI
 
         private void Update()
         {
+            if (!_enabled) return;
+
             if (Input.GetKeyDown(KeyCode.B) && _shopView != null)
             {
                 if (_shopView.IsOpen) _shopView.Hide();
@@ -33,11 +39,4 @@ namespace WheatFarm.UI
                 else _inventoryView.Show();
             }
 
-            if (Input.GetKeyDown(KeyCode.C) && _contractView != null)
-            {
-                if (_contractView.IsOpen) _contractView.Hide();
-                else _contractView.Show();
-            }
-        }
-    }
-}
+            if (Input.GetKeyDow

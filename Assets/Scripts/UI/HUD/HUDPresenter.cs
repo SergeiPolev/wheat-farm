@@ -42,7 +42,7 @@ namespace WheatFarm.UI
                 .AddTo(_disposables);
 
             _toolService.CurrentToolId
-                .Subscribe(id => _view.HighlightTool((int)id))
+                .Subscribe(id => _view.UpdateTool("Tool: " + ToolName(id)))
                 .AddTo(_disposables);
 
             _dayNight.CurrentPhase
@@ -58,6 +58,4 @@ namespace WheatFarm.UI
                 .AddTo(_disposables);
         }
 
-        public void Dispose() => _disposables.Dispose();
-    }
-}
+        public void Dispose() => _disposables.Dispos

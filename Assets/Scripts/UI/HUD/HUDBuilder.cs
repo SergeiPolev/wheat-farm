@@ -122,11 +122,22 @@ namespace WheatFarm.UI
                 new Vector2(8, 0), new Vector2(-8, 0));
 
             
+// === Active Tool (top-center) ===
+            var toolPanel = CreatePanel(canvasGo.transform, "ToolPanel",
+                TextAnchor.UpperCenter, new Vector2(0.5f, 1), new Vector2(0.5f, 1),
+                new Vector2(0, -15), new Vector2(240, 40));
+            var toolText = CreateTMPText(toolPanel.transform, "ToolText",
+                "Tool: Plant", 18, TextAlignmentOptions.Center,
+                new Vector2(8, 0), new Vector2(-8, 0));
+
+            
 SetPrivateField(hudView, "_coinsText", coinsText);
             SetPrivateField(hudView, "_toolIcons", toolIcons);
             SetPrivateField(hudView, "_timeText", timeText);
             SetPrivateField(hudView, "_timeFill", fillImg);            SetPrivateField(hudView, "_brushText", brushText);
             SetPrivateField(hudView, "_seedText", seedText);
+            SetPrivateField(hudView, "_toolText", toolText);
+
 
 
 
@@ -169,20 +180,4 @@ SetPrivateField(hudView, "_coinsText", coinsText);
             }
 
             var tmp = go.AddComponent<TextMeshProUGUI>();
-            tmp.text = text;
-            tmp.fontSize = fontSize;
-            tmp.alignment = alignment;
-            tmp.color = Color.white;
-            tmp.enableAutoSizing = false;
-
-            return tmp;
-        }
-
-        private static void SetPrivateField(object obj, string fieldName, object value)
-        {
-            var field = obj.GetType().GetField(fieldName,
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            field?.SetValue(obj, value);
-        }
-    }
-}
+            t

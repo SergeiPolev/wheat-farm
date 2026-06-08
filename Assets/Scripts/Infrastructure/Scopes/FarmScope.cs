@@ -202,7 +202,15 @@ namespace WheatFarm.Infrastructure
                     .As<IInitializable, System.IDisposable>();
             }
 
-            // Build building panel programmatically
+            // Economy buildings: Warehouse -> Inventory, Contracts -> board
+            if (_inventoryView != null && _contractBoardView != null)
+            {
+                builder.Register<EconomyBuildingPresenter>(Lifetime.Singleton)
+                    .As<IInitializable, System.IDisposable>();
+            }
+
+            
+// Build building panel programmatically
             if (canvasRoot != null)
             {
                 var buildingPanel = PanelBuilder.BuildBuildingPanel(canvasRoot);
@@ -251,12 +259,4 @@ namespace WheatFarm.Infrastructure
             }
 
             
-// Keybinds for panel toggling (Tab=Shop, I=Inventory, C=Contracts)
-            {
-                var toggleGo = new UnityEngine.GameObject("UIToggleController");
-                var toggle = toggleGo.AddComponent<UIToggleController>();
-                toggle.Init(_shopView, _inventoryView, _contractBoardView);
-            }
-        }
-    }
-}
+// Keybinds for panel toggling (Tab

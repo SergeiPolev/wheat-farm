@@ -105,7 +105,7 @@ namespace WheatFarm.UI
             var placed = marker.PlacedObject;
             if (placed.Data == null || !placed.Data.Interactable) return;
             // Market buildings are handled by MarketPresenter, not this production panel.
-            if (placed.Data.Role == BuildingRole.Market) return;
+            if (placed.Data.Role != BuildingRole.Production) return;
 
 
             // Toggle: clicking the same building closes the panel
@@ -211,5 +211,4 @@ namespace WheatFarm.UI
             if (_currentBuilding == null) return;
             _production.SetAutoRepeat(_currentBuilding, enabled);
         }
-    }
-}
+    

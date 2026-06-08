@@ -25,6 +25,9 @@ namespace WheatFarm.UI
         [SerializeField] private TextMeshProUGUI _brushText;
         [Header("Seeds")]
         [SerializeField] private TextMeshProUGUI _seedText;
+        [Header("Active Tool")]
+        [SerializeField] private TextMeshProUGUI _toolText;
+
 
 
 
@@ -71,10 +74,4 @@ namespace WheatFarm.UI
 
         public void UpdateSeedCount(string label)
         {
-            if (_seedText != null)
-                _seedText.text = label;
-        }
-
-
-    }
-}
+  
