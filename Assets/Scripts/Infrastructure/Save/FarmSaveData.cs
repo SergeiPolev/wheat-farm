@@ -89,6 +89,8 @@ namespace WheatFarm.Infrastructure.Save
         public float PosX;
         public float PosY;
         public float PosZ;
+        public float Scale;
+        public float RotationY;
         public float Growth;
         public Color32 Color;
     }

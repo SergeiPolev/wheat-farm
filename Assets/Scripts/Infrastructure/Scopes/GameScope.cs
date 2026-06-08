@@ -24,6 +24,9 @@ namespace WheatFarm.Infrastructure
 
             // Data: databases (available to all child scopes)
             builder.RegisterInstance(_plantDatabase);
+            builder.Register<PlantUnlockService>(Lifetime.Singleton)
+                .As<IPlantUnlockService>();
+
 
             if (_placeableDatabase != null)
                 builder.RegisterInstance(_placeableDatabase);

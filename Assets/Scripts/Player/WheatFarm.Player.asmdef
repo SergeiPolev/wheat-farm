@@ -5,6 +5,7 @@
         "WheatFarm.Core",
         "WheatFarm.Farming",
         "WheatFarm.Buildings",
+        "WheatFarm.Inventory",
         "VContainer",
         "UniTask",
         "Unity.InputSystem",

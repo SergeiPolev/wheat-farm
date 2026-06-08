@@ -4,6 +4,7 @@ using R3;
 using UnityEngine;
 using VContainer.Unity;
 using WheatFarm.Core.Data;
+using WheatFarm.Economy;
 using WheatFarm.Player.Tools;
 
 namespace WheatFarm.UI
@@ -11,6 +12,7 @@ namespace WheatFarm.UI
     /// <summary>
     /// Populates CatalogTabBar from PlantDatabase + PlaceableDatabase.
     /// On item click: selects plant/placeable on PlacementTool or equips a tool.
+    /// Locked plants are unlocked (for coins) on click via ShopService.
     /// </summary>
     public class CatalogPresenter : IInitializable, IDisposable
     {
@@ -19,6 +21,8 @@ namespace WheatFarm.UI
         private readonly PlaceableDatabase _placeableDb;
         private readonly IToolService _toolService;
         private readonly PlacementTool _placementTool;
+        private readonly IPlantUnlockService _unlock;
+        private readonly IShopService _shop;
 
         private readonly CompositeDisposable _disposables = new();
 
@@ -27,25 +31,33 @@ namespace WheatFarm.UI
 
         // Current tab's items — can be PlantData or PlaceableData or ToolId
         private readonly List<object> _currentItems = new();
+        private int _currentTab;
 
         public CatalogPresenter(
             CatalogTabBar view,
             PlantDatabase plantDb,
             PlaceableDatabase placeableDb,
             IToolService toolService,
-            PlacementTool placementTool)
+            PlacementTool placementTool,
+            IPlantUnlockService unlock,
+            IShopService shop)
         {
             _view = view;
             _plantDb = plantDb;
             _placeableDb = placeableDb;
             _toolService = toolService;
             _placementTool = placementTool;
+            _unlock = unlock;
+            _shop = shop;
         }
 
         public void Initialize()
         {
             _view.OnTabClicked += OnTabSelected;
             _view.OnItemClicked += OnItemSelected;
+
+            // Refresh lock badges whenever the unlocked set changes
+            _unlock.Changed += OnUnlocksChanged;
 
             // Auto-select Crops tab
             OnTabSelected(0);
@@ -55,11 +67,15 @@ namespace WheatFarm.UI
         {
             _view.OnTabClicked -= OnTabSelected;
             _view.OnItemClicked -= OnItemSelected;
+            _unlock.Changed -= OnUnlocksChanged;
             _disposables.Dispose();
         }
 
+        private void OnUnlocksChanged() => OnTabSelected(_currentTab);
+
         private void OnTabSelected(int tabIndex)
         {
+            _currentTab = tabIndex;
             _view.SetActiveTab(tabIndex);
             _currentItems.Clear();
 
@@ -99,6 +115,17 @@ namespace WheatFarm.UI
 
             if (item is PlantData plant)
             {
+                if (!_unlock.IsUnlocked(plant.PlantId))
+                {
+                    if (!_shop.TryUnlockPlant(plant))
+                    {
+                        Debug.Log($"[Catalog] {plant.DisplayName} is locked — not enough coins to unlock.");
+                        return;
+                    }
+                    Debug.Log($"[Catalog] Unlocked {plant.DisplayName}.");
+                    // OnUnlocksChanged repopulates the tab; the click below still selects it.
+                }
+
                 _toolService.EquipTool(ToolId.Placement);
                 _placementTool.SelectPlant(plant);
                 Debug.Log($"[Catalog] Selected plant: {plant.DisplayName}");
@@ -122,7 +149,7 @@ namespace WheatFarm.UI
             foreach (var plant in _plantDb.GetByCategory(category))
             {
                 _currentItems.Add(plant);
-                display.Add((plant.DisplayName, plant.SeedCost, !plant.UnlockedByDefault));
+                display.Add((plant.DisplayName, plant.SeedCost, !_unlock.IsUnlocked(plant.PlantId)));
             }
         }
 

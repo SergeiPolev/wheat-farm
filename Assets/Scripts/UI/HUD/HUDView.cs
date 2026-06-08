@@ -21,6 +21,9 @@ namespace WheatFarm.UI
         [Header("Day/Night")]
         [SerializeField] private TextMeshProUGUI _timeText;
         [SerializeField] private Image _timeFill;
+        [Header("Brush")]
+        [SerializeField] private TextMeshProUGUI _brushText;
+
 
         private int _lastHighlighted = -1;
 
@@ -56,5 +59,12 @@ namespace WheatFarm.UI
             if (_timeFill != null)
                 _timeFill.fillAmount = normalized;
         }
+
+        public void UpdateBrushSize(string label)
+        {
+            if (_brushText != null)
+                _brushText.text = label;
+        }
+
     }
 }

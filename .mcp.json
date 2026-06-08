@@ -4,13 +4,13 @@
       "type": "sse",
       "url": "http://localhost:7890/sse"
     },
-    "unityMCP": {
-      "command": "C:\\Users\\spole\\.local\\bin\\uvx.exe",
-      "args": ["--from", "mcpforunityserver", "mcp-for-unity", "--transport", "stdio"]
-    },
     "csharp-analyzer": {
       "command": "dotnet",
-      "args": ["run", "--project", "tools/CSharpAnalyzerMcp"],
+      "args": [
+        "run",
+        "--project",
+        "tools/CSharpAnalyzerMcp"
+      ],
       "env": {
         "PROJECT_PATH": "./wheat-farm.sln"
       }

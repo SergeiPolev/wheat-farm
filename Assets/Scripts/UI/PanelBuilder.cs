@@ -507,6 +507,219 @@ namespace WheatFarm.UI
             return go;
         }
 
+        public static MarketView BuildMarketPanel(Transform canvasRoot)
+        {
+            var panel = CreatePanel(canvasRoot, "MarketPanel", 380, 600);
+            panel.SetActive(false);
+
+            // Tablet accent top bar
+            var topBar = new GameObject("TopBar");
+            topBar.transform.SetParent(panel.transform, false);
+            var topRect = topBar.AddComponent<RectTransform>();
+            topRect.anchorMin = new Vector2(0, 0.90f);
+            topRect.anchorMax = new Vector2(1, 1);
+            topRect.offsetMin = Vector2.zero;
+            topRect.offsetMax = Vector2.zero;
+            topBar.AddComponent<Image>().color = new Color(0.20f, 0.52f, 0.80f, 1f);
+
+            CreateLabel(topBar.transform, "Title", "MARKET", 22, TextAnchor.MiddleCenter,
+                new Vector2(0, 0), new Vector2(1, 1), new Vector2(12, 0), new Vector2(-12, 0));
+
+            var coinsText = CreateTMP(topBar.transform, "Coins", "0c", 16);
+            var coinsRect = coinsText.GetComponent<RectTransform>();
+            coinsRect.anchorMin = new Vector2(0.6f, 0);
+            coinsRect.anchorMax = new Vector2(1, 1);
+            coinsRect.offsetMin = Vector2.zero;
+            coinsRect.offsetMax = new Vector2(-12, 0);
+            coinsText.alignment = TextAlignmentOptions.Right;
+
+            // --- Buy Seeds section ---
+            CreateLabel(panel.transform, "BuyHeader", "Buy Seeds", 15, TextAnchor.MiddleLeft,
+                new Vector2(0, 0.84f), new Vector2(1, 0.89f), new Vector2(14, 0), new Vector2(-12, 0));
+
+            var buyArea = new GameObject("BuyArea");
+            buyArea.transform.SetParent(panel.transform, false);
+            var buyRect = buyArea.AddComponent<RectTransform>();
+            buyRect.anchorMin = new Vector2(0, 0.54f);
+            buyRect.anchorMax = new Vector2(1, 0.84f);
+            buyRect.offsetMin = new Vector2(12, 0);
+            buyRect.offsetMax = new Vector2(-12, 0);
+            var buyLayout = buyArea.AddComponent<VerticalLayoutGroup>();
+            buyLayout.spacing = 4;
+            buyLayout.padding = new RectOffset(0, 0, 4, 4);
+            buyLayout.childForceExpandWidth = true;
+            buyLayout.childForceExpandHeight = false;
+
+            var buyPrefab = CreateMarketBuyItemPrefab("MarketBuyPrefab");
+            buyPrefab.SetActive(false);
+
+            // --- Sell Harvest section ---
+            CreateLabel(panel.transform, "SellHeader", "Sell Harvest", 15, TextAnchor.MiddleLeft,
+                new Vector2(0, 0.49f), new Vector2(1, 0.54f), new Vector2(14, 0), new Vector2(-12, 0));
+
+            var scrollArea = new GameObject("SellArea");
+            scrollArea.transform.SetParent(panel.transform, false);
+            var scrollRect = scrollArea.AddComponent<RectTransform>();
+            scrollRect.anchorMin = new Vector2(0, 0.17f);
+            scrollRect.anchorMax = new Vector2(1, 0.49f);
+            scrollRect.offsetMin = new Vector2(12, 0);
+            scrollRect.offsetMax = new Vector2(-12, 0);
+            var layout = scrollArea.AddComponent<VerticalLayoutGroup>();
+            layout.spacing = 4;
+            layout.padding = new RectOffset(0, 0, 4, 4);
+            layout.childForceExpandWidth = true;
+            layout.childForceExpandHeight = false;
+
+            var itemPrefab = CreateMarketItemPrefab("MarketItemPrefab");
+            itemPrefab.SetActive(false);
+
+            var emptyTmp = CreateLabel(panel.transform, "Empty", "Nothing to sell.", 14, TextAnchor.MiddleCenter,
+                new Vector2(0, 0.17f), new Vector2(1, 0.49f), new Vector2(12, 0), new Vector2(-12, 0));
+            emptyTmp.color = new Color(1f, 1f, 1f, 0.5f);
+
+            // Footer: total + Sell All + close
+            var footer = new GameObject("Footer");
+            footer.transform.SetParent(panel.transform, false);
+            var footerRect = footer.AddComponent<RectTransform>();
+            footerRect.anchorMin = Vector2.zero;
+            footerRect.anchorMax = new Vector2(1, 0.16f);
+            footerRect.offsetMin = new Vector2(12, 8);
+            footerRect.offsetMax = new Vector2(-12, -4);
+
+            var totalText = CreateTMP(footer.transform, "Total", "Total: 0c", 16);
+            var totalRect = totalText.GetComponent<RectTransform>();
+            totalRect.anchorMin = new Vector2(0, 0.55f);
+            totalRect.anchorMax = new Vector2(1, 1);
+            totalRect.offsetMin = Vector2.zero;
+            totalRect.offsetMax = Vector2.zero;
+
+            var sellBtn = CreateButton(footer.transform, "SellAll", "SELL ALL", new Color(0.3f, 0.6f, 0.3f, 1f));
+            var sellRect = sellBtn.GetComponent<RectTransform>();
+            sellRect.anchorMin = new Vector2(0, 0);
+            sellRect.anchorMax = new Vector2(0.7f, 0.5f);
+            sellRect.offsetMin = Vector2.zero;
+            sellRect.offsetMax = Vector2.zero;
+
+            var closeBtn = CreateButton(footer.transform, "Close", "X", CloseColor);
+            var closeRect = closeBtn.GetComponent<RectTransform>();
+            closeRect.anchorMin = new Vector2(0.74f, 0);
+            closeRect.anchorMax = new Vector2(1, 0.5f);
+            closeRect.offsetMin = Vector2.zero;
+            closeRect.offsetMax = Vector2.zero;
+
+            var view = panel.AddComponent<MarketView>();
+            SetField(view, "_panel", panel);
+            SetField(view, "_itemContainer", scrollArea.transform);
+            SetField(view, "_itemPrefab", itemPrefab);
+            SetField(view, "_buyContainer", buyArea.transform);
+            SetField(view, "_buyItemPrefab", buyPrefab);
+            SetField(view, "_totalText", totalText);
+            SetField(view, "_coinsText", coinsText);
+            SetField(view, "_emptyText", emptyTmp);
+            SetField(view, "_sellAllButton", sellBtn);
+            SetField(view, "_closeButton", closeBtn);
+
+            return view;
+        }
+
+        /// <summary>Market buy row: label (name + price) + Buy button.</summary>
+        private static GameObject CreateMarketBuyItemPrefab(string name)
+        {
+            var go = new GameObject(name);
+            var rect = go.AddComponent<RectTransform>();
+            rect.sizeDelta = new Vector2(0, 34);
+            go.AddComponent<Image>().color = ItemBg;
+            go.AddComponent<LayoutElement>().preferredHeight = 34;
+
+            var label = new GameObject("Label");
+            label.transform.SetParent(go.transform, false);
+            var labelRect = label.AddComponent<RectTransform>();
+            labelRect.anchorMin = new Vector2(0, 0);
+            labelRect.anchorMax = new Vector2(0.68f, 1);
+            labelRect.offsetMin = new Vector2(8, 0);
+            labelRect.offsetMax = Vector2.zero;
+            var labelTmp = label.AddComponent<TextMeshProUGUI>();
+            labelTmp.fontSize = 14;
+            labelTmp.alignment = TextAlignmentOptions.Left;
+            labelTmp.color = Color.white;
+
+            var btnGo = new GameObject("BuyBtn");
+            btnGo.transform.SetParent(go.transform, false);
+            var btnRect = btnGo.AddComponent<RectTransform>();
+            btnRect.anchorMin = new Vector2(0.7f, 0.12f);
+            btnRect.anchorMax = new Vector2(0.98f, 0.88f);
+            btnRect.offsetMin = Vector2.zero;
+            btnRect.offsetMax = Vector2.zero;
+            var btnImg = btnGo.AddComponent<Image>();
+            btnImg.color = new Color(0.3f, 0.6f, 0.3f, 1f);
+            var btn = btnGo.AddComponent<Button>();
+            btn.targetGraphic = btnImg;
+
+            var btnLabel = new GameObject("Text");
+            btnLabel.transform.SetParent(btnGo.transform, false);
+            var btnLabelRect = btnLabel.AddComponent<RectTransform>();
+            btnLabelRect.anchorMin = Vector2.zero;
+            btnLabelRect.anchorMax = Vector2.one;
+            btnLabelRect.offsetMin = Vector2.zero;
+            btnLabelRect.offsetMax = Vector2.zero;
+            var btnTmp = btnLabel.AddComponent<TextMeshProUGUI>();
+            btnTmp.text = "Buy";
+            btnTmp.fontSize = 13;
+            btnTmp.alignment = TextAlignmentOptions.Center;
+            btnTmp.color = Color.white;
+
+            return go;
+        }
+
+
+        /// <summary>Market row: item name + quantity + line total (3 TMP texts).</summary>
+        private static GameObject CreateMarketItemPrefab(string name)
+        {
+            var go = new GameObject(name);
+            var rect = go.AddComponent<RectTransform>();
+            rect.sizeDelta = new Vector2(0, 34);
+            go.AddComponent<Image>().color = ItemBg;
+            go.AddComponent<LayoutElement>().preferredHeight = 34;
+
+            var nameGo = new GameObject("Name");
+            nameGo.transform.SetParent(go.transform, false);
+            var nameRect = nameGo.AddComponent<RectTransform>();
+            nameRect.anchorMin = new Vector2(0, 0);
+            nameRect.anchorMax = new Vector2(0.55f, 1);
+            nameRect.offsetMin = new Vector2(8, 0);
+            nameRect.offsetMax = Vector2.zero;
+            var nameTmp = nameGo.AddComponent<TextMeshProUGUI>();
+            nameTmp.fontSize = 15;
+            nameTmp.alignment = TextAlignmentOptions.Left;
+            nameTmp.color = Color.white;
+
+            var amtGo = new GameObject("Amount");
+            amtGo.transform.SetParent(go.transform, false);
+            var amtRect = amtGo.AddComponent<RectTransform>();
+            amtRect.anchorMin = new Vector2(0.55f, 0);
+            amtRect.anchorMax = new Vector2(0.75f, 1);
+            amtRect.offsetMin = Vector2.zero;
+            amtRect.offsetMax = Vector2.zero;
+            var amtTmp = amtGo.AddComponent<TextMeshProUGUI>();
+            amtTmp.fontSize = 15;
+            amtTmp.alignment = TextAlignmentOptions.Center;
+            amtTmp.color = new Color(0.8f, 0.8f, 0.8f);
+
+            var totGo = new GameObject("Total");
+            totGo.transform.SetParent(go.transform, false);
+            var totRect = totGo.AddComponent<RectTransform>();
+            totRect.anchorMin = new Vector2(0.75f, 0);
+            totRect.anchorMax = new Vector2(1, 1);
+            totRect.offsetMin = Vector2.zero;
+            totRect.offsetMax = new Vector2(-8, 0);
+            var totTmp = totGo.AddComponent<TextMeshProUGUI>();
+            totTmp.fontSize = 15;
+            totTmp.alignment = TextAlignmentOptions.Right;
+            totTmp.color = new Color(1f, 0.85f, 0.3f);
+
+            return go;
+        }
+
         // --- Helpers ---
 
         private static GameObject CreatePanel(Transform parent, string name, float width, float height)

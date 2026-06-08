@@ -18,7 +18,7 @@ namespace WheatFarm.Farming
     {
         Subject<HarvestData> OnHarvested { get; }
 
-        void Plant(Vector2Int chunkCoord, int cellX, int cellY, PlantData data);
+        bool Plant(Vector2Int chunkCoord, int cellX, int cellY, PlantData data);
         void Water(Vector2Int chunkCoord, int cellX, int cellY);
         void Fertilize(Vector2Int chunkCoord, int cellX, int cellY, float multiplier);
         HarvestData? Harvest(Vector2Int chunkCoord, int cellX, int cellY);
@@ -90,28 +90,27 @@ namespace WheatFarm.Farming
             }
         }
 
-        public void Plant(Vector2Int chunkCoord, int cellX, int cellY, PlantData data)
+        public bool Plant(Vector2Int chunkCoord, int cellX, int cellY, PlantData data)
         {
             var chunk = _chunkSystem.GetChunk(chunkCoord);
-            if (chunk == null || !chunk.Unlocked) return;
+            if (chunk == null || !chunk.Unlocked) return false;
 
             int idx = chunk.CellIndex(cellX, cellY);
             ref var cell = ref chunk.Cells[idx];
-            if (cell.Occupied || cell.HasPlant) return;
-            if (cell.GroundState >= GroundState.PathStone) return; // paths block planting
+            if (cell.Occupied || cell.HasPlant) return false;
+            if (cell.GroundState >= GroundState.PathStone) return false; // paths block planting
 
             // Gameplay state
             cell.PlantId = data.PlantId;
             cell.Growth = InitialGrowth;
-            cell.Watered = true; // Auto-water so crops grow immediately
+            cell.Watered = false; // must be watered (watering can) before it grows
             cell.FertilizerMultiplier = 1f;
-            cell.GroundState = GroundState.Watered;
+            cell.GroundState = GroundState.Tilled;
 
             // Placement data (for matrix reconstruction during growth)
             float baseScale = _chunkSystem.CellWorldSize * ScaleMultiplier;
             cell.BaseScale = baseScale * UnityEngine.Random.Range(data.ScaleRange.x, data.ScaleRange.y);
             // Restrict rotation to front-facing range for flat mesh models
-            // Camera looks from isometric angle; mesh faces need ~165° base + variance
             cell.RotationY = CropRotation.BaseAngle + UnityEngine.Random.Range(-CropRotation.Variance, CropRotation.Variance);
 
             // Sync to GPU: positions RELATIVE to chunk bounds center (shader requirement)
@@ -125,7 +124,7 @@ namespace WheatFarm.Farming
             // gr matrix is NOT modified here — ground tile keeps its fixed size from chunk init
 
             // cropState.x = MeshId (must match material _Id); cropState.y = growth (>0 = visible)
-            // cropState.z = ground state (0=grass, 1=tilled, 2=watered, 3=fertilized)
+            // cropState.z = ground state (1=tilled until watered)
             props.cropState.x = data.MeshId;
             props.cropState.y = InitialGrowth;
             props.cropState.z = (float)cell.GroundState;
@@ -134,6 +133,7 @@ namespace WheatFarm.Farming
 
             chunk.Dirty = true;
             _chunkSystem.UpdateGroundNeighborFlags(chunkCoord, cellX, cellY);
+            return true;
         }
 
         public void Water(Vector2Int chunkCoord, int cellX, int cellY)

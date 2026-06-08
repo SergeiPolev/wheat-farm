@@ -3,6 +3,7 @@ using R3;
 using VContainer.Unity;
 using WheatFarm.DayNight;
 using WheatFarm.Economy;
+using WheatFarm.Farming;
 using WheatFarm.Player.Tools;
 
 namespace WheatFarm.UI
@@ -17,18 +18,21 @@ namespace WheatFarm.UI
         private readonly IWalletService _wallet;
         private readonly IToolService _toolService;
         private readonly IDayNightService _dayNight;
+        private readonly IBrushService _brush;
         private readonly CompositeDisposable _disposables = new();
 
         public HUDPresenter(
             HUDView view,
             IWalletService wallet,
             IToolService toolService,
-            IDayNightService dayNight)
+            IDayNightService dayNight,
+            IBrushService brush)
         {
             _view = view;
             _wallet = wallet;
             _toolService = toolService;
             _dayNight = dayNight;
+            _brush = brush;
         }
 
         public void Initialize()
@@ -47,6 +51,10 @@ namespace WheatFarm.UI
 
             _dayNight.TimeNormalized
                 .Subscribe(t => _view.UpdateTimeFill(t))
+                .AddTo(_disposables);
+
+            _brush.CurrentSize
+                .Subscribe(size => _view.UpdateBrushSize($"Brush: {size}"))
                 .AddTo(_disposables);
         }
 

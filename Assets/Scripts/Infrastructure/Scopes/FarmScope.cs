@@ -107,6 +107,10 @@ namespace WheatFarm.Infrastructure
             builder.Register<Save.SaveLoadController>(Lifetime.Singleton)
                 .As<IStartable, ITickable>();
 
+            builder.Register<StartingInventoryGranter>(Lifetime.Singleton)
+                .As<IStartable>();
+
+
             // Player interaction (optional — assign in Inspector when Player GO exists)
             if (_interactionController != null)
             {
@@ -182,6 +186,18 @@ namespace WheatFarm.Infrastructure
                     builder.RegisterComponent(buildingPanel);
                     builder.Register<BuildingPanelPresenter>(Lifetime.Singleton)
                         .As<IInitializable, ITickable, System.IDisposable>();
+                }
+            }
+
+            // Build market panel (tablet UI) — opens when clicking a Market building
+            if (canvasRoot != null)
+            {
+                var marketView = PanelBuilder.BuildMarketPanel(canvasRoot);
+                if (marketView != null)
+                {
+                    builder.RegisterComponent(marketView);
+                    builder.Register<MarketPresenter>(Lifetime.Singleton)
+                        .As<IInitializable, System.IDisposable>();
                 }
             }
 

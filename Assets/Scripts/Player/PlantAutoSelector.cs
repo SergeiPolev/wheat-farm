@@ -11,18 +11,18 @@ namespace WheatFarm.Player
     /// </summary>
     public class PlantAutoSelector : IStartable
     {
-        private readonly PlantDatabase _plantDb;
+        private readonly IPlantUnlockService _unlock;
         private readonly PlacementTool _placementTool;
 
-        public PlantAutoSelector(PlantDatabase plantDb, PlacementTool placementTool)
+        public PlantAutoSelector(IPlantUnlockService unlock, PlacementTool placementTool)
         {
-            _plantDb = plantDb;
+            _unlock = unlock;
             _placementTool = placementTool;
         }
 
         public void Start()
         {
-            var unlocked = _plantDb.GetUnlocked();
+            var unlocked = _unlock.GetUnlocked();
             if (unlocked.Length > 0)
             {
                 _placementTool.SelectPlant(unlocked[0]);
@@ -30,7 +30,7 @@ namespace WheatFarm.Player
             }
             else
             {
-                Debug.LogWarning("[PlantAutoSelector] No unlocked plants in PlantDatabase!");
+                Debug.LogWarning("[PlantAutoSelector] No unlocked plants!");
             }
         }
     }

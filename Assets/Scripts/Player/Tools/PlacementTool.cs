@@ -1,7 +1,8 @@
 using UnityEngine;
 using WheatFarm.Buildings;
 using WheatFarm.Core.Data;
-using WheatFarm.Farming;
+using WheatFarm.Farming;using WheatFarm.Inventory;
+
 
 namespace WheatFarm.Player.Tools
 {
@@ -15,7 +16,8 @@ namespace WheatFarm.Player.Tools
         private readonly ITreePlacementService _treePlacement;
         private readonly IBrushService _brush;
         private readonly IPlacementService _placementService;
-        private readonly IChunkSystem _chunkSystem;
+        private readonly IChunkSystem _chunkSystem;        private readonly IInventoryService _inventory;
+
 
         private PlantData _selectedPlant;
         private PlaceableData _selectedPlaceable;
@@ -41,13 +43,15 @@ namespace WheatFarm.Player.Tools
             ITreePlacementService treePlacement,
             IBrushService brush,
             IPlacementService placementService,
-            IChunkSystem chunkSystem)
+            IChunkSystem chunkSystem,
+            IInventoryService inventory)
         {
             _plantSystem = plantSystem;
             _treePlacement = treePlacement;
             _brush = brush;
             _placementService = placementService;
-            _chunkSystem = chunkSystem;
+            _chunkSystem = chunkSystem;            _inventory = inventory;
+
         }
 
         public void SelectPlant(PlantData plant)
@@ -146,7 +150,15 @@ namespace WheatFarm.Player.Tools
                 return;
             }
 
-            // Crops and bushes: brush-based
+            // Crops and bushes require a purchased seed
+            string seedId = "seed_" + _selectedPlant.PlantId;
+            if (!_inventory.HasItem(seedId, 1))
+            {
+                Debug.Log($"[Plant] No {_selectedPlant.DisplayName} seeds — buy some at the shop.");
+                return;
+            }
+
+            // Brush-based; each planted cell consumes one seed (see Apply)
             _brush.ApplyAtWorldPos(worldPos, this);
         }
 
@@ -165,7 +177,12 @@ namespace WheatFarm.Player.Tools
             int idx = chunk.CellIndex(cellX, cellY);
             if (chunk.Cells[idx].HasPlant || chunk.Cells[idx].Occupied) return;
 
-            _plantSystem.Plant(chunk.ChunkCoord, cellX, cellY, _selectedPlant);
+            // One seed per planted cell
+            string seedId = "seed_" + _selectedPlant.PlantId;
+            if (!_inventory.HasItem(seedId, 1)) return;
+
+            if (_plantSystem.Plant(chunk.ChunkCoord, cellX, cellY, _selectedPlant))
+                _inventory.TryConsume(seedId, 1);
         }
 
         private void ApplyPath(ChunkData chunk, int cellX, int cellY)

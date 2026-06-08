@@ -96,7 +96,16 @@ namespace WheatFarm.UI
                 toolIcons[i] = toolImg;
             }
 
-            // === Time Panel (top-right) ===
+                        // === Brush Size Indicator (bottom-center, above toolbar) ===
+            var brushPanel = CreatePanel(canvasGo.transform, "BrushPanel",
+                TextAnchor.LowerCenter, new Vector2(0.5f, 0), new Vector2(0.5f, 0),
+                new Vector2(0, 90), new Vector2(200, 34));
+
+            var brushText = CreateTMPText(brushPanel.transform, "BrushText",
+                "Brush: Medium", 18, TextAlignmentOptions.Center,
+                new Vector2(8, 0), new Vector2(-8, 0));
+
+// === Time Panel (top-right) ===
             var timePanel = CreatePanel(canvasGo.transform, "TimePanel",
                 TextAnchor.UpperRight, new Vector2(1, 1), new Vector2(1, 1),
                 new Vector2(-20, -20), new Vector2(180, 50));
@@ -135,7 +144,8 @@ namespace WheatFarm.UI
             SetPrivateField(hudView, "_coinsText", coinsText);
             SetPrivateField(hudView, "_toolIcons", toolIcons);
             SetPrivateField(hudView, "_timeText", timeText);
-            SetPrivateField(hudView, "_timeFill", fillImg);
+            SetPrivateField(hudView, "_timeFill", fillImg);            SetPrivateField(hudView, "_brushText", brushText);
+
 
             BuiltHUDView = hudView;
         }

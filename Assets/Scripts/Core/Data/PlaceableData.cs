@@ -4,7 +4,8 @@ namespace WheatFarm.Core.Data
 {
     public enum PlaceableCategory { Building, Decor, Path }
     public enum PlacementLevel { Cell, Chunk }
-    public enum RotationMode { Fixed, Step90, Free5 }
+    public enum RotationMode { Fixed, Step90, Free5 }    public enum BuildingRole { Production, Market }
+
 
     [CreateAssetMenu(menuName = "WheatFarm/PlaceableData")]
     public class PlaceableData : ScriptableObject
@@ -33,7 +34,8 @@ namespace WheatFarm.Core.Data
         public bool UnlockedByDefault = true;
 
         [Header("Interaction")]
-        public bool Interactable;
+        public bool Interactable;        public BuildingRole Role;
+
         public RecipeData[] Recipes;
         public int MaxLevel = 1;
     }
