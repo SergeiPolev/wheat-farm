@@ -27,6 +27,11 @@ namespace WheatFarm.Infrastructure
             builder.Register<PlantUnlockService>(Lifetime.Singleton)
                 .As<IPlantUnlockService>();
 
+            // Debug / god-mode flags
+            builder.Register<WheatFarm.Core.DebugFlags>(Lifetime.Singleton)
+                .As<WheatFarm.Core.IDebugFlags>();
+
+
 
             if (_placeableDatabase != null)
                 builder.RegisterInstance(_placeableDatabase);
@@ -48,10 +53,4 @@ namespace WheatFarm.Infrastructure
                 .As<IContractService, System.IDisposable>();
 
             // Phase 8: Day/Night cycle
-            builder.Register<DayNightService>(Lifetime.Singleton)
-                .As<IDayNightService, ITickable, System.IDisposable>();
-
-            // TODO: InputService, CameraService
-        }
-    }
-}
+            builder.Register<DayNightService>(

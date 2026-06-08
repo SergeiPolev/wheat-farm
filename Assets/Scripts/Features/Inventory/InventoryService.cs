@@ -2,7 +2,8 @@ using System;
 using System.Linq;
 using ObservableCollections;
 using R3;
-using WheatFarm.Core.Data;
+using WheatFarm.Core.Data;using WheatFarm.Core;
+
 
 namespace WheatFarm.Inventory
 {
@@ -28,8 +29,21 @@ namespace WheatFarm.Inventory
         public int UsedSlots => Items.Count;
         public bool IsFull => UsedSlots >= _capacity.Value;
 
+        private readonly IDebugFlags _debug;
+
+        public InventoryService(IDebugFlags debug = null)
+        {
+            _debug = debug;
+        }
+
+        private bool IsFree(string itemId) =>
+            _debug != null && (itemId != null && itemId.StartsWith("seed_") ? _debug.SeedsAreFree : _debug.ResourcesAreFree);
+
+
         public bool HasItem(string itemId, int amount = 1)
         {
+            if (IsFree(itemId)) return true;
+
             int total = 0;
             foreach (var item in Items)
             {
@@ -50,6 +64,7 @@ namespace WheatFarm.Inventory
 
         public bool TryConsume(string itemId, int amount = 1)
         {
+            if (IsFree(itemId)) return true; // god mode: items never deplete
             if (!HasItem(itemId, amount)) return false;
 
             int remaining = amount;
@@ -81,25 +96,4 @@ namespace WheatFarm.Inventory
                 var existing = Items[i];
                 if (existing.ItemId == item.ItemId && existing.Type == item.Type)
                 {
-                    existing.Amount += item.Amount;
-                    Items[i] = existing;
-                    return true;
-                }
-            }
-
-            // New slot
-            if (IsFull) return false;
-            Items.Add(item);
-            return true;
-        }
-
-        public void Clear() => Items.Clear();
-
-        public void SetCapacity(int capacity) => _capacity.Value = capacity;
-
-        public void Dispose()
-        {
-            _capacity.Dispose();
-        }
-    }
-}
+                    existing.
