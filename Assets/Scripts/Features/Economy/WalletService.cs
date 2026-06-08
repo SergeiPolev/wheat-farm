@@ -1,7 +1,6 @@
 using System;
 using R3;
 using UnityEngine;
-using WheatFarm.Core;
 
 namespace WheatFarm.Economy
 {
@@ -17,20 +16,9 @@ namespace WheatFarm.Economy
     public class WalletService : IWalletService
     {
         private readonly ReactiveProperty<int> _coins = new(100); // starter money
-        private readonly IDebugFlags _debug;
-
-        public WalletService(IDebugFlags debug = null)
-        {
-            _debug = debug;
-        }
-
         public ReadOnlyReactiveProperty<int> Coins => _coins;
 
-        public bool CanAfford(int amount)
-        {
-            if (_debug != null && _debug.CoinsAreFree) return true;
-            return _coins.Value >= amount;
-        }
+        public bool CanAfford(int amount) => _coins.Value >= amount;
 
         public void Add(int amount)
         {
@@ -40,4 +28,16 @@ namespace WheatFarm.Economy
 
         public bool TrySpend(int amount)
         {
-            if (amount <= 0) re
+            if (amount <= 0 || !CanAfford(amount)) return false;
+            _coins.Value -= amount;
+            return true;
+        }
+
+        public void SetCoins(int amount) => _coins.Value = Mathf.Max(0, amount);
+
+        public void Dispose()
+        {
+            _coins.Dispose();
+        }
+    }
+}

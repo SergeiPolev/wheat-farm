@@ -26,6 +26,8 @@ namespace WheatFarm.Farming
         HarvestData? Harvest(Vector2Int chunkCoord, int cellX, int cellY);
         void Uproot(Vector2Int chunkCoord, int cellX, int cellY);
         void Dye(Vector2Int chunkCoord, int cellX, int cellY, Color color);
+        void ForceMature(Vector2Int chunkCoord, int cellX, int cellY);
+
     }
 
     public class PlantSystem : IPlantSystem, ITickable, IDisposable
@@ -44,18 +46,16 @@ namespace WheatFarm.Farming
 
         private readonly IChunkSystem _chunkSystem;
         private readonly PlantDatabase _plantDb;
-        private readonly IInventoryService _inventory;        private readonly IFeedbackService _feedback;        private readonly IDebugFlags _debug;
-
+        private readonly IInventoryService _inventory;        private readonly IFeedbackService _feedback;
 
 
         public Subject<HarvestData> OnHarvested { get; } = new();
 
-        public PlantSystem(IChunkSystem chunkSystem, PlantDatabase plantDb, IInventoryService inventory, IFeedbackService feedback = null, IDebugFlags debug = null)
+        public PlantSystem(IChunkSystem chunkSystem, PlantDatabase plantDb, IInventoryService inventory, IFeedbackService feedback = null)
         {
             _chunkSystem = chunkSystem;
             _plantDb = plantDb;
-            _inventory = inventory;            _feedback = feedback;            _debug = debug;
-
+            _inventory = inventory;            _feedback = feedback;
 
         }
 
@@ -67,7 +67,6 @@ namespace WheatFarm.Farming
         public void Tick()
         {
             float dt = Time.deltaTime;
-            bool instant = _debug != null && _debug.InstantGrowth;
 
             foreach (var chunk in _chunkSystem.GetAllUnlockedChunks())
             {
@@ -75,21 +74,14 @@ namespace WheatFarm.Farming
                 for (int i = 0; i < chunk.CellCount; i++)
                 {
                     ref var cell = ref chunk.Cells[i];
-                    if (!cell.HasPlant || cell.Growth >= 1f) continue;
-                    if (!cell.Watered && !instant) continue;
+                    if (!cell.HasPlant || !cell.Watered || cell.Growth >= 1f)
+                        continue;
 
                     var plantData = _plantDb.GetById(cell.PlantId);
                     if (plantData == null) continue;
 
-                    if (instant)
-                    {
-                        cell.Growth = 1f;
-                    }
-                    else
-                    {
-                        float growthRate = cell.FertilizerMultiplier / plantData.GrowthDuration;
-                        cell.Growth = Mathf.Min(1f, cell.Growth + growthRate * dt);
-                    }
+                    float growthRate = cell.FertilizerMultiplier / plantData.GrowthDuration;
+                    cell.Growth = Mathf.Min(1f, cell.Growth + growthRate * dt);
 
                     ref var props = ref chunk.MeshProps[i];
                     props.cropState.y = cell.Growth;
@@ -262,6 +254,26 @@ namespace WheatFarm.Farming
             _feedback?.PlayEffect(FarmFxType.Uproot, _chunkSystem.CellToWorld(chunkCoord, cellX, cellY));
         }
 
+        /// <summary>Instantly mature a planted cell (waters it and sets growth to full). Neutral API.</summary>
+        public void ForceMature(Vector2Int chunkCoord, int cellX, int cellY)
+        {
+            var chunk = _chunkSystem.GetChunk(chunkCoord);
+            if (chunk == null) return;
+
+            int idx = chunk.CellIndex(cellX, cellY);
+            ref var cell = ref chunk.Cells[idx];
+            if (!cell.HasPlant) return;
+
+            cell.Watered = true;
+            cell.Growth = 1f;
+
+            ref var props = ref chunk.MeshProps[idx];
+            props.cropState.y = 1f;
+            RebuildMatrix(ref cell, ref props);
+            chunk.Dirty = true;
+        }
+
+
         public void Dye(Vector2Int chunkCoord, int cellX, int cellY, Color color)
         {
             var chunk = _chunkSystem.GetChunk(chunkCoord);
@@ -289,12 +301,4 @@ namespace WheatFarm.Farming
             // If matrix was never set (zero), fall back to zero pos (shouldn't happen for planted cells)
 
             float growthFraction = Mathf.InverseLerp(0f, 1f, cell.Growth);
-            float visualScale = cell.BaseScale * Mathf.Lerp(MinGrowthScale, 1f, growthFraction);
-            var scale = new Vector3(visualScale, visualScale, visualScale);
-
-            props.m = Matrix4x4.TRS(pos, Quaternion.Euler(0, cell.RotationY, 0), scale);
-        }
-
-        private static void ClearCell(ref SubCellState cell, ref MeshProperties props)
-        {
-            cell = SubCellState.
+            float visualScale = c

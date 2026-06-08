@@ -40,17 +40,13 @@ namespace WheatFarm.Infrastructure
                 builder.RegisterInstance(_contractDatabase);
 
             // Phase 5: Economy
-            builder.Register<WalletService>(Lifetime.Singleton)
+            builder.Register<WalletService>(Lifetime.Singleton).AsSelf();
+            builder.Register<WheatFarm.Infrastructure.Cheats.DebugWalletService>(Lifetime.Singleton)
                 .As<IWalletService, System.IDisposable>();
 
-            builder.Register<InventoryService>(Lifetime.Singleton)
+            builder.Register<InventoryService>(Lifetime.Singleton).AsSelf();
+            builder.Register<WheatFarm.Infrastructure.Cheats.DebugInventoryService>(Lifetime.Singleton)
                 .As<IInventoryService, System.IDisposable>();
 
             builder.Register<ShopService>(Lifetime.Singleton)
-                .As<IShopService>();
-
-            builder.Register<ContractService>(Lifetime.Singleton)
-                .As<IContractService, System.IDisposable>();
-
-            // Phase 8: Day/Night cycle
-            builder.Register<DayNightService>(
+                .As<IShopService>
