@@ -1,7 +1,8 @@
 using VContainer;
 using VContainer.Unity;
 using UnityEngine;
-using WheatFarm.Buildings;
+using WheatFarm.Buildings;using WheatFarm.Core;
+
 using WheatFarm.Farming;
 using WheatFarm.Infrastructure.Save;
 using WheatFarm.Player;
@@ -49,6 +50,11 @@ namespace WheatFarm.Infrastructure
 
             builder.Register<BrushService>(Lifetime.Singleton)
                 .As<IBrushService, System.IDisposable>();
+
+            // Action feedback (particles) — hook point for plant/water/harvest/build effects
+            builder.Register<FeedbackService>(Lifetime.Singleton)
+                .As<IFeedbackService, System.IDisposable>();
+
 
             builder.Register<FarmRenderSystem>(Lifetime.Singleton)
                 .As<ITickable, System.IDisposable>();
@@ -214,8 +220,4 @@ namespace WheatFarm.Infrastructure
             if (canvasRoot != null)
             {
                 var catalogGo = new UnityEngine.GameObject("CatalogTabBarHost");
-                var catalogTabBar = catalogGo.AddComponent<CatalogTabBar>();
-                catalogTabBar.Build(canvasRoot, new[] { "Crops", "Trees", "Buildings", "Decor", "Paths", "Tools" });
-
-                builder.RegisterComponent(catalogTabBar);
-                builder.Register<CatalogPresenter>(Lifetime.Sing
+                var catalogTabBar = catalogGo.AddComponent<CatalogTabBar>(

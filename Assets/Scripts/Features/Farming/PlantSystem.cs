@@ -2,7 +2,8 @@ using System;
 using R3;
 using UnityEngine;
 using VContainer.Unity;
-using WheatFarm.Core.Data;
+using WheatFarm.Core.Data;using WheatFarm.Core;
+
 using WheatFarm.Inventory;
 
 namespace WheatFarm.Farming
@@ -42,15 +43,17 @@ namespace WheatFarm.Farming
 
         private readonly IChunkSystem _chunkSystem;
         private readonly PlantDatabase _plantDb;
-        private readonly IInventoryService _inventory;
+        private readonly IInventoryService _inventory;        private readonly IFeedbackService _feedback;
+
 
         public Subject<HarvestData> OnHarvested { get; } = new();
 
-        public PlantSystem(IChunkSystem chunkSystem, PlantDatabase plantDb, IInventoryService inventory)
+        public PlantSystem(IChunkSystem chunkSystem, PlantDatabase plantDb, IInventoryService inventory, IFeedbackService feedback = null)
         {
             _chunkSystem = chunkSystem;
             _plantDb = plantDb;
-            _inventory = inventory;
+            _inventory = inventory;            _feedback = feedback;
+
         }
 
         public void Dispose()
@@ -133,6 +136,7 @@ namespace WheatFarm.Farming
 
             chunk.Dirty = true;
             _chunkSystem.UpdateGroundNeighborFlags(chunkCoord, cellX, cellY);
+            _feedback?.PlayEffect(FarmFxType.Plant, worldPos);
             return true;
         }
 
@@ -152,6 +156,8 @@ namespace WheatFarm.Farming
             props.cropState.z = (float)GroundState.Watered;
             props.cropState.w = Time.time;
             chunk.Dirty = true;
+
+            _feedback?.PlayEffect(FarmFxType.Water, _chunkSystem.CellToWorld(chunkCoord, cellX, cellY));
         }
 
         public void Fertilize(Vector2Int chunkCoord, int cellX, int cellY, float multiplier)
@@ -212,6 +218,8 @@ namespace WheatFarm.Farming
             chunk.Dirty = true;
             _chunkSystem.UpdateGroundNeighborFlags(chunkCoord, cellX, cellY);
             OnHarvested.OnNext(harvestData);
+            _feedback?.PlayEffect(FarmFxType.Harvest, harvestData.WorldPosition);
+
             return harvestData;
         }
 
@@ -240,6 +248,7 @@ namespace WheatFarm.Farming
             ClearCell(ref cell, ref chunk.MeshProps[idx]);
             chunk.Dirty = true;
             _chunkSystem.UpdateGroundNeighborFlags(chunkCoord, cellX, cellY);
+            _feedback?.PlayEffect(FarmFxType.Uproot, _chunkSystem.CellToWorld(chunkCoord, cellX, cellY));
         }
 
         public void Dye(Vector2Int chunkCoord, int cellX, int cellY, Color color)
@@ -272,16 +281,4 @@ namespace WheatFarm.Farming
             float visualScale = cell.BaseScale * Mathf.Lerp(MinGrowthScale, 1f, growthFraction);
             var scale = new Vector3(visualScale, visualScale, visualScale);
 
-            props.m = Matrix4x4.TRS(pos, Quaternion.Euler(0, cell.RotationY, 0), scale);
-        }
-
-        private static void ClearCell(ref SubCellState cell, ref MeshProperties props)
-        {
-            cell = SubCellState.Empty;
-            props.m = Matrix4x4.zero;
-            // Keep gr matrix intact — ground tile stays visible after clearing crop
-            props.cropState = new Vector4(0, 0, (float)GroundState.Grass, Time.time);
-            props.color = Vector4.zero;
-        }
-    }
-}
+            props.m = Matrix4x4.TRS(pos, Quaternion.Euler(

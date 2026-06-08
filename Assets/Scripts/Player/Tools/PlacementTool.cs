@@ -300,13 +300,9 @@ namespace WheatFarm.Player.Tools
             if (_selectedPlaceable != null && _selectedPlaceable.Level == PlacementLevel.Chunk)
             {
                 var chunkCoord = _chunkSystem.WorldToChunkCoord(worldPos);
-                return _chunkSystem.CellToWorld(chunkCoord, 0, 0);
-            }
-            else
-            {
-                var (chunkCoord, cellX, cellY) = _chunkSystem.WorldToCell(worldPos);
-                return _chunkSystem.CellToWorld(chunkCoord, cellX, cellY);
-            }
-        }
-    }
-}
+                float cw = _chunkSystem.ChunkWorldSize;
+                // Center of the GridSize-chunk footprint (matches PlacementService spawn)
+                return new Vector3(
+                    (chunkCoord.x + _selectedPlaceable.GridSize.x * 0.5f) * cw,
+                    0f,
+                    (chunkCoord.

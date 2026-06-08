@@ -1,7 +1,8 @@
 using System.Collections.Generic;
 using ObservableCollections;
 using UnityEngine;
-using WheatFarm.Core.Data;
+using WheatFarm.Core.Data;using WheatFarm.Core;
+
 using WheatFarm.Economy;
 using WheatFarm.Farming;
 
@@ -32,15 +33,17 @@ namespace WheatFarm.Buildings
         private const float RefundRatio = 0.5f;
 
         private readonly IChunkSystem _chunkSystem;
-        private readonly IWalletService _wallet;
+        private readonly IWalletService _wallet;        private readonly IFeedbackService _feedback;
+
         private readonly HashSet<Vector2Int> _occupiedChunks = new();
 
         public ObservableList<PlacedObject> PlacedObjects { get; } = new();
 
-        public PlacementService(IChunkSystem chunkSystem, IWalletService wallet)
+        public PlacementService(IChunkSystem chunkSystem, IWalletService wallet, IFeedbackService feedback = null)
         {
             _chunkSystem = chunkSystem;
-            _wallet = wallet;
+            _wallet = wallet;            _feedback = feedback;
+
         }
 
         public bool CanPlace(PlaceableData data, Vector3 worldPos)
@@ -60,10 +63,16 @@ namespace WheatFarm.Buildings
             if (!CanPlace(data, worldPos)) return null;
             if (!_wallet.TrySpend(data.Cost)) return null;
 
-            if (data.Level == PlacementLevel.Chunk)
-                return PlaceChunkLevel(data, worldPos, rotationY);
-            else
-                return PlaceCellLevel(data, worldPos, rotationY);
+            var placed = data.Level == PlacementLevel.Chunk
+                ? PlaceChunkLevel(data, worldPos, rotationY)
+                : PlaceCellLevel(data, worldPos, rotationY);
+
+            if (placed != null)
+            {
+                Vector3 fxPos = placed.Instance != null ? placed.Instance.transform.position : worldPos;
+                _feedback?.PlayEffect(FarmFxType.Build, fxPos);
+            }
+            return placed;
         }
 
         public bool Remove(PlacedObject obj)
@@ -76,7 +85,10 @@ namespace WheatFarm.Buildings
                 FreeCellLevel(obj);
 
             if (obj.Instance != null)
+            {
+                _feedback?.PlayEffect(FarmFxType.Remove, obj.Instance.transform.position);
                 Object.Destroy(obj.Instance);
+            }
 
             PlacedObjects.Remove(obj);
 
@@ -134,7 +146,7 @@ namespace WheatFarm.Buildings
 
             if (data.Prefab != null)
             {
-                var spawnPos = _chunkSystem.CellToWorld(chunkCoord, 0, 0);
+                var spawnPos = ChunkFootprintCenter(chunkCoord, data.GridSize);
                 placed.Instance = Object.Instantiate(data.Prefab, spawnPos, Quaternion.Euler(0, rotationY, 0));
 
                 if (data.Interactable)
@@ -314,21 +326,6 @@ namespace WheatFarm.Buildings
             {
                 Vector3 spawnPos;
                 if (data.Level == PlacementLevel.Chunk)
-                    spawnPos = _chunkSystem.CellToWorld(chunkCoord, 0, 0);
+                    spawnPos = ChunkFootprintCenter(chunkCoord, data.GridSize);
                 else
-                    spawnPos = _chunkSystem.CellToWorld(chunkCoord, cellX, cellY);
-
-                placed.Instance = Object.Instantiate(data.Prefab, spawnPos, Quaternion.Euler(0, rotationY, 0));
-
-                if (data.Interactable)
-                {
-                    var marker = placed.Instance.AddComponent<BuildingMarker>();
-                    marker.PlacedObject = placed;
-                }
-            }
-
-            PlacedObjects.Add(placed);
-            return placed;
-        }
-    }
-}
+                    spawnPos = _chunkS
