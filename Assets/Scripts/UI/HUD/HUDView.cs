@@ -23,6 +23,9 @@ namespace WheatFarm.UI
         [SerializeField] private Image _timeFill;
         [Header("Brush")]
         [SerializeField] private TextMeshProUGUI _brushText;
+        [Header("Seeds")]
+        [SerializeField] private TextMeshProUGUI _seedText;
+
 
 
         private int _lastHighlighted = -1;
@@ -65,6 +68,13 @@ namespace WheatFarm.UI
             if (_brushText != null)
                 _brushText.text = label;
         }
+
+        public void UpdateSeedCount(string label)
+        {
+            if (_seedText != null)
+                _seedText.text = label;
+        }
+
 
     }
 }

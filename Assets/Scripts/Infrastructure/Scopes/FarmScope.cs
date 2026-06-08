@@ -159,6 +159,9 @@ namespace WheatFarm.Infrastructure
             if (_hudView != null)
             {
                 builder.RegisterComponent(_hudView);
+                builder.Register<SeedCounterPresenter>(Lifetime.Singleton)
+                    .As<ITickable>();
+
                 builder.Register<HUDPresenter>(Lifetime.Singleton)
                     .As<IInitializable, System.IDisposable>();
             }
@@ -219,4 +222,41 @@ namespace WheatFarm.Infrastructure
                 {
                     builder.RegisterComponent(marketView);
                     builder.Register<MarketPresenter>(Lifetime.Singleton)
-                        .As<IInitializable, Sys
+                        .As<IInitializable, System.IDisposable>();
+                }
+            }
+
+            // Catalog tab bar (bottom of screen — category selection)
+            if (canvasRoot != null)
+            {
+                var catalogGo = new UnityEngine.GameObject("CatalogTabBarHost");
+                var catalogTabBar = catalogGo.AddComponent<CatalogTabBar>();
+                catalogTabBar.Build(canvasRoot, new[] { "Crops", "Trees", "Buildings", "Decor", "Paths", "Tools" });
+
+                builder.RegisterComponent(catalogTabBar);
+                builder.Register<CatalogPresenter>(Lifetime.Singleton)
+                    .As<IInitializable, System.IDisposable>();
+            }
+
+            // Radial tool selector (hold Tab)
+            if (canvasRoot != null)
+            {
+                var radialGo = new UnityEngine.GameObject("RadialMenuHost");
+                var radial = radialGo.AddComponent<RadialMenuView>();
+                radial.Build(canvasRoot);
+
+                builder.RegisterComponent(radial);
+                builder.Register<RadialToolPresenter>(Lifetime.Singleton)
+                    .As<ITickable, System.IDisposable>();
+            }
+
+            
+// Keybinds for panel toggling (Tab=Shop, I=Inventory, C=Contracts)
+            {
+                var toggleGo = new UnityEngine.GameObject("UIToggleController");
+                var toggle = toggleGo.AddComponent<UIToggleController>();
+                toggle.Init(_shopView, _inventoryView, _contractBoardView);
+            }
+        }
+    }
+}

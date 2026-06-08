@@ -4,7 +4,7 @@ namespace WheatFarm.UI
 {
     /// <summary>
     /// Handles keyboard shortcuts for toggling UI panels.
-    /// Tab = Shop, I = Inventory, C = Contracts.
+    /// B = Shop, I = Inventory, C = Contracts (Tab = radial tool menu).
     /// </summary>
     public class UIToggleController : MonoBehaviour
     {
@@ -21,7 +21,7 @@ namespace WheatFarm.UI
 
         private void Update()
         {
-            if (Input.GetKeyDown(KeyCode.Tab) && _shopView != null)
+            if (Input.GetKeyDown(KeyCode.B) && _shopView != null)
             {
                 if (_shopView.IsOpen) _shopView.Hide();
                 else _shopView.Show();

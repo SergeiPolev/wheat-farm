@@ -12,7 +12,8 @@ namespace WheatFarm.Inventory
         ReadOnlyReactiveProperty<int> Capacity { get; }
         int UsedSlots { get; }
         bool IsFull { get; }
-        bool HasItem(string itemId, int amount = 1);
+        bool HasItem(string itemId, int amount = 1);        int GetAmount(string itemId);
+
         bool TryConsume(string itemId, int amount = 1);
         bool TryAdd(InventoryItem item);
         void Clear();
@@ -37,6 +38,15 @@ namespace WheatFarm.Inventory
             }
             return total >= amount;
         }
+
+        public int GetAmount(string itemId)
+        {
+            int total = 0;
+            foreach (var item in Items)
+                if (item.ItemId == itemId) total += item.Amount;
+            return total;
+        }
+
 
         public bool TryConsume(string itemId, int amount = 1)
         {

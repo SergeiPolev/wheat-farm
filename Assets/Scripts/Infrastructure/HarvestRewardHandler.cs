@@ -39,4 +39,13 @@ namespace WheatFarm.Infrastructure
 
             // Return seeds so farming is self-sustaining (buying is for expansion)
             if (data.SeedYield > 0)
-                _inv
+                _inventory.TryAdd(new InventoryItem($"seed_{data.PlantId}", ItemType.Seed, data.SeedYield));
+        }
+
+        public void Dispose()
+        {
+            _subscription?.Dispose();
+            _subscription = null;
+        }
+    }
+}

@@ -328,4 +328,30 @@ namespace WheatFarm.Buildings
                 if (data.Level == PlacementLevel.Chunk)
                     spawnPos = ChunkFootprintCenter(chunkCoord, data.GridSize);
                 else
-                    spawnPos = _chunkS
+                    spawnPos = _chunkSystem.CellToWorld(chunkCoord, cellX, cellY);
+
+                placed.Instance = Object.Instantiate(data.Prefab, spawnPos, Quaternion.Euler(0, rotationY, 0));
+
+                if (data.Interactable)
+                {
+                    var marker = placed.Instance.AddComponent<BuildingMarker>();
+                    marker.PlacedObject = placed;
+                }
+            }
+
+            PlacedObjects.Add(placed);
+            return placed;
+        }
+
+        /// <summary>World-space center of a chunk-level building's GridSize footprint.</summary>
+        private Vector3 ChunkFootprintCenter(Vector2Int chunkCoord, Vector2Int gridSize)
+        {
+            float cw = _chunkSystem.ChunkWorldSize;
+            return new Vector3(
+                (chunkCoord.x + gridSize.x * 0.5f) * cw,
+                0f,
+                (chunkCoord.y + gridSize.y * 0.5f) * cw);
+        }
+
+    }
+}

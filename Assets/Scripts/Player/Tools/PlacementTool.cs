@@ -305,4 +305,13 @@ namespace WheatFarm.Player.Tools
                 return new Vector3(
                     (chunkCoord.x + _selectedPlaceable.GridSize.x * 0.5f) * cw,
                     0f,
-                    (chunkCoord.
+                    (chunkCoord.y + _selectedPlaceable.GridSize.y * 0.5f) * cw);
+            }
+            else
+            {
+                var (chunkCoord, cellX, cellY) = _chunkSystem.WorldToCell(worldPos);
+                return _chunkSystem.CellToWorld(chunkCoord, cellX, cellY);
+            }
+        }
+    }
+}

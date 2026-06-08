@@ -281,4 +281,18 @@ namespace WheatFarm.Farming
 
             float growthFraction = Mathf.InverseLerp(0f, 1f, cell.Growth);
             float visualScale = cell.BaseScale * Mathf.Lerp(MinGrowthScale, 1f, growthFraction);
-            var sc
+            var scale = new Vector3(visualScale, visualScale, visualScale);
+
+            props.m = Matrix4x4.TRS(pos, Quaternion.Euler(0, cell.RotationY, 0), scale);
+        }
+
+        private static void ClearCell(ref SubCellState cell, ref MeshProperties props)
+        {
+            cell = SubCellState.Empty;
+            props.m = Matrix4x4.zero;
+            // Keep gr matrix intact — ground tile stays visible after clearing crop
+            props.cropState = new Vector4(0, 0, (float)GroundState.Grass, Time.time);
+            props.color = Vector4.zero;
+        }
+    }
+}

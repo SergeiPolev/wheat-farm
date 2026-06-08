@@ -26,4 +26,6 @@ MonoBehaviour:
   RenewableHarvest: 0
   HarvestSeedYield: 1
   TrunkSize: {x: 1, y: 1}
- 
+  UprootYieldId: 
+  UprootYieldAmount: 0
+  UnlockedByDefault: 1

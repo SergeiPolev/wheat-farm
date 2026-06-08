@@ -33,4 +33,10 @@ namespace WheatFarm.Core.Data
 
         [Header("Uproot")]
         [Tooltip("Item ID yielded when uprooting a fully grown plant (e.g. 'wood'). Empty = no yield.")]
-        pu
+        public string UprootYieldId;
+        public int UprootYieldAmount;
+
+        [Header("Unlock")]
+        public bool UnlockedByDefault;
+    }
+}

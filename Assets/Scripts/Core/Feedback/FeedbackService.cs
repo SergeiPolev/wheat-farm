@@ -97,4 +97,44 @@ namespace WheatFarm.Core
             emission.rateOverTime = 0f;
             emission.SetBursts(new[] { new ParticleSystem.Burst(0f, (short)CountFor(type)) });
 
-            var 
+            var shape = ps.shape;
+            shape.shapeType = ParticleSystemShapeType.Hemisphere;
+            shape.radius = 0.12f;
+
+            var psRenderer = ps.GetComponent<ParticleSystemRenderer>();
+            if (_proceduralMat == null)
+            {
+                var shader = Shader.Find("Sprites/Default");
+                if (shader != null) _proceduralMat = new Material(shader);
+            }
+            if (_proceduralMat != null) psRenderer.material = _proceduralMat;
+
+            return ps;
+        }
+
+        private static Color ColorFor(FarmFxType t) => t switch
+        {
+            FarmFxType.Plant => new Color(0.40f, 0.85f, 0.35f),
+            FarmFxType.Water => new Color(0.30f, 0.60f, 1.00f),
+            FarmFxType.Harvest => new Color(1.00f, 0.82f, 0.20f),
+            FarmFxType.Uproot => new Color(0.60f, 0.40f, 0.20f),
+            FarmFxType.Build => Color.white,
+            FarmFxType.Remove => new Color(0.70f, 0.70f, 0.70f),
+            _ => Color.white
+        };
+
+        private static int CountFor(FarmFxType t) => t switch
+        {
+            FarmFxType.Harvest => 16,
+            FarmFxType.Build => 22,
+            FarmFxType.Remove => 18,
+            _ => 10
+        };
+
+        public void Dispose()
+        {
+            if (_root != null) UnityEngine.Object.Destroy(_root.gameObject);
+            _instances.Clear();
+        }
+    }
+}

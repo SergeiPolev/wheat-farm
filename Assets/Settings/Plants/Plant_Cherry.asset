@@ -28,4 +28,4 @@ MonoBehaviour:
   TrunkSize: {x: 3, y: 3}
   UprootYieldId: wood
   UprootYieldAmount: 3
- 
+  UnlockedByDefault: 0
