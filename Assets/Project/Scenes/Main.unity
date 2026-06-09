@@ -838,9 +838,10 @@ MonoBehaviour:
   autoInjectGameObjects: []
   _renderConfig: {fileID: 11400000, guid: e680bb40453325b4f8193ce3a7e6acb2, type: 2}
   _feedbackConfig: {fileID: 11400000, guid: 131212dc9d06803479c3d641bd4c44d0, type: 2}
+  _enableDebug: 1
   _interactionController: {fileID: 973734435}
   _playerController: {fileID: 973734436}
-  _directionalLight: {fileID: 0}
+  _directionalLight: {fileID: 514534949}
   _hudView: {fileID: 0}
   _shopView: {fileID: 0}
   _inventoryView: {fileID: 0}
@@ -1356,4 +1357,3 @@ SceneRoots:
   - {fileID: 5572686707880215225}
   - {fileID: 7909107814393779804}
   - {fileID: 1818528260}
-  - {fileID: 1728861291}

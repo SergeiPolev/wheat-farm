@@ -129,7 +129,11 @@ namespace WheatFarm.Infrastructure
             builder.Register<StartingInventoryGranter>(Lifetime.Singleton)
                 .As<IStartable>();
 
-            // Player interaction (optional — assign in Inspector when Player GO exists)
+            builder.Register<EconomyBuildingsBootstrap>(Lifetime.Singleton)
+                .As<IStartable>();
+
+            
+// Player interaction (optional — assign in Inspector when Player GO exists)
             if (_interactionController != null)
             {
                 builder.RegisterComponent(_interactionController);
@@ -282,9 +286,4 @@ namespace WheatFarm.Infrastructure
             if (_enableDebug)
             {
                 var toggleGo = new UnityEngine.GameObject("DebugControls");
-                var toggle = toggleGo.AddComponent<UIToggleController>();
-                toggle.Init(_shopView, _inventoryView, _contractBoardView);
-            }
-        }
-    }
-}
+                var toggle = toggleGo.AddComponent<UIToggleController
