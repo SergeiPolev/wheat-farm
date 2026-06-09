@@ -27,7 +27,7 @@ Transform:
   m_GameObject: {fileID: 432394325428621759}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0.38268346, z: 0, w: 0.9238795}
-  m_LocalPosition: {x: 0, y: 4.4, z: 0}
+  m_LocalPosition: {x: 0, y: 2.7, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -88,7 +88,7 @@ TextMesh:
   m_GameObject: {fileID: 432394325428621759}
   m_Text: Warehouse
   m_OffsetZ: 0
-  m_CharacterSize: 0.1
+  m_CharacterSize: 0.08
   m_LineSpacing: 1
   m_Anchor: 4
   m_Alignment: 1
@@ -128,8 +128,8 @@ Transform:
   m_GameObject: {fileID: 1594194660971418823}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.5, z: 0}
-  m_LocalScale: {x: 6, y: 3, z: 6}
+  m_LocalPosition: {x: 0, y: 1, z: 0}
+  m_LocalScale: {x: 3.2, y: 2, z: 3.2}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 586500613824393177}
@@ -240,4 +240,4 @@ Transform:
   - {fileID: 1398892181704985428}
   - {fileID: 5405979915145748468}
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 

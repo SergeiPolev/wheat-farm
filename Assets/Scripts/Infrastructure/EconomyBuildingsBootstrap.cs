@@ -17,7 +17,7 @@ namespace WheatFarm.Infrastructure
         {
             ("market", new Vector2Int(-2, -2)),
             ("warehouse", new Vector2Int(0, -2)),
-            ("contracts", new Vector2Int(-2, 0)),
+            ("contracts", new Vector2Int(2, -2)),
         };
 
         private readonly IPlacementService _placement;
