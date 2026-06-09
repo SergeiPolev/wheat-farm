@@ -58,4 +58,20 @@ namespace WheatFarm.UI
                 .AddTo(_disposables);
         }
 
-        public void Dispose() => _disposables.Dispos
+        public void Dispose() => _disposables.Dispose();
+
+        private static string ToolName(WheatFarm.Player.Tools.ToolId id) => id switch
+        {
+            WheatFarm.Player.Tools.ToolId.Placement => "Plant",
+            WheatFarm.Player.Tools.ToolId.WateringCan => "Water",
+            WheatFarm.Player.Tools.ToolId.Sickle => "Sickle",
+            WheatFarm.Player.Tools.ToolId.Dye => "Dye",
+            WheatFarm.Player.Tools.ToolId.Fertilizer => "Fertilizer",
+            WheatFarm.Player.Tools.ToolId.Uproot => "Uproot",
+            WheatFarm.Player.Tools.ToolId.Bulldoze => "Bulldoze",
+            WheatFarm.Player.Tools.ToolId.Build => "Build",
+            _ => id.ToString()
+        };
+
+    }
+}

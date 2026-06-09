@@ -51,4 +51,10 @@ namespace WheatFarm.UI
                 case "god": _flags.GodMode = value; break;
                 case "seeds": _flags.InfiniteSeeds = value; break;
                 case "coins": _flags.InfiniteCoins = value; break;
-                case "resources": _flags.Infi
+                case "resources": _flags.InfiniteResources = value; break;
+                case "growth": _flags.InstantGrowth = value; break;
+
+            }
+        }
+    }
+}

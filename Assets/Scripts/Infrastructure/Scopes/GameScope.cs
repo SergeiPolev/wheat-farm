@@ -49,4 +49,16 @@ namespace WheatFarm.Infrastructure
                 .As<IInventoryService, System.IDisposable>();
 
             builder.Register<ShopService>(Lifetime.Singleton)
-                .As<IShopService>
+                .As<IShopService>();
+
+            builder.Register<ContractService>(Lifetime.Singleton)
+                .As<IContractService, System.IDisposable>();
+
+            // Phase 8: Day/Night cycle
+            builder.Register<DayNightService>(Lifetime.Singleton)
+                .As<IDayNightService, ITickable, System.IDisposable>();
+
+            // TODO: InputService, CameraService
+        }
+    }
+}

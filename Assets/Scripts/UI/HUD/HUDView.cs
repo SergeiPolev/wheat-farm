@@ -74,4 +74,17 @@ namespace WheatFarm.UI
 
         public void UpdateSeedCount(string label)
         {
-  
+            if (_seedText != null)
+                _seedText.text = label;
+        }
+
+        public void UpdateTool(string label)
+        {
+            if (_toolText != null)
+                _toolText.text = label;
+        }
+
+
+
+    }
+}

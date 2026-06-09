@@ -180,4 +180,20 @@ SetPrivateField(hudView, "_coinsText", coinsText);
             }
 
             var tmp = go.AddComponent<TextMeshProUGUI>();
-            t
+            tmp.text = text;
+            tmp.fontSize = fontSize;
+            tmp.alignment = alignment;
+            tmp.color = Color.white;
+            tmp.enableAutoSizing = false;
+
+            return tmp;
+        }
+
+        private static void SetPrivateField(object obj, string fieldName, object value)
+        {
+            var field = obj.GetType().GetField(fieldName,
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            field?.SetValue(obj, value);
+        }
+    }
+}

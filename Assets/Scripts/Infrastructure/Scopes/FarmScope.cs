@@ -1,8 +1,8 @@
 using VContainer;
 using VContainer.Unity;
 using UnityEngine;
-using WheatFarm.Buildings;using WheatFarm.Core;
-
+using WheatFarm.Buildings;
+using WheatFarm.Core;
 using WheatFarm.Farming;
 using WheatFarm.Infrastructure.Save;
 using WheatFarm.Player;
@@ -17,12 +17,12 @@ namespace WheatFarm.Infrastructure
     /// </summary>
     public class FarmScope : LifetimeScope
     {
-        [SerializeField] private FarmRenderConfig _renderConfig;        [SerializeField] private FeedbackConfig _feedbackConfig;
+        [SerializeField] private FarmRenderConfig _renderConfig;
+        [SerializeField] private FeedbackConfig _feedbackConfig;
+
         [Header("Debug")]
         [Tooltip("Master switch for all in-game debug tooling (F1 cheat menu + B/I/C panel hotkeys).")]
         [SerializeField] private bool _enableDebug = true;
-
-
 
         [Header("Player (assign when Player GO is set up)")]
         [SerializeField] private FarmInteractionController _interactionController;
@@ -61,7 +61,6 @@ namespace WheatFarm.Infrastructure
                 .WithParameter<FeedbackConfig>(_feedbackConfig)
                 .As<IFeedbackService, System.IDisposable>();
 
-
             builder.Register<FarmRenderSystem>(Lifetime.Singleton)
                 .As<ITickable, System.IDisposable>();
 
@@ -72,8 +71,7 @@ namespace WheatFarm.Infrastructure
             builder.Register<CropIndicatorSystem>(Lifetime.Singleton)
                 .As<ITickable, System.IDisposable>();
 
-            
-// Phase 5: Harvest → Inventory + Contracts bridge
+            // Phase 5: Harvest → Inventory + Contracts bridge
             builder.Register<HarvestRewardHandler>(Lifetime.Singleton)
                 .As<IInitializable, System.IDisposable>();
 
@@ -100,8 +98,7 @@ namespace WheatFarm.Infrastructure
             builder.Register<HarvestCollectFX>(Lifetime.Singleton)
                 .As<IInitializable, ITickable, System.IDisposable>();
 
-            
-// Phase 6: Buildings & Production
+            // Phase 6: Buildings & Production
             builder.Register<PlacementService>(Lifetime.Singleton)
                 .As<IPlacementService>();
 
@@ -131,7 +128,6 @@ namespace WheatFarm.Infrastructure
 
             builder.Register<StartingInventoryGranter>(Lifetime.Singleton)
                 .As<IStartable>();
-
 
             // Player interaction (optional — assign in Inspector when Player GO exists)
             if (_interactionController != null)
@@ -165,12 +161,10 @@ namespace WheatFarm.Infrastructure
                 builder.RegisterComponent(_hudView);
                 builder.Register<SeedCounterPresenter>(Lifetime.Singleton)
                     .As<ITickable>();
-
                 builder.Register<HUDPresenter>(Lifetime.Singleton)
                     .As<IInitializable, System.IDisposable>();
             }
 
-            // Build Shop/Inventory panels programmatically if not assigned
             // HUDView may sit on the Canvas root (programmatic build) or be a child (Inspector).
             // Use the actual Canvas transform so panels parent under it.
             var canvasRoot = _hudView != null
@@ -213,8 +207,7 @@ namespace WheatFarm.Infrastructure
                     .As<IInitializable, System.IDisposable>();
             }
 
-            
-// Build building panel programmatically
+            // Build building panel programmatically
             if (canvasRoot != null)
             {
                 var buildingPanel = PanelBuilder.BuildBuildingPanel(canvasRoot);
@@ -258,4 +251,40 @@ namespace WheatFarm.Infrastructure
                 radial.Build(canvasRoot);
 
                 builder.RegisterComponent(radial);
-     
+                builder.Register<RadialToolPresenter>(Lifetime.Singleton)
+                    .As<ITickable, System.IDisposable>();
+            }
+
+            // Debug cheat: instant-growth ticker (uses neutral PlantSystem.ForceMature)
+            if (_enableDebug)
+                builder.Register<WheatFarm.Infrastructure.Cheats.InstantGrowthCheat>(Lifetime.Singleton)
+                    .As<ITickable>();
+
+            // Debug / god-mode menu (F1)
+            if (_enableDebug && canvasRoot != null)
+            {
+                var dbgGo = new UnityEngine.GameObject("DebugMenuHost");
+                var dbgView = dbgGo.AddComponent<DebugMenuView>();
+                dbgView.Build(canvasRoot, new (string, string)[]
+                {
+                    ("god", "God Mode"),
+                    ("seeds", "Infinite Seeds"),
+                    ("coins", "Infinite Coins"),
+                    ("resources", "Infinite Resources"),
+                    ("growth", "Instant Growth")
+                });
+                builder.RegisterComponent(dbgView);
+                builder.Register<DebugMenuPresenter>(Lifetime.Singleton)
+                    .As<IInitializable, ITickable, System.IDisposable>();
+            }
+
+            // Debug panel hotkeys (B = Shop, I = Inventory, C = Contracts)
+            if (_enableDebug)
+            {
+                var toggleGo = new UnityEngine.GameObject("DebugControls");
+                var toggle = toggleGo.AddComponent<UIToggleController>();
+                toggle.Init(_shopView, _inventoryView, _contractBoardView);
+            }
+        }
+    }
+}

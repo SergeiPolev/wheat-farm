@@ -211,4 +211,5 @@ namespace WheatFarm.UI
             if (_currentBuilding == null) return;
             _production.SetAutoRepeat(_currentBuilding, enabled);
         }
-    
+    }
+}

@@ -39,4 +39,11 @@ namespace WheatFarm.UI
                 else _inventoryView.Show();
             }
 
-            if (Input.GetKeyDow
+            if (Input.GetKeyDown(KeyCode.C) && _contractView != null)
+            {
+                if (_contractView.IsOpen) _contractView.Hide();
+                else _contractView.Show();
+            }
+        }
+    }
+}

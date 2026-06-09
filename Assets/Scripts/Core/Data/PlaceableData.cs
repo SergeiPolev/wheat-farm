@@ -37,4 +37,6 @@ namespace WheatFarm.Core.Data
         public bool Interactable;        public BuildingRole Role;
 
         public RecipeData[] Recipes;
-        public int Max
+        public int MaxLevel = 1;
+    }
+}

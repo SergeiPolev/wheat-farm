@@ -29,4 +29,7 @@ namespace WheatFarm.Core
         public bool InstantGrowth { get; set; }
 
         public bool SeedsAreFree => GodMode || InfiniteResources || InfiniteSeeds;
-        public bool ResourcesAreFree => GodMode || Infinit
+        public bool ResourcesAreFree => GodMode || InfiniteResources;
+        public bool CoinsAreFree => GodMode || InfiniteCoins;
+    }
+}

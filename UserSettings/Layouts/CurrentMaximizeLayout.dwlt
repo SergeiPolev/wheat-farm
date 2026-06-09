@@ -2855,4 +2855,6 @@ MonoBehaviour:
     m_SaveData: []
     m_ContainerData: []
     m_OverlaysVisible: 1
-  m_Lock
+  m_LockTracker:
+    m_IsLocked: 0
+  m_LastSelectedObjectID: -1766
