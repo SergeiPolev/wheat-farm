@@ -162,6 +162,23 @@ namespace WheatFarm.Player.Tools
             _brush.ApplyAtWorldPos(worldPos, this);
         }
 
+        private GroundState SelectedPathState => _selectedPlaceable.PathSubtype switch
+        {
+            1 => GroundState.PathWood,
+            2 => GroundState.PathBrick,
+            _ => GroundState.PathStone
+        };
+
+        public bool CanApply(ChunkData chunk, int cellX, int cellY)
+        {
+            ref readonly var cell = ref chunk.Cells[chunk.CellIndex(cellX, cellY)];
+            if (_selectedPlaceable != null && _selectedPlaceable.Category == PlaceableCategory.Path)
+                return BrushPredicates.PathPaintable(cell, SelectedPathState);
+            if (_selectedPlant != null)
+                return BrushPredicates.Plantable(cell);
+            return false;
+        }
+
         /// <summary>IBrushAction implementation — called for each cell in brush radius.</summary>
         public void Apply(ChunkData chunk, int cellX, int cellY)
         {
@@ -174,8 +191,6 @@ namespace WheatFarm.Player.Tools
 
             // Plant mode
             if (_selectedPlant == null) return;
-            int idx = chunk.CellIndex(cellX, cellY);
-            if (chunk.Cells[idx].HasPlant || chunk.Cells[idx].Occupied) return;
 
             // One seed per planted cell
             string seedId = "seed_" + _selectedPlant.PlantId;
@@ -190,19 +205,7 @@ namespace WheatFarm.Player.Tools
             int idx = chunk.CellIndex(cellX, cellY);
             ref var cell = ref chunk.Cells[idx];
 
-            // Don't paint over plants or existing buildings
-            if (cell.HasPlant) return;
-
-            // Map PathSubtype to GroundState
-            var pathState = _selectedPlaceable.PathSubtype switch
-            {
-                1 => GroundState.PathWood,
-                2 => GroundState.PathBrick,
-                _ => GroundState.PathStone
-            };
-
-            // Skip if already this path type
-            if (cell.GroundState == pathState) return;
+            var pathState = SelectedPathState;
 
             cell.GroundState = pathState;
             cell.Occupied = true;

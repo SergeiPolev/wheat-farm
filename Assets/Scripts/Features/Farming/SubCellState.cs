@@ -2,7 +2,11 @@ using UnityEngine;
 
 namespace WheatFarm.Farming
 {
-    /// <summary>Visual state of the ground tile under a cell.</summary>
+    /// <summary>
+    /// Visual state of the ground tile under a cell.
+    /// Ordinal order matters: BrushPredicates and tools compare with >= PathStone,
+    /// so path values must stay contiguous at the end of the enum.
+    /// </summary>
     public enum GroundState
     {
         Grass = 0,

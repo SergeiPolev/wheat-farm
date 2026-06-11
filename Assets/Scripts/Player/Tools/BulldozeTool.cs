@@ -48,6 +48,9 @@ namespace WheatFarm.Player.Tools
             _brush.ApplyAtWorldPos(worldPos, this);
         }
 
+        public bool CanApply(ChunkData chunk, int cellX, int cellY) =>
+            BrushPredicates.Bulldozable(chunk.Cells[chunk.CellIndex(cellX, cellY)]);
+
         /// <summary>IBrushAction — clear path or uproot crop at each cell.</summary>
         public void Apply(ChunkData chunk, int cellX, int cellY)
         {

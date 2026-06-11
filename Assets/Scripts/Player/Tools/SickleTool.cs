@@ -29,6 +29,9 @@ namespace WheatFarm.Player.Tools
             _brush.ApplyAtWorldPos(worldPos, this);
         }
 
+        public bool CanApply(ChunkData chunk, int cellX, int cellY) =>
+            BrushPredicates.Harvestable(chunk.Cells[chunk.CellIndex(cellX, cellY)]);
+
         public void Apply(ChunkData chunk, int cellX, int cellY)
         {
             _plantSystem.Harvest(chunk.ChunkCoord, cellX, cellY);

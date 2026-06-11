@@ -13,9 +13,12 @@ namespace WheatFarm.Farming
 
     /// <summary>
     /// Action applied to each cell within brush radius.
+    /// CanApply is the per-tool cell filter — also used by the brush preview,
+    /// so preview and apply always agree (see BrushPredicates).
     /// </summary>
     public interface IBrushAction
     {
+        bool CanApply(ChunkData chunk, int cellX, int cellY);
         void Apply(ChunkData chunk, int cellX, int cellY);
     }
 
@@ -24,6 +27,9 @@ namespace WheatFarm.Farming
         ReactiveProperty<BrushSize> CurrentSize { get; }
         float WorldRadius { get; }
         void ApplyAtWorldPos(UnityEngine.Vector3 worldPos, IBrushAction action);
+
+        /// <summary>All brush cells in unlocked chunks (no per-tool filtering).</summary>
+        IEnumerable<(ChunkData chunk, int cellX, int cellY)> GetAffectableCells(UnityEngine.Vector3 worldPos);
     }
 
     public class BrushService : IBrushService, IDisposable
@@ -44,18 +50,22 @@ namespace WheatFarm.Farming
             CurrentSize.Dispose();
         }
 
-        public void ApplyAtWorldPos(UnityEngine.Vector3 worldPos, IBrushAction action)
+        public IEnumerable<(ChunkData chunk, int cellX, int cellY)> GetAffectableCells(UnityEngine.Vector3 worldPos)
         {
             var cells = _chunkSystem.GetCellsInRadius(worldPos, WorldRadius);
-
             foreach (var (chunkCoord, cellX, cellY) in cells)
             {
                 var chunk = _chunkSystem.GetChunk(chunkCoord);
                 if (chunk == null || !chunk.Unlocked) continue;
+                yield return (chunk, cellX, cellY);
+            }
+        }
 
-                int idx = chunk.CellIndex(cellX, cellY);
-                if (chunk.Cells[idx].Occupied) continue;
-
+        public void ApplyAtWorldPos(UnityEngine.Vector3 worldPos, IBrushAction action)
+        {
+            foreach (var (chunk, cellX, cellY) in GetAffectableCells(worldPos))
+            {
+                if (!action.CanApply(chunk, cellX, cellY)) continue;
                 action.Apply(chunk, cellX, cellY);
                 chunk.Dirty = true;
             }
