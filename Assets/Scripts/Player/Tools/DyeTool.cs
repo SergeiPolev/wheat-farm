@@ -12,7 +12,9 @@ namespace WheatFarm.Player.Tools
         private readonly IPlantSystem _plantSystem;
         private readonly IBrushService _brush;
 
-        private Color _selectedColor = Color.white;
+        // Visible default until a color-picker UI exists (SelectColor is never called yet);
+        // white would make both dyeing and the brush preview look like nothing happened.
+        private Color _selectedColor = new(0.85f, 0.3f, 0.75f, 1f);
 
         public ToolId Id => ToolId.Dye;
         public bool RequiresResource => true;
