@@ -11,7 +11,7 @@ namespace WheatFarm.Player.Tools
     /// Unified placement tool: handles PlantData (crops/bushes/trees) and PlaceableData (buildings/decor/paths).
     /// Replaces PlanterTool + BuildTool.
     /// </summary>
-    public class PlacementTool : ITool, IBrushAction
+    public class PlacementTool : ITool, IBrushAction, IBrushPreviewSource
     {
         private readonly IPlantSystem _plantSystem;
         private readonly ITreePlacementService _treePlacement;
@@ -21,6 +21,8 @@ namespace WheatFarm.Player.Tools
 
 
         private readonly IPlacementGhostService _ghost;
+        private readonly IBrushPreviewService _brushPreview;
+        private readonly FarmRenderConfig _config;
 
         private PlantData _selectedPlant;
         private PlaceableData _selectedPlaceable;
@@ -40,7 +42,9 @@ namespace WheatFarm.Player.Tools
             IPlacementService placementService,
             IChunkSystem chunkSystem,
             IInventoryService inventory,
-            IPlacementGhostService ghost)
+            IPlacementGhostService ghost,
+            IBrushPreviewService brushPreview,
+            FarmRenderConfig config)
         {
             _plantSystem = plantSystem;
             _treePlacement = treePlacement;
@@ -48,6 +52,8 @@ namespace WheatFarm.Player.Tools
             _placementService = placementService;
             _chunkSystem = chunkSystem;            _inventory = inventory;
             _ghost = ghost;
+            _brushPreview = brushPreview;
+            _config = config;
 
         }
 
@@ -105,7 +111,19 @@ namespace WheatFarm.Player.Tools
                 return;
             Vector3 snappedPos = SnapPosition(cursorWorldPos);
             _ghost.UpdatePose(snappedPos, _pendingRotation);
-            _ghost.SetValid(_placementService.CanPlace(_selectedPlaceable, cursorWorldPos));
+
+            bool canPlace = _placementService.CanPlace(_selectedPlaceable, cursorWorldPos);
+            _ghost.SetValid(canPlace);
+            _brushPreview.RenderFootprint(snappedPos, FootprintWorldSize(), canPlace);
+        }
+
+        private Vector2 FootprintWorldSize()
+        {
+            if (_selectedPlaceable.Level == PlacementLevel.Chunk)
+                return new Vector2(
+                    _selectedPlaceable.GridSize.x * _chunkSystem.ChunkWorldSize,
+                    _selectedPlaceable.GridSize.y * _chunkSystem.ChunkWorldSize);
+            return Vector2.one * _chunkSystem.CellWorldSize;
         }
 
         /// <summary>
@@ -166,6 +184,7 @@ namespace WheatFarm.Player.Tools
                 return BrushPredicates.PathPaintable(cell, SelectedPathState);
             if (_selectedPlant != null)
                 return BrushPredicates.Plantable(cell);
+            // Non-path placeables (buildings) aren't brush-applied
             return false;
         }
 
@@ -205,7 +224,6 @@ namespace WheatFarm.Player.Tools
             props.cropState.z = (float)pathState;
             props.cropState.w = UnityEngine.Time.time;
 
-            chunk.Dirty = true;
             _chunkSystem.UpdateGroundNeighborFlags(chunk.ChunkCoord, cellX, cellY);
         }
 
@@ -225,6 +243,32 @@ namespace WheatFarm.Player.Tools
                 Debug.Log($"[Placement] Placed {_selectedPlaceable.DisplayName}");
             else
                 Debug.Log($"[Placement] Cannot place {_selectedPlaceable.DisplayName}");
+        }
+
+        // Trees are placed singly via TreePlacementService, not the brush — no cell preview for them
+        public bool PreviewActive =>
+            (_selectedPlant != null && _selectedPlant.Category != PlantCategory.Tree) ||
+            (_selectedPlaceable != null && _selectedPlaceable.Category == PlaceableCategory.Path);
+
+        public Color PreviewCellColor
+        {
+            get
+            {
+                if (_selectedPlaceable != null && _selectedPlaceable.Category == PlaceableCategory.Path)
+                {
+                    var prop = _selectedPlaceable.PathSubtype switch
+                    {
+                        1 => "_TintPathWood",
+                        2 => "_TintPathBrick",
+                        _ => "_TintPathStone"
+                    };
+                    var mat = _config != null ? _config.GroundMaterial : null;
+                    var c = (mat != null && mat.HasProperty(prop)) ? mat.GetColor(prop) : Color.gray;
+                    c.a = 0.55f;
+                    return c;
+                }
+                return new Color(0.2f, 0.9f, 0.2f, 0.4f); // plant mode
+            }
         }
 
         private Vector3 SnapPosition(Vector3 worldPos)

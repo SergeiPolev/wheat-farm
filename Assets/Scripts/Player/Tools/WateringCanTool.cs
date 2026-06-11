@@ -6,7 +6,7 @@ namespace WheatFarm.Player.Tools
     /// <summary>
     /// Waters plants in brush radius, enabling growth.
     /// </summary>
-    public class WateringCanTool : ITool, IBrushAction
+    public class WateringCanTool : ITool, IBrushAction, IBrushPreviewSource
     {
         private readonly IPlantSystem _plantSystem;
         private readonly IBrushService _brush;
@@ -35,5 +35,8 @@ namespace WheatFarm.Player.Tools
         {
             _plantSystem.Water(chunk.ChunkCoord, cellX, cellY);
         }
+
+        public bool PreviewActive => true;
+        public Color PreviewCellColor => new(0.3f, 0.6f, 1f, 0.45f);
     }
 }

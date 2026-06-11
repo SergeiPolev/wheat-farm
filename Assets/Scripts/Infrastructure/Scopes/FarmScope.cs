@@ -82,6 +82,9 @@ namespace WheatFarm.Infrastructure
             builder.Register<WheatFarm.Player.Preview.PlacementGhostService>(Lifetime.Singleton)
                 .As<WheatFarm.Player.Preview.IPlacementGhostService, System.IDisposable>();
 
+            builder.Register<WheatFarm.Player.Preview.BrushPreviewService>(Lifetime.Singleton)
+                .As<WheatFarm.Player.Preview.IBrushPreviewService, System.IDisposable>();
+
             builder.Register<PlacementTool>(Lifetime.Singleton).As<PlacementTool, ITool>();
             builder.Register<WateringCanTool>(Lifetime.Singleton).As<ITool>();
             builder.Register<SickleTool>(Lifetime.Singleton).As<ITool>();

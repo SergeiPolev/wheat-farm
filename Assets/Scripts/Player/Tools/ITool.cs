@@ -27,4 +27,16 @@ namespace WheatFarm.Player.Tools
         void OnUnequip();
         void UseAtPosition(Vector3 worldPos);
     }
+
+    /// <summary>
+    /// Brush tools that want a cell-highlight preview implement this in addition
+    /// to IBrushAction. CanApply (from IBrushAction) decides which cells light up.
+    /// </summary>
+    public interface IBrushPreviewSource
+    {
+        /// <summary>False disables the preview (e.g. PlacementTool in building-ghost mode).</summary>
+        bool PreviewActive { get; }
+        /// <summary>Cell highlight color (path tint for paths, tool color otherwise).</summary>
+        UnityEngine.Color PreviewCellColor { get; }
+    }
 }

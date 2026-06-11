@@ -20,6 +20,8 @@ namespace WheatFarm.Player
         private IToolService _toolService;
         private IBrushService _brushService;
         private PlacementTool _placementTool;
+        private WheatFarm.Player.Preview.IPlacementGhostService _ghostService;
+        private WheatFarm.Player.Preview.IBrushPreviewService _brushPreview;
         private Camera _cam;
         private PlayerAnimationController _animController;
         private readonly Plane _groundPlane = new(Vector3.up, Vector3.zero);
@@ -30,10 +32,17 @@ namespace WheatFarm.Player
         public event Action<GameObject> OnBuildingClicked;
 
         [Inject]
-        public void Construct(IToolService toolService, IBrushService brushService, PlacementTool placementTool = null)
+        public void Construct(
+            IToolService toolService,
+            IBrushService brushService,
+            WheatFarm.Player.Preview.IPlacementGhostService ghostService,
+            WheatFarm.Player.Preview.IBrushPreviewService brushPreview,
+            PlacementTool placementTool = null)
         {
             _toolService = toolService;
             _brushService = brushService;
+            _ghostService = ghostService;
+            _brushPreview = brushPreview;
             _placementTool = placementTool;
         }
 
@@ -50,7 +59,7 @@ namespace WheatFarm.Player
             UpdateInteractionPosition();
             HandleToolSwitching();
             HandleBrushSize();
-            HandlePlacementPreview();
+            HandlePreview();
             HandlePlacementRotation();
             HandleToolUse();
         }
@@ -148,14 +157,25 @@ namespace WheatFarm.Player
                 CycleBrushSize(1);
         }
 
-        private void HandlePlacementPreview()
+        private void HandlePreview()
         {
-            if (_placementTool == null) return;
-            if (_toolService.CurrentToolId.CurrentValue != ToolId.Placement) return;
+            bool overUI = UnityEngine.EventSystems.EventSystem.current != null &&
+                          UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject();
+            Vector3? hitPoint = overUI ? null : GetGroundHitPoint();
 
-            Vector3? hitPoint = GetGroundHitPoint();
-            if (hitPoint.HasValue)
-                _placementTool.UpdatePreview(hitPoint.Value);
+            // Building ghost (Placement tool only)
+            if (_placementTool != null && _toolService.CurrentToolId.CurrentValue == ToolId.Placement)
+            {
+                _ghostService.SetVisible(hitPoint.HasValue);
+                if (hitPoint.HasValue)
+                    _placementTool.UpdatePreview(hitPoint.Value);
+            }
+
+            // Brush cell preview (any tool that is IBrushAction + IBrushPreviewSource)
+            if (!hitPoint.HasValue) return;
+            var tool = _toolService.CurrentTool.CurrentValue;
+            if (tool is IBrushAction action && tool is IBrushPreviewSource src && src.PreviewActive)
+                _brushPreview.RenderBrush(hitPoint.Value, action, src.PreviewCellColor);
         }
 
         private void HandlePlacementRotation()

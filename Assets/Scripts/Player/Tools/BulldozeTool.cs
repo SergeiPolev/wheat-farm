@@ -10,7 +10,7 @@ namespace WheatFarm.Player.Tools
     /// Click on a building/decor prefab → PlacementService.Remove() with partial refund.
     /// Click on ground → clear path (reset GroundState) or uproot crop.
     /// </summary>
-    public class BulldozeTool : ITool, IBrushAction
+    public class BulldozeTool : ITool, IBrushAction, IBrushPreviewSource
     {
         private const float BuildingProximityThreshold = 3f;
         private const float DecorProximityThreshold = 0.5f;
@@ -78,6 +78,9 @@ namespace WheatFarm.Player.Tools
                 _plantSystem.Uproot(chunk.ChunkCoord, cellX, cellY);
             }
         }
+
+        public bool PreviewActive => true;
+        public Color PreviewCellColor => new(0.9f, 0.25f, 0.2f, 0.45f);
 
         private bool TryRemovePlacedObject(Vector3 worldPos)
         {

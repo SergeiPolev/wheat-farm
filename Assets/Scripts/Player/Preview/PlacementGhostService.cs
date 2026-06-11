@@ -14,7 +14,7 @@ namespace WheatFarm.Player.Preview
     /// <summary>
     /// Owns the placement ghost instance: strips physics/scripts, swaps materials
     /// to GhostPreview (textures preserved), applies validity tint via
-    /// MaterialPropertyBlock, and feeds _PreviewHighlightColor to the outline feature.
+    /// MaterialPropertyBlock, and feeds _PreviewHighlightColor to the (future) outline render feature.
     /// </summary>
     public class PlacementGhostService : IPlacementGhostService, System.IDisposable
     {
@@ -41,6 +41,10 @@ namespace WheatFarm.Player.Preview
 
             foreach (var col in _instance.GetComponentsInChildren<Collider>(true))
                 Object.Destroy(col);
+            // NOTE: Object.Destroy is deferred, so a prefab MonoBehaviour's Awake/OnEnable still
+            // runs once during Instantiate. Safe today — placeable prefabs carry no scripts
+            // (BuildingMarker is added post-placement). Revisit if future prefabs gain scripts
+            // with global side effects.
             foreach (var mb in _instance.GetComponentsInChildren<MonoBehaviour>(true))
                 Object.Destroy(mb);
 
