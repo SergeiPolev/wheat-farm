@@ -79,6 +79,9 @@ namespace WheatFarm.Infrastructure
                 .As<IStartable>();
 
             // Phase 4: Tools
+            builder.Register<WheatFarm.Player.Preview.PlacementGhostService>(Lifetime.Singleton)
+                .As<WheatFarm.Player.Preview.IPlacementGhostService, System.IDisposable>();
+
             builder.Register<PlacementTool>(Lifetime.Singleton).As<PlacementTool, ITool>();
             builder.Register<WateringCanTool>(Lifetime.Singleton).As<ITool>();
             builder.Register<SickleTool>(Lifetime.Singleton).As<ITool>();
@@ -286,4 +289,9 @@ namespace WheatFarm.Infrastructure
             if (_enableDebug)
             {
                 var toggleGo = new UnityEngine.GameObject("DebugControls");
-                var toggle = toggleGo.AddComponent<UIToggleController
+                var toggle = toggleGo.AddComponent<UIToggleController>();
+                toggle.Init(_shopView, _inventoryView, _contractBoardView);
+            }
+        }
+    }
+}

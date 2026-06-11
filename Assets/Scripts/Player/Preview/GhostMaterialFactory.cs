@@ -9,6 +9,8 @@ namespace WheatFarm.Player.Preview
     /// texture and base color so the ghost looks like the object, not a flat blob.
     /// Caches per source material; validity tint is applied per-renderer via
     /// MaterialPropertyBlock, so cached materials never need mutation.
+    /// Source materials are expected to be long-lived catalog assets; the cache
+    /// lives until the owning scope disposes.
     /// </summary>
     public class GhostMaterialFactory : IDisposable
     {
@@ -20,6 +22,8 @@ namespace WheatFarm.Player.Preview
 
         public Material Get(Material source)
         {
+            if (source == null) return null;
+
             if (_cache.TryGetValue(source, out var cached) && cached != null)
                 return cached;
 

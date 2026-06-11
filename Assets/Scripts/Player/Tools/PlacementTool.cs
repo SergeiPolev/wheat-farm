@@ -2,6 +2,7 @@ using UnityEngine;
 using WheatFarm.Buildings;
 using WheatFarm.Core.Data;
 using WheatFarm.Farming;using WheatFarm.Inventory;
+using WheatFarm.Player.Preview;
 
 
 namespace WheatFarm.Player.Tools
@@ -19,17 +20,11 @@ namespace WheatFarm.Player.Tools
         private readonly IChunkSystem _chunkSystem;        private readonly IInventoryService _inventory;
 
 
+        private readonly IPlacementGhostService _ghost;
+
         private PlantData _selectedPlant;
         private PlaceableData _selectedPlaceable;
         private float _pendingRotation;
-
-        // Ghost preview
-        private GameObject _ghostInstance;
-        private Material _ghostMaterial;
-        private bool _ghostValid;
-
-        private static readonly Color GhostValidColor = new(0.2f, 0.9f, 0.2f, 0.4f);
-        private static readonly Color GhostInvalidColor = new(0.9f, 0.2f, 0.2f, 0.4f);
 
         public ToolId Id => ToolId.Placement;
         public bool RequiresResource => true;
@@ -44,13 +39,15 @@ namespace WheatFarm.Player.Tools
             IBrushService brush,
             IPlacementService placementService,
             IChunkSystem chunkSystem,
-            IInventoryService inventory)
+            IInventoryService inventory,
+            IPlacementGhostService ghost)
         {
             _plantSystem = plantSystem;
             _treePlacement = treePlacement;
             _brush = brush;
             _placementService = placementService;
             _chunkSystem = chunkSystem;            _inventory = inventory;
+            _ghost = ghost;
 
         }
 
@@ -59,7 +56,7 @@ namespace WheatFarm.Player.Tools
             _selectedPlaceable = null;
             _selectedPlant = plant;
             _pendingRotation = 0f;
-            DestroyGhost();
+            _ghost.Hide();
         }
 
         public void SelectPlaceable(PlaceableData placeable)
@@ -67,8 +64,9 @@ namespace WheatFarm.Player.Tools
             _selectedPlant = null;
             _selectedPlaceable = placeable;
             _pendingRotation = 0f;
-            DestroyGhost();
-            CreateGhost(placeable);
+            _ghost.Hide();
+            if (placeable != null && placeable.Category != PlaceableCategory.Path && placeable.Prefab != null)
+                _ghost.Show(placeable.Prefab);
         }
 
         public void ClearSelection()
@@ -76,14 +74,14 @@ namespace WheatFarm.Player.Tools
             _selectedPlant = null;
             _selectedPlaceable = null;
             _pendingRotation = 0f;
-            DestroyGhost();
+            _ghost.Hide();
         }
 
         public void OnEquip() { }
 
         public void OnUnequip()
         {
-            DestroyGhost();
+            _ghost.Hide();
         }
 
         public void UseAtPosition(Vector3 worldPos)
@@ -103,19 +101,11 @@ namespace WheatFarm.Player.Tools
         /// </summary>
         public void UpdatePreview(Vector3 cursorWorldPos)
         {
-            if (_ghostInstance == null) return;
-
+            if (_selectedPlaceable == null || _selectedPlaceable.Category == PlaceableCategory.Path)
+                return;
             Vector3 snappedPos = SnapPosition(cursorWorldPos);
-            _ghostInstance.transform.position = snappedPos;
-            _ghostInstance.transform.rotation = Quaternion.Euler(0, _pendingRotation, 0);
-
-            // Tint valid/invalid
-            bool canPlace = _selectedPlaceable != null && _placementService.CanPlace(_selectedPlaceable, cursorWorldPos);
-            if (canPlace != _ghostValid)
-            {
-                _ghostValid = canPlace;
-                SetGhostTint(_ghostValid ? GhostValidColor : GhostInvalidColor);
-            }
+            _ghost.UpdatePose(snappedPos, _pendingRotation);
+            _ghost.SetValid(_placementService.CanPlace(_selectedPlaceable, cursorWorldPos));
         }
 
         /// <summary>
@@ -235,67 +225,6 @@ namespace WheatFarm.Player.Tools
                 Debug.Log($"[Placement] Placed {_selectedPlaceable.DisplayName}");
             else
                 Debug.Log($"[Placement] Cannot place {_selectedPlaceable.DisplayName}");
-        }
-
-        // --- Ghost preview system ---
-
-        private void CreateGhost(PlaceableData data)
-        {
-            if (data == null || data.Prefab == null || data.Category == PlaceableCategory.Path)
-                return;
-
-            _ghostInstance = Object.Instantiate(data.Prefab);
-            _ghostInstance.name = $"Ghost_{data.DisplayName}";
-
-            // Remove colliders and scripts from ghost
-            foreach (var col in _ghostInstance.GetComponentsInChildren<Collider>())
-                Object.Destroy(col);
-            foreach (var mb in _ghostInstance.GetComponentsInChildren<MonoBehaviour>())
-                Object.Destroy(mb);
-
-            // Create transparent material
-            _ghostMaterial = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-            _ghostMaterial.SetFloat("_Surface", 1); // Transparent
-            _ghostMaterial.SetFloat("_Blend", 0); // Alpha
-            _ghostMaterial.SetFloat("_AlphaClip", 0);
-            _ghostMaterial.SetOverrideTag("RenderType", "Transparent");
-            _ghostMaterial.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-            _ghostMaterial.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-            _ghostMaterial.SetInt("_ZWrite", 0);
-            _ghostMaterial.renderQueue = 3000;
-            _ghostMaterial.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-
-            // Apply ghost material to all renderers
-            foreach (var renderer in _ghostInstance.GetComponentsInChildren<Renderer>())
-            {
-                var mats = new Material[renderer.sharedMaterials.Length];
-                for (int i = 0; i < mats.Length; i++)
-                    mats[i] = _ghostMaterial;
-                renderer.materials = mats;
-            }
-
-            _ghostValid = false;
-            SetGhostTint(GhostInvalidColor);
-        }
-
-        private void SetGhostTint(Color color)
-        {
-            if (_ghostMaterial != null)
-                _ghostMaterial.color = color;
-        }
-
-        private void DestroyGhost()
-        {
-            if (_ghostInstance != null)
-            {
-                Object.Destroy(_ghostInstance);
-                _ghostInstance = null;
-            }
-            if (_ghostMaterial != null)
-            {
-                Object.Destroy(_ghostMaterial);
-                _ghostMaterial = null;
-            }
         }
 
         private Vector3 SnapPosition(Vector3 worldPos)
