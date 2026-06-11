@@ -1,0 +1,9 @@
+{
+    "name": "WheatFarm.Rendering",
+    "rootNamespace": "WheatFarm.Rendering",
+    "references": [
+        "Unity.RenderPipelines.Universal.Runtime",
+        "Unity.RenderPipelines.Core.Runtime"
+    ],
+    "autoReferenced": true
+}
