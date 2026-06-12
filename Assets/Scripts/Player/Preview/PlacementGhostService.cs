@@ -14,7 +14,9 @@ namespace WheatFarm.Player.Preview
     /// <summary>
     /// Owns the placement ghost instance: strips physics/scripts, swaps materials
     /// to GhostPreview (textures preserved), applies validity tint via
-    /// MaterialPropertyBlock, and feeds _PreviewHighlightColor to the (future) outline render feature.
+    /// MaterialPropertyBlock, and feeds _PreviewHighlightColor to GhostOutlineRenderFeature
+    /// (PC renderer). Brush-only previews never set that global — they rely on the green
+    /// default seeded by GhostOutlineRenderFeature.Create().
     /// </summary>
     public class PlacementGhostService : IPlacementGhostService, System.IDisposable
     {
