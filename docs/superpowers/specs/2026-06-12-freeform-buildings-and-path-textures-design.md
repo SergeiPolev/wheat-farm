@@ -40,7 +40,8 @@
 
 - `_occupiedChunks`, `CanPlaceChunkLevel/PlaceChunkLevel/FreeChunkLevel/MarkChunkSubCellsOccupied`, `ChunkFootprintCenter` — удаляются.
 - Единый путь: якорная клетка = `WorldToCell(worldPos)`; для каждого офсета маски (с учётом поворота) клетка вычисляется через мировые координаты (`CellToWorld(якорь) + офсет·CellWorldSize → WorldToCell`) — **пересечение границ чанков работает** (чинит и старый баг декора).
-- `CanPlace`: каждая клетка маски — `chunk != null && Unlocked && !Occupied && !HasPlant`; плюс клетки padding-кольца (дилатация маски на `PaddingCells`) — те же условия, кроме того что padding проверяет только `!Occupied` (растения рядом не мешают). Padding-клетки занятыми НЕ помечаются.
+- `CanPlace`: каждая клетка маски — `chunk != null && Unlocked && !Occupied && !HasPlant`; плюс клетки padding-кольца (дилатация маски на `PaddingCells`) — padding проверяет только `!Occupied` (растения рядом не мешают; padding-клетка в залоченном/несуществующем чанке считается свободной). Padding-клетки занятыми НЕ помечаются.
+- Поворот маски — вокруг её **центра** (bounding-box), а не якорной клетки: при вращении призрак не «уезжает» от курсора.
 - `Place`/`Remove`/`RestorePlace`: помечают/освобождают `Occupied` только по клеткам маски. Спавн префаба — в центре bounding-box маски (Y=0), поворот `rotationY`.
 - `PlacedObject` дополняется `RotationSteps` (int 0..3) для Step90-масок; `RotationY` остаётся для визуала (Free5 — только визуальный поворот, маска не вращается, в инспекторе предупреждение).
 - Поиск здания по клику/бульдозеру: `IPlacementService.TryGetAt(Vector3 worldPos, out PlacedObject)` — линейный поиск по `PlacedObjects` с проверкой попадания клетки в маску (объектов мало, YAGNI на словарь). `BulldozeTool.TryRemovePlacedObject` переводится на него (вместо дистанции до центра).
@@ -50,11 +51,13 @@
 - `PlacementTool.SnapPosition`: единый клеточный снап (чанковый branch удаляется). Призрак ставится в центр bounding-box маски.
 - `AdjustRotation` при Step90 инкрементирует `RotationSteps` (маска и призрак вращаются согласованно).
 - `BrushPreviewService.RenderFootprint` заменяется на `RenderFootprintCells(IReadOnlyList<(Vector3 pos, bool ok)>)`: инстансированные квады клеток маски, **каждая клетка зелёная/красная по собственной валидности** (два инстанс-дропа: валидные и невалидные). `PlacementService` отдаёт пер-клеточную валидность методом `EvaluateFootprint(data, worldPos, rotationSteps, List<(Vector3, bool)> результат)` — превью и `CanPlace` используют одну и ту же проверку (принцип «превью не врёт», как у кисти).
-- Общая валидность (тинт призрака + цвет контура) = все клетки ok.
+- Общая валидность (тинт призрака + цвет контура) = все клетки ok, **включая padding**. Блокирующие padding-клетки попадают в выдачу `EvaluateFootprint` с ok=false и рисуются красным (игрок видит, что мешает сосед); свободный padding не рисуется вовсе.
 
 ### A5. Сейв (ломаем формат)
 
-- `FarmSaveData.PlacedObjectData`: + `RotationSteps`; `Level`-поле placeable больше не влияет. Bump версии сейва; старые сейвы отклоняются с логом (новая игра).
+- `FarmSaveData.PlacedObjectData`: + `RotationSteps`. Важно про имена: удаляется enum `PlacementLevel` из `PlaceableData`; поле `PlacedObject.Level`/`PlacedObjectSaveData.Level` — это **уровень прокачки здания**, оно ОСТАЁТСЯ.
+- `ProductionSlotSaveData` сейчас мэтчится по `PlaceableId + ChunkCoord` — после перехода на клетки два одинаковых здания могут жить в одном чанке. В мэтчинг добавляются `CellX/CellY`.
+- `FarmSaveData.Version` (есть, =1) повышается до 2; проверка версии — новый код в загрузке (сейчас `Version` никем не читается): `Version < 2` → лог + новая игра.
 - Существующие ассеты `Placeable_*.asset` обновляются: `GridSize` переводится из чанков в клетки (1 чанк = 8 клеток; Mill 1×1 чанк → маска ~6×6–8×8 по видимому размеру префаба), `Level` удаляется. Первичные маски ставим по bounding-box рендереров префаба (скриптом), владелец потом правит в новом редакторе.
 
 ### A6. Тесты (EditMode)
