@@ -41,6 +41,10 @@ namespace WheatFarm.Player.Preview
             _quad = BuildQuad();
             _cellMaterial = new Material(Shader.Find("WheatFarm/BrushCellPreview"));
             _ringMaterial = new Material(Shader.Find("WheatFarm/BrushRing"));
+
+            _cellMaterial.enableInstancing = true;
+            _ringMaterial.enableInstancing = true;
+            
             _layer = LayerMask.NameToLayer("PlacementPreview");
         }
 
