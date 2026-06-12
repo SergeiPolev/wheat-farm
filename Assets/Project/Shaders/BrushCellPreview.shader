@@ -18,6 +18,8 @@ Shader "WheatFarm/BrushCellPreview"
             #pragma multi_compile_instancing
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
+            // _Color is per-RenderMeshInstanced-call (via MaterialPropertyBlock), not per-instance.
+            // Per-instance colors would need UNITY_DEFINE_INSTANCED_PROP instead.
             CBUFFER_START(UnityPerMaterial)
                 half4 _Color;
             CBUFFER_END

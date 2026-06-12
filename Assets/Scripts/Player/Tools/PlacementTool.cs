@@ -73,6 +73,8 @@ namespace WheatFarm.Player.Tools
             _ghost.Hide();
             if (placeable != null && placeable.Category != PlaceableCategory.Path && placeable.Prefab != null)
                 _ghost.Show(placeable.Prefab);
+            if (placeable != null && placeable.Category == PlaceableCategory.Path)
+                _pathPreviewColor = ResolvePathPreviewColor(placeable);
         }
 
         public void ClearSelection()
@@ -250,25 +252,26 @@ namespace WheatFarm.Player.Tools
             (_selectedPlant != null && _selectedPlant.Category != PlantCategory.Tree) ||
             (_selectedPlaceable != null && _selectedPlaceable.Category == PlaceableCategory.Path);
 
-        public Color PreviewCellColor
+        public Color PreviewCellColor =>
+            _selectedPlaceable != null && _selectedPlaceable.Category == PlaceableCategory.Path
+                ? _pathPreviewColor
+                : new Color(0.2f, 0.9f, 0.2f, 0.4f); // plant mode
+
+        // Resolved once on selection: Material.GetColor is a native call, no need per frame
+        private Color _pathPreviewColor = Color.gray;
+
+        private Color ResolvePathPreviewColor(PlaceableData placeable)
         {
-            get
+            var prop = placeable.PathSubtype switch
             {
-                if (_selectedPlaceable != null && _selectedPlaceable.Category == PlaceableCategory.Path)
-                {
-                    var prop = _selectedPlaceable.PathSubtype switch
-                    {
-                        1 => "_TintPathWood",
-                        2 => "_TintPathBrick",
-                        _ => "_TintPathStone"
-                    };
-                    var mat = _config != null ? _config.GroundMaterial : null;
-                    var c = (mat != null && mat.HasProperty(prop)) ? mat.GetColor(prop) : Color.gray;
-                    c.a = 0.55f;
-                    return c;
-                }
-                return new Color(0.2f, 0.9f, 0.2f, 0.4f); // plant mode
-            }
+                1 => "_TintPathWood",
+                2 => "_TintPathBrick",
+                _ => "_TintPathStone"
+            };
+            var mat = _config != null ? _config.GroundMaterial : null;
+            var c = (mat != null && mat.HasProperty(prop)) ? mat.GetColor(prop) : Color.gray;
+            c.a = 0.55f;
+            return c;
         }
 
         private Vector3 SnapPosition(Vector3 worldPos)
