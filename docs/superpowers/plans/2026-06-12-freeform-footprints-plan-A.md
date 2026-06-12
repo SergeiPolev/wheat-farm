@@ -25,7 +25,8 @@
 | `Assets/Scripts/Player/Tools/BulldozeTool.cs` | Modify | TryGetAt buildings + tree removal + refund |
 | `Assets/Scripts/Player/FarmInteractionController.cs` | Modify | Bulldoze hover hook for tree highlight |
 | `Assets/Scripts/Features/Farming/TreePlacementService.cs` | Modify | Expose trunk-cell hit test (small helper) |
-| `Assets/Scripts/Infrastructure/Save/FarmSaveData.cs` + `FarmSaveManager.cs` | Modify | Version 2, RotationSteps, slot matching by cell |
+| `Assets/Scripts/Infrastructure/Save/FarmSaveData.cs` + `FarmSaveManager.cs` + `FarmSaveService.cs` | Modify | Version 2, RotationSteps, slot matching by cell, compatible-save probe |
+| `Assets/Scripts/Features/Buildings/ProductionService.cs` | Modify | `ProductionSlotSaveData` + CellX/CellY; `GetSaveData()` writes them |
 | `Assets/Settings/Placeables/Placeable_*.asset` (13 шт.) | Modify | GridSize chunks→cells, masks roughed from prefab bounds |
 | `Assets/Scripts/Editor/PlaceableFootprintMigration.cs` | Create | One-shot menu item to rough masks from renderer bounds |
 
@@ -37,12 +38,15 @@ Key existing facts (verified): `ChunkSystem.WorldToCell/CellToWorld/CellWorldSiz
 
 **Files:** Create `Assets/Scripts/Core/Data/FootprintMask.cs`; Test `Assets/Scripts/Tests/EditMode/FootprintMaskTests.cs`.
 
+**Offset contract (the core decision — read carefully):** `Cells(rotSteps)` returns offsets **relative to the mask's center cell**, so the anchor (cursor) cell always hosts the center cell in every rotation and the ghost never swings. Definition: float center `c = ((W-1)/2f, (H-1)/2f)`; center cell `= (floor(c.x), floor(c.y))`; offsets `= cell − centerCell` (may be negative). For a rotation, rotate the cell set 90°·steps, re-normalize to a 0-based grid, recompute the rotated center cell by the same floor rule, and return offsets relative to it. No `AnchorShift` — it cannot be expressed in integers for masks of mixed parity.
+
 - [ ] **1.1 Failing tests first.** Cover:
-  - `Parse(["XX.","XXX"])` → Width 3, Height 2, correct `Cells(0)` set (origin = row 0 col 0 = (0,0); rows go +y).
+  - `Parse(["XX.","XXX"])` → Width 3, Height 2; `Cells(0)` == {(-1,0),(0,0),(-1,1),(0,1),(1,1)} (center cell of 3×2 = (1,0); rows go +y).
+  - **Rotation pinning for the same 3×2 mask:** explicit expected offset sets for `Cells(1)`, `Cells(2)`, `Cells(3)` computed by hand in the test (rotate, re-normalize, re-center by floor rule). This is the fiddliest math in the plan — it ships pinned or not at all.
   - Empty/null rows + `GridSize(2,3)` fallback → full 2×3 rectangle.
   - Ragged rows (`["XX","X"]`) → does not throw, logs error, falls back to GridSize.
-  - `Cells(1)` (90° CW) of `["XX.","XXX"]` equals manually rotated set; `Cells(4)` == `Cells(0)`.
-  - `Dilate(1)` of a single cell → 3×3 ring minus the cell itself (returns ONLY the ring cells).
+  - `Cells(4)` == `Cells(0)` (steps wrap mod 4).
+  - `Dilate(cells, 1)` (static, over an **arbitrary** offset set — works for any rotation or Free5 raster) of a single cell → 8 ring cells (returns ONLY the ring, not the input).
   - `RasterizeRotated(0f)` == `Cells(0)`; `RasterizeRotated(90f)` == `Cells(1)`; `RasterizeRotated(45f)` of 1×3 mask: superset of the axis projection, each returned cell actually overlapped (sanity: count between 3 and 9).
 - [ ] **1.2 Verify red** (compile fail), **1.3 implement:**
 
@@ -99,6 +103,7 @@ namespace WheatFarm.Core.Data
   - Mask crossing a chunk border (anchor at cell 7,4 of chunk (0,0), 2-wide mask) → cells land in both chunks (both unlocked).
   - Neighbor chunk locked → `CanPlace` false.
   - `PaddingCells=1`: building adjacent to an existing building → false (padding cell occupied), one cell gap → true; padding cells NOT marked occupied after placement; padding into locked/missing chunk → treated as free.
+  - `PaddingCells=1` + `rotationSteps=1`: padding ring follows the ROTATED mask (uses `Dilate(Cells(1), 1)`).
   - Parity: `EvaluateFootprint` all-ok ⇔ `CanPlace` (including padding).
   - `Remove` frees exactly `OccupiedCells`.
   - `TryGetAt(worldPos)` finds the object by any of its mask cells; misses outside.
@@ -110,8 +115,11 @@ namespace WheatFarm.Core.Data
         ObservableList<PlacedObject> PlacedObjects { get; }
         PlacedObject Place(PlaceableData data, Vector3 worldPos, int rotationSteps, float rotationY);
         bool CanPlace(PlaceableData data, Vector3 worldPos, int rotationSteps, float rotationY);
-        /// <summary>Per-cell validity for preview; cells = mask cells (always) + blocking padding cells (only when blocked). All-ok ⇔ CanPlace.</summary>
-        void EvaluateFootprint(PlaceableData data, Vector3 worldPos, int rotationSteps, float rotationY, List<(Vector3 worldPos, bool ok)> result);
+        /// <summary>Per-cell validity for preview; cells = mask cells (always) + blocking padding cells (only when blocked). AllOk ⇔ CanPlace.</summary>
+        FootprintEval EvaluateFootprint(PlaceableData data, Vector3 worldPos, int rotationSteps, float rotationY, List<(Vector3 worldPos, bool ok)> result);
+        // struct FootprintEval { public bool AllOk; public Vector3 BBoxCenter; }  — center of the
+        // occupied-cells bounding box at y=0; Task 4 consumes it for ghost pose, decided HERE so
+        // the Task 3 interface+tests never reopen.
         bool TryGetAt(Vector3 worldPos, out PlacedObject obj);
         bool Remove(PlacedObject obj);
         PlacedObject RestorePlace(PlaceableData data, Vector2Int chunkCoord, int cellX, int cellY, int rotationSteps, float rotationY, int level);
@@ -123,7 +131,7 @@ namespace WheatFarm.Core.Data
   - Mask cell valid: chunk exists && Unlocked && !Occupied && !HasPlant. Padding cell valid: !(exists && Unlocked && Occupied) — i.e. only an occupied unlocked cell blocks.
   - `PlacedObject`: + `int RotationSteps; List<(Vector2Int chunkCoord, int cellX, int cellY)> OccupiedCells;` `Place` fills it and sets `Occupied=true` on exactly those; `Remove`/`RestorePlace` symmetric. Spawn pos = world center of the occupied-cells bounding box, y=0. Delete: `_occupiedChunks`, all *ChunkLevel methods, `MarkChunkSubCellsOccupied`, `ChunkFootprintCenter`. Delete `PlacementLevel` enum + `PlaceableData.Level` field (upgrade level `PlacedObject.Level` STAYS).
   - `TryGetAt`: linear scan of `PlacedObjects` → `OccupiedCells.Contains(WorldToCell(worldPos))`.
-- [ ] **3.4 Fix all compile fallout** of deleting `PlacementLevel` (`PlacementTool.SnapPosition/FootprintWorldSize`, `BulldozeTool` threshold branch, `FarmSaveManager`) — minimal mechanical edits to compile; their real rework comes in Tasks 4–6 (leave `// TODO(plan-A task N)` markers).
+- [ ] **3.4 Fix all compile fallout** of deleting `PlacementLevel` (`PlacementTool.SnapPosition/FootprintWorldSize`, `BulldozeTool` threshold branch, `FarmSaveManager`, `EconomyBuildingsBootstrap` line ~46: `RestorePlace(data, coord, 0, 0, 0f, 1)` gains the `rotationSteps` arg) — minimal mechanical edits to compile; their real rework comes in Tasks 4–6 (leave `// TODO(plan-A task N)` markers).
 - [ ] **3.5 Green (all suites), 3.6 commit** `feat: cell-based placement with footprint masks, per-cell validity, TryGetAt`.
 
 ### Task 4: PlacementTool + per-cell footprint preview
@@ -143,9 +151,10 @@ namespace WheatFarm.Core.Data
 
 **Files:** Modify `FarmSaveData.cs`, `FarmSaveManager.cs`; Create `Assets/Scripts/Editor/PlaceableFootprintMigration.cs`; Modify 13 `Placeable_*.asset`.
 
-- [ ] **5.1** `FarmSaveData.Version` default → 2. `PlacedObjectSaveData` + `int RotationSteps`. `ProductionSlotSaveData` + `int CellX, CellY`; matching in `FarmSaveManager.RestoreFromData` becomes PlaceableId+ChunkCoord+Cell. Load path: `if (data.Version < 2) { Debug.LogWarning("[Save] Incompatible save version, starting fresh"); return false/skip; }` (old files deserialize with Version=1 via field initializer — works as the discriminator).
+- [ ] **5.1** `FarmSaveData.Version` default → 2. `PlacedObjectSaveData` + `int RotationSteps`. `ProductionSlotSaveData` (defined in `ProductionService.cs:~247`!) + `int CellX, CellY` — **обе стороны**: запись в `ProductionService.GetSaveData()` (~line 198) и мэтчинг в `FarmSaveManager.RestoreFromData` (PlaceableId+ChunkCoord+Cell). Без записи слоты молча потеряются у любого здания не в клетке (0,0) — компилятор это не поймает.
+- [ ] **5.1b Совместимость старого сейва — механизм, а не только проверка.** `FarmSaveService.HasSave` — это просто `File.Exists`; `EconomyBuildingsBootstrap` и `StartingInventoryGranter` ранне-выходят при `HasSave==true`, а отклонение версии при загрузке оставило бы ферму ПУСТОЙ (ни стартовых зданий, ни инвентаря). Решение: `FarmSaveService` получает синхронный probe `HasCompatibleSave` (читает файл, десериализует, проверяет `Version >= 2`; несовместимый → один warning + **удаление файла** → дальше везде false). Все три потребителя (`SaveLoadController`, `EconomyBuildingsBootstrap`, `StartingInventoryGranter`) переводятся на него. Файл маленький (JSON), один лишний parse на старте — приемлемо.
 - [ ] **5.2** `PlaceableFootprintMigration` (menu `WheatFarm/Migrate Placeable Footprints`): for each `Placeable_*.asset` with Category != Path — compute prefab renderer bounds, `GridSize = ceil(bounds.size.xz / CellWorldSize(0.5f))` clamped to ≥1, clear FootprintRows (solid rectangle fallback), save assets. Run it via MCP `execute_menu_item`; log the resulting sizes per asset for the owner to eyeball.
-- [ ] **5.3** Play-mode: fresh game starts (old save rejected with the warning), economy buildings auto-place (`EconomyBuildingsBootstrap`) still works on the new API. **Check `EconomyBuildingsBootstrap` + `ShopService`/UI call sites of `Place/CanPlace`** — signatures changed in Task 3; finish their adaptation here if Task 3 left TODOs.
+- [ ] **5.3** Play-mode: with a v1 save file on disk — warning логируется, файл удаляется, стартует свежая игра, economy-здания авто-ставятся, стартовый инвентарь выдаётся. Sweep оставшихся TODO из 3.4: `PlacementTool`, `EconomyBuildingsBootstrap`, `FarmSaveManager` (других call sites `Place/CanPlace` в проекте нет — проверено ревьюером).
 - [ ] **5.4 Commit** `feat!: save format v2 — cell-anchored placements, slot matching by cell`.
 
 ### Task 6: Bulldoze — buildings by footprint + trees
