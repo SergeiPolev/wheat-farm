@@ -8,7 +8,7 @@ namespace WheatFarm.Core.Data
     /// Cells are stored as offsets relative to the mask's center cell, with
     /// all 4 clockwise (in mask-string space) 90-degree rotations precomputed.
     /// </summary>
-    public class FootprintMask
+    public sealed class FootprintMask
     {
         private readonly IReadOnlyList<Vector2Int>[] _rotations;
         private readonly int[] _rotationWidths;
@@ -175,6 +175,9 @@ namespace WheatFarm.Core.Data
 
             var result = new List<Vector2Int>();
 
+            // To test whether a rotated candidate cell overlaps an unrotated mask cell, we
+            // transform the candidate back into mask space (inverse rotation) rather than
+            // transforming every mask cell forward.
             for (var cy = minCellY; cy < maxCellY; cy++)
             {
                 for (var cx = minCellX; cx < maxCellX; cx++)
@@ -263,6 +266,12 @@ namespace WheatFarm.Core.Data
                             return CreateFallback(gridSizeFallback);
                     }
                 }
+            }
+
+            if (cells.Count == 0)
+            {
+                Debug.LogError("FootprintMask.Create: mask has zero occupied cells; falling back to rectangle.");
+                return CreateFallback(gridSizeFallback);
             }
 
             return new FootprintMask(cells, width, height);

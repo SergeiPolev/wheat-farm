@@ -19,8 +19,13 @@ namespace WheatFarm.Core.Data
         [Header("Placement")]
         public Vector2Int GridSize = Vector2Int.one;
         public bool BlocksPlanting = true;
+        [System.Obsolete("Removed in Task A3 — all placement is cell-based now")]
         public PlacementLevel Level;
         public RotationMode Rotation = RotationMode.Fixed;
+        [Tooltip("Маска футпринта: 'X' занято, '.' свободно. Пусто = прямоугольник GridSize (в КЛЕТКАХ).")]
+        public string[] FootprintRows;
+        [Tooltip("Зазор валидности вокруг маски, в клетках. Не помечает клетки занятыми.")]
+        public int PaddingCells = 0;
 
         [Header("Visual")]
         public GameObject Prefab;

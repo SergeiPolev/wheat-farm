@@ -120,6 +120,18 @@ namespace WheatFarm.Tests
         }
 
         [Test]
+        public void Create_AllDotsRows_LogsErrorAndFallsBack()
+        {
+            LogAssert.Expect(LogType.Error, new Regex("FootprintMask.*"));
+
+            var mask = FootprintMask.Create(new[] { "..", ".." }, new Vector2Int(1, 1));
+
+            Assert.AreEqual(1, mask.Width);
+            Assert.AreEqual(1, mask.Height);
+            CollectionAssert.AreEquivalent(new[] { Vector2Int.zero }, mask.Cells(0));
+        }
+
+        [Test]
         public void Dilate_SingleCell_ReturnsEightSurroundingCellsExcludingInput()
         {
             var input = new[] { Vector2Int.zero };
