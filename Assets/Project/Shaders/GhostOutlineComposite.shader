@@ -12,6 +12,8 @@ Shader "Hidden/WheatFarm/GhostOutlineComposite"
             HLSLPROGRAM
             #pragma vertex Vert
             #pragma fragment Frag
+            // Core.hlsl must come first: Blit.hlsl uses TEXTURE2D_X & friends defined there
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.core/Runtime/Utilities/Blit.hlsl"
 
             float4 _PreviewHighlightColor;
