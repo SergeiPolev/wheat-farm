@@ -12,9 +12,7 @@ namespace WheatFarm.Player.Tools
     /// </summary>
     public class BulldozeTool : ITool, IBrushAction, IBrushPreviewSource
     {
-        private const float BuildingProximityThreshold = 3f;
-        private const float DecorProximityThreshold = 0.5f;
-
+        // TODO(plan-A task6): BuildingProximityThreshold/DecorProximityThreshold removed; TryGetAt is cell-accurate
         private readonly IPlacementService _placementService;
         private readonly IPlantSystem _plantSystem;
         private readonly IChunkSystem _chunkSystem;
@@ -84,21 +82,13 @@ namespace WheatFarm.Player.Tools
 
         private bool TryRemovePlacedObject(Vector3 worldPos)
         {
-            // Check PlacementService's placed objects for one near the click position
-            foreach (var obj in _placementService.PlacedObjects)
+            // TODO(plan-A task6): replace with _placementService.TryGetAt(worldPos) after Task 6 rework
+            // Stub: use TryGetAt for cell-accurate hit detection
+            if (_placementService.TryGetAt(worldPos, out var obj))
             {
-                if (obj.Instance == null) continue;
-
-                float dist = Vector3.Distance(obj.Instance.transform.position, worldPos);
-                // Use chunk size as proximity threshold for buildings, cell size for decor
-                float threshold = obj.Data.Level == PlacementLevel.Chunk ? BuildingProximityThreshold : DecorProximityThreshold;
-
-                if (dist <= threshold)
-                {
-                    _placementService.Remove(obj);
-                    Debug.Log($"[Bulldoze] Removed {obj.Data.DisplayName}");
-                    return true;
-                }
+                _placementService.Remove(obj);
+                Debug.Log($"[Bulldoze] Removed {obj.Data.DisplayName}");
+                return true;
             }
             return false;
         }

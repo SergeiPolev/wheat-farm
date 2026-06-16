@@ -43,7 +43,7 @@ namespace WheatFarm.Infrastructure
             {
                 var data = _placeableDb.GetById(id);
                 if (data == null) continue;
-                _placement.RestorePlace(data, coord, 0, 0, 0f, 1);
+                _placement.RestorePlace(data, coord, 0, 0, 0, 0f, 1);
                 Debug.Log($"[EconomyBuildings] Placed {id} at {coord}");
             }
         }

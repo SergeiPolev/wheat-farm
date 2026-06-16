@@ -11,8 +11,6 @@ namespace WheatFarm.Core.Data
     public sealed class FootprintMask
     {
         private readonly IReadOnlyList<Vector2Int>[] _rotations;
-        private readonly int[] _rotationWidths;
-        private readonly int[] _rotationHeights;
 
         public int Width { get; }
         public int Height { get; }
@@ -23,8 +21,6 @@ namespace WheatFarm.Core.Data
             Height = height;
 
             _rotations = new IReadOnlyList<Vector2Int>[4];
-            _rotationWidths = new int[4];
-            _rotationHeights = new int[4];
 
             var cells = baseCells;
             var w = width;
@@ -32,8 +28,6 @@ namespace WheatFarm.Core.Data
 
             for (var step = 0; step < 4; step++)
             {
-                _rotationWidths[step] = w;
-                _rotationHeights[step] = h;
                 _rotations[step] = ToOffsets(cells, w, h);
 
                 // Rotate for the next step: (x, y) -> (H-1-y, x), dims swap W<->H.

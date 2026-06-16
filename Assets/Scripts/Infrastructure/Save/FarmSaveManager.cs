@@ -282,9 +282,10 @@ namespace WheatFarm.Infrastructure.Save
                     if (placeableData == null) continue;
 
                     var coord = new Vector2Int(poSave.ChunkCoordX, poSave.ChunkCoordY);
+                    // TODO(plan-A task5): read RotationSteps from save data (save format v2); passing 0 for now
                     _placement.RestorePlace(
                         placeableData, coord, poSave.CellX, poSave.CellY,
-                        poSave.RotationY, poSave.Level);
+                        0, poSave.RotationY, poSave.Level);
                 }
             }
 

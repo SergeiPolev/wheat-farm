@@ -8,24 +8,57 @@ using WheatFarm.Farming;
 
 namespace WheatFarm.Buildings
 {
+    /// <summary>Result of evaluating a placeable's footprint at a candidate position.</summary>
+    public struct FootprintEval
+    {
+        public bool AllOk;
+
+        /// <summary>World-space center of the mask cells' bounding box, y=0.</summary>
+        public Vector3 BBoxCenter;
+    }
+
     /// <summary>Runtime data for a placed object (building, decor). Paths are tracked via cell GroundState only.</summary>
     public class PlacedObject
     {
         public PlaceableData Data;
+
+        /// <summary>Anchor cell's chunk.</summary>
         public Vector2Int ChunkCoord;
+
+        /// <summary>Anchor cell within its chunk.</summary>
         public int CellX, CellY;
+
+        /// <summary>Step90 footprint rotation, 0..3.</summary>
+        public int RotationSteps;
+
+        /// <summary>Visual rotation in degrees. Free5 also uses this for rasterization.</summary>
         public float RotationY;
+
+        /// <summary>Upgrade level — separate from footprint/rotation concerns.</summary>
         public int Level = 1;
+
         public GameObject Instance;
+
+        public List<(Vector2Int chunkCoord, int cellX, int cellY)> OccupiedCells = new();
     }
 
     public interface IPlacementService
     {
         ObservableList<PlacedObject> PlacedObjects { get; }
-        PlacedObject Place(PlaceableData data, Vector3 worldPos, float rotationY = 0f);
-        bool CanPlace(PlaceableData data, Vector3 worldPos);
+
+        PlacedObject Place(PlaceableData data, Vector3 worldPos, int rotationSteps, float rotationY);
+        bool CanPlace(PlaceableData data, Vector3 worldPos, int rotationSteps, float rotationY);
+
+        /// <summary>
+        /// Evaluates every footprint cell (and any blocking padding cells) for the given placement.
+        /// Fills <paramref name="result"/> (cleared first) with world positions and per-cell validity.
+        /// </summary>
+        FootprintEval EvaluateFootprint(PlaceableData data, Vector3 worldPos, int rotationSteps, float rotationY,
+            List<(Vector3 worldPos, bool ok)> result);
+
+        bool TryGetAt(Vector3 worldPos, out PlacedObject obj);
         bool Remove(PlacedObject obj);
-        PlacedObject RestorePlace(PlaceableData data, Vector2Int chunkCoord, int cellX, int cellY, float rotationY, int level);
+        PlacedObject RestorePlace(PlaceableData data, Vector2Int chunkCoord, int cellX, int cellY, int rotationSteps, float rotationY, int level);
     }
 
     public class PlacementService : IPlacementService
@@ -33,45 +66,200 @@ namespace WheatFarm.Buildings
         private const float RefundRatio = 0.5f;
 
         private readonly IChunkSystem _chunkSystem;
-        private readonly IWalletService _wallet;        private readonly IFeedbackService _feedback;
+        private readonly IWalletService _wallet;
+        private readonly IFeedbackService _feedback;
 
-        private readonly HashSet<Vector2Int> _occupiedChunks = new();
+        private readonly Dictionary<PlaceableData, FootprintMask> _footprintCache = new();
+
+        // Scratch buffers reused across calls to avoid per-call allocations.
+        private readonly List<Vector2Int> _scratchOffsets = new();
+        private readonly List<Vector2Int> _scratchPadding = new();
+        private readonly List<(Vector3 worldPos, bool ok)> _scratchEval = new();
 
         public ObservableList<PlacedObject> PlacedObjects { get; } = new();
 
         public PlacementService(IChunkSystem chunkSystem, IWalletService wallet, IFeedbackService feedback = null)
         {
             _chunkSystem = chunkSystem;
-            _wallet = wallet;            _feedback = feedback;
-
+            _wallet = wallet;
+            _feedback = feedback;
         }
 
-        public bool CanPlace(PlaceableData data, Vector3 worldPos)
+        // --- Footprint resolution ---
+
+        private FootprintMask GetMask(PlaceableData data)
+        {
+            if (!_footprintCache.TryGetValue(data, out var mask))
+            {
+                mask = FootprintMask.Create(data.FootprintRows, data.GridSize);
+                _footprintCache[data] = mask;
+            }
+            return mask;
+        }
+
+        /// <summary>Cell offsets (relative to the anchor cell) for this placeable's footprint at the given rotation.</summary>
+        private IReadOnlyList<Vector2Int> GetOffsets(PlaceableData data, int rotationSteps, float rotationY)
+        {
+            var mask = GetMask(data);
+            return data.Rotation switch
+            {
+                RotationMode.Step90 => mask.Cells(rotationSteps),
+                RotationMode.Free5 => mask.RasterizeRotated(rotationY),
+                _ => mask.Cells(0),
+            };
+        }
+
+        /// <summary>Resolves an offset cell (relative to the anchor) to its absolute chunk/cell coordinates.</summary>
+        private (Vector2Int chunkCoord, int cellX, int cellY) ResolveOffset(Vector3 anchorWorld, Vector2Int offset)
+        {
+            var offsetWorld = anchorWorld + new Vector3(offset.x, 0, offset.y) * _chunkSystem.CellWorldSize;
+            return _chunkSystem.WorldToCell(offsetWorld);
+        }
+
+        // --- Evaluation ---
+
+        public FootprintEval EvaluateFootprint(PlaceableData data, Vector3 worldPos, int rotationSteps, float rotationY,
+            List<(Vector3 worldPos, bool ok)> result)
+        {
+            result.Clear();
+
+            var eval = new FootprintEval { AllOk = true, BBoxCenter = Vector3.zero };
+            if (data == null)
+            {
+                eval.AllOk = false;
+                return eval;
+            }
+
+            var (anchorChunk, ax, ay) = _chunkSystem.WorldToCell(worldPos);
+            var anchorWorld = _chunkSystem.CellToWorld(anchorChunk, ax, ay);
+
+            var offsets = GetOffsets(data, rotationSteps, rotationY);
+
+            float minX = float.MaxValue, maxX = float.MinValue;
+            float minZ = float.MaxValue, maxZ = float.MinValue;
+
+            foreach (var off in offsets)
+            {
+                var (chunkCoord, cx, cy) = ResolveOffset(anchorWorld, off);
+                var cellWorld = _chunkSystem.CellToWorld(chunkCoord, cx, cy);
+
+                bool ok;
+                var chunk = _chunkSystem.GetChunk(chunkCoord);
+                if (chunk == null || !chunk.Unlocked)
+                {
+                    ok = false;
+                }
+                else
+                {
+                    ref var cell = ref chunk.Cells[chunk.CellIndex(cx, cy)];
+                    ok = !cell.Occupied && !cell.HasPlant;
+                }
+
+                if (!ok) eval.AllOk = false;
+
+                result.Add((cellWorld, ok));
+
+                minX = Mathf.Min(minX, cellWorld.x);
+                maxX = Mathf.Max(maxX, cellWorld.x);
+                minZ = Mathf.Min(minZ, cellWorld.z);
+                maxZ = Mathf.Max(maxZ, cellWorld.z);
+            }
+
+            eval.BBoxCenter = new Vector3((minX + maxX) * 0.5f, 0f, (minZ + maxZ) * 0.5f);
+
+            // Padding ring: blocks placement only if an occupied cell in an existing unlocked chunk.
+            if (data.PaddingCells > 0)
+            {
+                _scratchPadding.Clear();
+                _scratchPadding.AddRange(FootprintMask.Dilate(offsets, data.PaddingCells));
+
+                foreach (var off in _scratchPadding)
+                {
+                    var (chunkCoord, cx, cy) = ResolveOffset(anchorWorld, off);
+                    var chunk = _chunkSystem.GetChunk(chunkCoord);
+                    if (chunk == null || !chunk.Unlocked) continue;
+
+                    ref var cell = ref chunk.Cells[chunk.CellIndex(cx, cy)];
+                    if (cell.Occupied)
+                    {
+                        eval.AllOk = false;
+                        var cellWorld = _chunkSystem.CellToWorld(chunkCoord, cx, cy);
+                        result.Add((cellWorld, false));
+                    }
+                }
+            }
+
+            return eval;
+        }
+
+        public bool CanPlace(PlaceableData data, Vector3 worldPos, int rotationSteps, float rotationY)
         {
             if (data == null) return false;
             if (data.Category == PlaceableCategory.Path) return false; // paths use brush, not this method
 
-            if (data.Level == PlacementLevel.Chunk)
-                return CanPlaceChunkLevel(data, worldPos);
-            else
-                return CanPlaceCellLevel(data, worldPos);
+            return EvaluateFootprint(data, worldPos, rotationSteps, rotationY, _scratchEval).AllOk;
         }
 
-        public PlacedObject Place(PlaceableData data, Vector3 worldPos, float rotationY = 0f)
+        // --- Place / Remove ---
+
+        public PlacedObject Place(PlaceableData data, Vector3 worldPos, int rotationSteps, float rotationY)
         {
             if (data == null) return null;
-            if (!CanPlace(data, worldPos)) return null;
+            if (!CanPlace(data, worldPos, rotationSteps, rotationY)) return null;
             if (!_wallet.TrySpend(data.Cost)) return null;
 
-            var placed = data.Level == PlacementLevel.Chunk
-                ? PlaceChunkLevel(data, worldPos, rotationY)
-                : PlaceCellLevel(data, worldPos, rotationY);
+            var (anchorChunk, ax, ay) = _chunkSystem.WorldToCell(worldPos);
+            var anchorWorld = _chunkSystem.CellToWorld(anchorChunk, ax, ay);
+            var offsets = GetOffsets(data, rotationSteps, rotationY);
 
-            if (placed != null)
+            var placed = new PlacedObject
             {
-                Vector3 fxPos = placed.Instance != null ? placed.Instance.transform.position : worldPos;
-                _feedback?.PlayEffect(FarmFxType.Build, fxPos);
+                Data = data,
+                ChunkCoord = anchorChunk,
+                CellX = ax,
+                CellY = ay,
+                RotationSteps = rotationSteps,
+                RotationY = rotationY,
+                Level = 1,
+            };
+
+            float minX = float.MaxValue, maxX = float.MinValue;
+            float minZ = float.MaxValue, maxZ = float.MinValue;
+
+            foreach (var off in offsets)
+            {
+                var (chunkCoord, cx, cy) = ResolveOffset(anchorWorld, off);
+                var chunk = _chunkSystem.GetChunk(chunkCoord);
+                if (chunk == null) continue;
+
+                chunk.Cells[chunk.CellIndex(cx, cy)].Occupied = true;
+                chunk.Dirty = true;
+                placed.OccupiedCells.Add((chunkCoord, cx, cy));
+
+                var cellWorld = _chunkSystem.CellToWorld(chunkCoord, cx, cy);
+                minX = Mathf.Min(minX, cellWorld.x);
+                maxX = Mathf.Max(maxX, cellWorld.x);
+                minZ = Mathf.Min(minZ, cellWorld.z);
+                maxZ = Mathf.Max(maxZ, cellWorld.z);
             }
+
+            var spawnPos = new Vector3((minX + maxX) * 0.5f, 0f, (minZ + maxZ) * 0.5f);
+
+            if (data.Prefab != null)
+            {
+                placed.Instance = Object.Instantiate(data.Prefab, spawnPos, Quaternion.Euler(0, rotationY, 0));
+
+                if (data.Interactable)
+                {
+                    var marker = placed.Instance.AddComponent<BuildingMarker>();
+                    marker.PlacedObject = placed;
+                }
+            }
+
+            PlacedObjects.Add(placed);
+
+            _feedback?.PlayEffect(FarmFxType.Build, spawnPos);
+
             return placed;
         }
 
@@ -79,10 +267,14 @@ namespace WheatFarm.Buildings
         {
             if (obj == null) return false;
 
-            if (obj.Data.Level == PlacementLevel.Chunk)
-                FreeChunkLevel(obj);
-            else
-                FreeCellLevel(obj);
+            foreach (var (chunkCoord, cx, cy) in obj.OccupiedCells)
+            {
+                var chunk = _chunkSystem.GetChunk(chunkCoord);
+                if (chunk == null) continue;
+
+                chunk.Cells[chunk.CellIndex(cx, cy)].Occupied = false;
+                chunk.Dirty = true;
+            }
 
             if (obj.Instance != null)
             {
@@ -99,189 +291,40 @@ namespace WheatFarm.Buildings
             return true;
         }
 
-        // --- Chunk-level placement (buildings) ---
+        // --- TryGetAt ---
 
-        private bool CanPlaceChunkLevel(PlaceableData data, Vector3 worldPos)
+        public bool TryGetAt(Vector3 worldPos, out PlacedObject obj)
         {
-            var chunkCoord = _chunkSystem.WorldToChunkCoord(worldPos);
-            for (int dx = 0; dx < data.GridSize.x; dx++)
+            var probe = _chunkSystem.WorldToCell(worldPos);
+
+            foreach (var placed in PlacedObjects)
             {
-                for (int dy = 0; dy < data.GridSize.y; dy++)
+                foreach (var cell in placed.OccupiedCells)
                 {
-                    var coord = chunkCoord + new Vector2Int(dx, dy);
-                    var chunk = _chunkSystem.GetChunk(coord);
-                    if (chunk == null || !chunk.Unlocked) return false;
-                    if (_occupiedChunks.Contains(coord)) return false;
-                }
-            }
-            return true;
-        }
-
-        private PlacedObject PlaceChunkLevel(PlaceableData data, Vector3 worldPos, float rotationY)
-        {
-            var chunkCoord = _chunkSystem.WorldToChunkCoord(worldPos);
-
-            // Mark chunks occupied
-            for (int dx = 0; dx < data.GridSize.x; dx++)
-            {
-                for (int dy = 0; dy < data.GridSize.y; dy++)
-                {
-                    var coord = chunkCoord + new Vector2Int(dx, dy);
-                    _occupiedChunks.Add(coord);
-                }
-            }
-
-            // Mark all sub-cells as occupied
-            MarkChunkSubCellsOccupied(data, chunkCoord, true);
-
-            var placed = new PlacedObject
-            {
-                Data = data,
-                ChunkCoord = chunkCoord,
-                CellX = 0,
-                CellY = 0,
-                RotationY = rotationY,
-                Level = 1
-            };
-
-            if (data.Prefab != null)
-            {
-                var spawnPos = ChunkFootprintCenter(chunkCoord, data.GridSize);
-                placed.Instance = Object.Instantiate(data.Prefab, spawnPos, Quaternion.Euler(0, rotationY, 0));
-
-                if (data.Interactable)
-                {
-                    var marker = placed.Instance.AddComponent<BuildingMarker>();
-                    marker.PlacedObject = placed;
-                }
-            }
-
-            PlacedObjects.Add(placed);
-            return placed;
-        }
-
-        private void FreeChunkLevel(PlacedObject obj)
-        {
-            for (int dx = 0; dx < obj.Data.GridSize.x; dx++)
-            {
-                for (int dy = 0; dy < obj.Data.GridSize.y; dy++)
-                {
-                    _occupiedChunks.Remove(obj.ChunkCoord + new Vector2Int(dx, dy));
-                }
-            }
-            MarkChunkSubCellsOccupied(obj.Data, obj.ChunkCoord, false);
-        }
-
-        private void MarkChunkSubCellsOccupied(PlaceableData data, Vector2Int chunkCoord, bool occupied)
-        {
-            for (int dx = 0; dx < data.GridSize.x; dx++)
-            {
-                for (int dy = 0; dy < data.GridSize.y; dy++)
-                {
-                    var coord = chunkCoord + new Vector2Int(dx, dy);
-                    var chunk = _chunkSystem.GetChunk(coord);
-                    if (chunk == null) continue;
-
-                    for (int i = 0; i < chunk.CellCount; i++)
+                    if (cell == probe)
                     {
-                        chunk.Cells[i].Occupied = occupied;
-                    }
-                    chunk.Dirty = true;
-                }
-            }
-        }
-
-        // --- Cell-level placement (decor) ---
-
-        private bool CanPlaceCellLevel(PlaceableData data, Vector3 worldPos)
-        {
-            var (chunkCoord, cellX, cellY) = _chunkSystem.WorldToCell(worldPos);
-            var chunk = _chunkSystem.GetChunk(chunkCoord);
-            if (chunk == null || !chunk.Unlocked) return false;
-
-            int res = _chunkSystem.SubCellResolution;
-            for (int dx = 0; dx < data.GridSize.x; dx++)
-            {
-                for (int dy = 0; dy < data.GridSize.y; dy++)
-                {
-                    int cx = cellX + dx;
-                    int cy = cellY + dy;
-                    if (cx < 0 || cx >= res || cy < 0 || cy >= res) return false;
-                    int idx = cy * res + cx;
-                    ref var cell = ref chunk.Cells[idx];
-                    if (cell.Occupied || cell.HasPlant) return false;
-                }
-            }
-            return true;
-        }
-
-        private PlacedObject PlaceCellLevel(PlaceableData data, Vector3 worldPos, float rotationY)
-        {
-            var (chunkCoord, cellX, cellY) = _chunkSystem.WorldToCell(worldPos);
-            var chunk = _chunkSystem.GetChunk(chunkCoord);
-
-            int res = _chunkSystem.SubCellResolution;
-            for (int dx = 0; dx < data.GridSize.x; dx++)
-            {
-                for (int dy = 0; dy < data.GridSize.y; dy++)
-                {
-                    int cx = cellX + dx;
-                    int cy = cellY + dy;
-                    int idx = cy * res + cx;
-                    chunk.Cells[idx].Occupied = true;
-                }
-            }
-            chunk.Dirty = true;
-
-            var placed = new PlacedObject
-            {
-                Data = data,
-                ChunkCoord = chunkCoord,
-                CellX = cellX,
-                CellY = cellY,
-                RotationY = rotationY,
-                Level = 1
-            };
-
-            if (data.Prefab != null)
-            {
-                var spawnPos = _chunkSystem.CellToWorld(chunkCoord, cellX, cellY);
-                placed.Instance = Object.Instantiate(data.Prefab, spawnPos, Quaternion.Euler(0, rotationY, 0));
-            }
-
-            PlacedObjects.Add(placed);
-            return placed;
-        }
-
-        private void FreeCellLevel(PlacedObject obj)
-        {
-            var chunk = _chunkSystem.GetChunk(obj.ChunkCoord);
-            if (chunk == null) return;
-
-            int res = _chunkSystem.SubCellResolution;
-            for (int dx = 0; dx < obj.Data.GridSize.x; dx++)
-            {
-                for (int dy = 0; dy < obj.Data.GridSize.y; dy++)
-                {
-                    int cx = obj.CellX + dx;
-                    int cy = obj.CellY + dy;
-                    if (cx >= 0 && cx < res && cy >= 0 && cy < res)
-                    {
-                        int idx = cy * res + cx;
-                        chunk.Cells[idx].Occupied = false;
+                        obj = placed;
+                        return true;
                     }
                 }
             }
-            chunk.Dirty = true;
+
+            obj = null;
+            return false;
         }
+
+        // --- Restore (save/load) ---
 
         /// <summary>
         /// Restore a placed object during save-load without spending coins or validation.
         /// </summary>
         public PlacedObject RestorePlace(PlaceableData data, Vector2Int chunkCoord, int cellX, int cellY,
-            float rotationY, int level)
+            int rotationSteps, float rotationY, int level)
         {
             if (data == null) return null;
+
+            var anchorWorld = _chunkSystem.CellToWorld(chunkCoord, cellX, cellY);
+            var offsets = GetOffsets(data, rotationSteps, rotationY);
 
             var placed = new PlacedObject
             {
@@ -289,47 +332,34 @@ namespace WheatFarm.Buildings
                 ChunkCoord = chunkCoord,
                 CellX = cellX,
                 CellY = cellY,
+                RotationSteps = rotationSteps,
                 RotationY = rotationY,
-                Level = level
+                Level = level,
             };
 
-            // Mark cells
-            if (data.Level == PlacementLevel.Chunk)
+            float minX = float.MaxValue, maxX = float.MinValue;
+            float minZ = float.MaxValue, maxZ = float.MinValue;
+
+            foreach (var off in offsets)
             {
-                for (int dx = 0; dx < data.GridSize.x; dx++)
-                    for (int dy = 0; dy < data.GridSize.y; dy++)
-                        _occupiedChunks.Add(chunkCoord + new Vector2Int(dx, dy));
-                MarkChunkSubCellsOccupied(data, chunkCoord, true);
-            }
-            else
-            {
-                var chunk = _chunkSystem.GetChunk(chunkCoord);
-                if (chunk != null)
-                {
-                    int res = _chunkSystem.SubCellResolution;
-                    for (int dx = 0; dx < data.GridSize.x; dx++)
-                    {
-                        for (int dy = 0; dy < data.GridSize.y; dy++)
-                        {
-                            int cx = cellX + dx;
-                            int cy = cellY + dy;
-                            if (cx >= 0 && cx < res && cy >= 0 && cy < res)
-                                chunk.Cells[cy * res + cx].Occupied = true;
-                        }
-                    }
-                    chunk.Dirty = true;
-                }
+                var (occChunkCoord, cx, cy) = ResolveOffset(anchorWorld, off);
+                var chunk = _chunkSystem.GetChunk(occChunkCoord);
+                if (chunk == null) continue;
+
+                chunk.Cells[chunk.CellIndex(cx, cy)].Occupied = true;
+                chunk.Dirty = true;
+                placed.OccupiedCells.Add((occChunkCoord, cx, cy));
+
+                var cellWorld = _chunkSystem.CellToWorld(occChunkCoord, cx, cy);
+                minX = Mathf.Min(minX, cellWorld.x);
+                maxX = Mathf.Max(maxX, cellWorld.x);
+                minZ = Mathf.Min(minZ, cellWorld.z);
+                maxZ = Mathf.Max(maxZ, cellWorld.z);
             }
 
-            // Instantiate prefab
             if (data.Prefab != null)
             {
-                Vector3 spawnPos;
-                if (data.Level == PlacementLevel.Chunk)
-                    spawnPos = ChunkFootprintCenter(chunkCoord, data.GridSize);
-                else
-                    spawnPos = _chunkSystem.CellToWorld(chunkCoord, cellX, cellY);
-
+                var spawnPos = new Vector3((minX + maxX) * 0.5f, 0f, (minZ + maxZ) * 0.5f);
                 placed.Instance = Object.Instantiate(data.Prefab, spawnPos, Quaternion.Euler(0, rotationY, 0));
 
                 if (data.Interactable)
@@ -342,16 +372,5 @@ namespace WheatFarm.Buildings
             PlacedObjects.Add(placed);
             return placed;
         }
-
-        /// <summary>World-space center of a chunk-level building's GridSize footprint.</summary>
-        private Vector3 ChunkFootprintCenter(Vector2Int chunkCoord, Vector2Int gridSize)
-        {
-            float cw = _chunkSystem.ChunkWorldSize;
-            return new Vector3(
-                (chunkCoord.x + gridSize.x * 0.5f) * cw,
-                0f,
-                (chunkCoord.y + gridSize.y * 0.5f) * cw);
-        }
-
     }
 }

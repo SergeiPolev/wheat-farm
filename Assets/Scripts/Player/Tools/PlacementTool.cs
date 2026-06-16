@@ -114,17 +114,15 @@ namespace WheatFarm.Player.Tools
             Vector3 snappedPos = SnapPosition(cursorWorldPos);
             _ghost.UpdatePose(snappedPos, _pendingRotation);
 
-            bool canPlace = _placementService.CanPlace(_selectedPlaceable, cursorWorldPos);
+                // TODO(plan-A task4): pass rotationSteps + per-cell EvaluateFootprint; full rework in Task 4
+            bool canPlace = _placementService.CanPlace(_selectedPlaceable, cursorWorldPos, 0, _pendingRotation);
             _ghost.SetValid(canPlace);
             _brushPreview.RenderFootprint(snappedPos, FootprintWorldSize(), canPlace);
         }
 
         private Vector2 FootprintWorldSize()
         {
-            if (_selectedPlaceable.Level == PlacementLevel.Chunk)
-                return new Vector2(
-                    _selectedPlaceable.GridSize.x * _chunkSystem.ChunkWorldSize,
-                    _selectedPlaceable.GridSize.y * _chunkSystem.ChunkWorldSize);
+            // TODO(plan-A task4): compute from actual footprint bounding box via EvaluateFootprint
             return Vector2.one * _chunkSystem.CellWorldSize;
         }
 
@@ -240,7 +238,8 @@ namespace WheatFarm.Player.Tools
                 return;
             }
 
-            var result = _placementService.Place(_selectedPlaceable, worldPos, _pendingRotation);
+            // TODO(plan-A task4): pass _pendingRotationSteps; full rework in Task 4
+            var result = _placementService.Place(_selectedPlaceable, worldPos, 0, _pendingRotation);
             if (result != null)
                 Debug.Log($"[Placement] Placed {_selectedPlaceable.DisplayName}");
             else
@@ -276,21 +275,9 @@ namespace WheatFarm.Player.Tools
 
         private Vector3 SnapPosition(Vector3 worldPos)
         {
-            if (_selectedPlaceable != null && _selectedPlaceable.Level == PlacementLevel.Chunk)
-            {
-                var chunkCoord = _chunkSystem.WorldToChunkCoord(worldPos);
-                float cw = _chunkSystem.ChunkWorldSize;
-                // Center of the GridSize-chunk footprint (matches PlacementService spawn)
-                return new Vector3(
-                    (chunkCoord.x + _selectedPlaceable.GridSize.x * 0.5f) * cw,
-                    0f,
-                    (chunkCoord.y + _selectedPlaceable.GridSize.y * 0.5f) * cw);
-            }
-            else
-            {
-                var (chunkCoord, cellX, cellY) = _chunkSystem.WorldToCell(worldPos);
-                return _chunkSystem.CellToWorld(chunkCoord, cellX, cellY);
-            }
+            // TODO(plan-A task4): chunk-level snap removed; always snap to cell center
+            var (chunkCoord, cellX, cellY) = _chunkSystem.WorldToCell(worldPos);
+            return _chunkSystem.CellToWorld(chunkCoord, cellX, cellY);
         }
     }
 }

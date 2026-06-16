@@ -3,7 +3,6 @@ using UnityEngine;
 namespace WheatFarm.Core.Data
 {
     public enum PlaceableCategory { Building, Decor, Path }
-    public enum PlacementLevel { Cell, Chunk }
     public enum RotationMode { Fixed, Step90, Free5 }    public enum BuildingRole { Production, Market, Warehouse, Contracts }
 
 
@@ -19,8 +18,6 @@ namespace WheatFarm.Core.Data
         [Header("Placement")]
         public Vector2Int GridSize = Vector2Int.one;
         public bool BlocksPlanting = true;
-        [System.Obsolete("Removed in Task A3 — all placement is cell-based now")]
-        public PlacementLevel Level;
         public RotationMode Rotation = RotationMode.Fixed;
         [Tooltip("Маска футпринта: 'X' занято, '.' свободно. Пусто = прямоугольник GridSize (в КЛЕТКАХ).")]
         public string[] FootprintRows;
