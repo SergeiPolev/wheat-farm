@@ -294,6 +294,8 @@ namespace WheatFarm.Infrastructure.Save
             {
                 foreach (var slotData in data.ProductionSlots)
                 {
+                    // TODO(plan-A task5): match also by CellX/CellY — two same-type buildings in one chunk
+                    // currently collide and steal each other's production slots.
                     var building = _placement.PlacedObjects
                         .FirstOrDefault(po => po.Data.PlaceableId == slotData.PlaceableId
                             && po.ChunkCoord == slotData.ChunkCoord);

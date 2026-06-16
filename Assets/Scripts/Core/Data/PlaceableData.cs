@@ -3,7 +3,8 @@ using UnityEngine;
 namespace WheatFarm.Core.Data
 {
     public enum PlaceableCategory { Building, Decor, Path }
-    public enum RotationMode { Fixed, Step90, Free5 }    public enum BuildingRole { Production, Market, Warehouse, Contracts }
+    public enum RotationMode { Fixed, Step90, Free5 }
+    public enum BuildingRole { Production, Market, Warehouse, Contracts }
 
 
     [CreateAssetMenu(menuName = "WheatFarm/PlaceableData")]
@@ -36,7 +37,8 @@ namespace WheatFarm.Core.Data
         public bool UnlockedByDefault = true;
 
         [Header("Interaction")]
-        public bool Interactable;        public BuildingRole Role;
+        public bool Interactable;
+        public BuildingRole Role;
 
         public RecipeData[] Recipes;
         public int MaxLevel = 1;

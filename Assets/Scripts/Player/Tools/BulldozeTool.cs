@@ -82,14 +82,14 @@ namespace WheatFarm.Player.Tools
 
         private bool TryRemovePlacedObject(Vector3 worldPos)
         {
-            // TODO(plan-A task6): replace with _placementService.TryGetAt(worldPos) after Task 6 rework
-            // Stub: use TryGetAt for cell-accurate hit detection
+            // Buildings/decor: cell-accurate footprint hit. Final form.
             if (_placementService.TryGetAt(worldPos, out var obj))
             {
                 _placementService.Remove(obj);
                 Debug.Log($"[Bulldoze] Removed {obj.Data.DisplayName}");
                 return true;
             }
+            // TODO(plan-A task6): also remove trees (TryGetTreeAt + SeedCost/2 refund) and add hover highlight
             return false;
         }
     }

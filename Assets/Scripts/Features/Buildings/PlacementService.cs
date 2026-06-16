@@ -72,7 +72,6 @@ namespace WheatFarm.Buildings
         private readonly Dictionary<PlaceableData, FootprintMask> _footprintCache = new();
 
         // Scratch buffers reused across calls to avoid per-call allocations.
-        private readonly List<Vector2Int> _scratchOffsets = new();
         private readonly List<Vector2Int> _scratchPadding = new();
         private readonly List<(Vector3 worldPos, bool ok)> _scratchEval = new();
 
@@ -116,6 +115,39 @@ namespace WheatFarm.Buildings
             return _chunkSystem.WorldToCell(offsetWorld);
         }
 
+        /// <summary>World center (y=0) of the bounding box of the given footprint offsets around an anchor.</summary>
+        private Vector3 ComputeBBoxCenter(Vector3 anchorWorld, IReadOnlyList<Vector2Int> offsets)
+        {
+            float minX = float.MaxValue, maxX = float.MinValue;
+            float minZ = float.MaxValue, maxZ = float.MinValue;
+            foreach (var off in offsets)
+            {
+                var (chunkCoord, cx, cy) = ResolveOffset(anchorWorld, off);
+                var cellWorld = _chunkSystem.CellToWorld(chunkCoord, cx, cy);
+                minX = Mathf.Min(minX, cellWorld.x);
+                maxX = Mathf.Max(maxX, cellWorld.x);
+                minZ = Mathf.Min(minZ, cellWorld.z);
+                maxZ = Mathf.Max(maxZ, cellWorld.z);
+            }
+            if (minX > maxX) return new Vector3(anchorWorld.x, 0f, anchorWorld.z); // empty offsets — unreachable in practice
+            return new Vector3((minX + maxX) * 0.5f, 0f, (minZ + maxZ) * 0.5f);
+        }
+
+        /// <summary>Marks (or frees) the footprint cells around an anchor, recording them into <paramref name="into"/>. Returns the spawn bbox center.</summary>
+        private Vector3 MarkFootprint(Vector3 anchorWorld, IReadOnlyList<Vector2Int> offsets, List<(Vector2Int, int, int)> into)
+        {
+            foreach (var off in offsets)
+            {
+                var (chunkCoord, cx, cy) = ResolveOffset(anchorWorld, off);
+                var chunk = _chunkSystem.GetChunk(chunkCoord);
+                if (chunk == null) continue; // CanPlace already verified presence; defensive only
+                chunk.Cells[chunk.CellIndex(cx, cy)].Occupied = true;
+                chunk.Dirty = true;
+                into.Add((chunkCoord, cx, cy));
+            }
+            return ComputeBBoxCenter(anchorWorld, offsets);
+        }
+
         // --- Evaluation ---
 
         public FootprintEval EvaluateFootprint(PlaceableData data, Vector3 worldPos, int rotationSteps, float rotationY,
@@ -135,9 +167,6 @@ namespace WheatFarm.Buildings
 
             var offsets = GetOffsets(data, rotationSteps, rotationY);
 
-            float minX = float.MaxValue, maxX = float.MinValue;
-            float minZ = float.MaxValue, maxZ = float.MinValue;
-
             foreach (var off in offsets)
             {
                 var (chunkCoord, cx, cy) = ResolveOffset(anchorWorld, off);
@@ -156,16 +185,10 @@ namespace WheatFarm.Buildings
                 }
 
                 if (!ok) eval.AllOk = false;
-
                 result.Add((cellWorld, ok));
-
-                minX = Mathf.Min(minX, cellWorld.x);
-                maxX = Mathf.Max(maxX, cellWorld.x);
-                minZ = Mathf.Min(minZ, cellWorld.z);
-                maxZ = Mathf.Max(maxZ, cellWorld.z);
             }
 
-            eval.BBoxCenter = new Vector3((minX + maxX) * 0.5f, 0f, (minZ + maxZ) * 0.5f);
+            eval.BBoxCenter = ComputeBBoxCenter(anchorWorld, offsets);
 
             // Padding ring: blocks placement only if an occupied cell in an existing unlocked chunk.
             if (data.PaddingCells > 0)
@@ -223,27 +246,7 @@ namespace WheatFarm.Buildings
                 Level = 1,
             };
 
-            float minX = float.MaxValue, maxX = float.MinValue;
-            float minZ = float.MaxValue, maxZ = float.MinValue;
-
-            foreach (var off in offsets)
-            {
-                var (chunkCoord, cx, cy) = ResolveOffset(anchorWorld, off);
-                var chunk = _chunkSystem.GetChunk(chunkCoord);
-                if (chunk == null) continue;
-
-                chunk.Cells[chunk.CellIndex(cx, cy)].Occupied = true;
-                chunk.Dirty = true;
-                placed.OccupiedCells.Add((chunkCoord, cx, cy));
-
-                var cellWorld = _chunkSystem.CellToWorld(chunkCoord, cx, cy);
-                minX = Mathf.Min(minX, cellWorld.x);
-                maxX = Mathf.Max(maxX, cellWorld.x);
-                minZ = Mathf.Min(minZ, cellWorld.z);
-                maxZ = Mathf.Max(maxZ, cellWorld.z);
-            }
-
-            var spawnPos = new Vector3((minX + maxX) * 0.5f, 0f, (minZ + maxZ) * 0.5f);
+            var spawnPos = MarkFootprint(anchorWorld, offsets, placed.OccupiedCells);
 
             if (data.Prefab != null)
             {
@@ -337,29 +340,10 @@ namespace WheatFarm.Buildings
                 Level = level,
             };
 
-            float minX = float.MaxValue, maxX = float.MinValue;
-            float minZ = float.MaxValue, maxZ = float.MinValue;
-
-            foreach (var off in offsets)
-            {
-                var (occChunkCoord, cx, cy) = ResolveOffset(anchorWorld, off);
-                var chunk = _chunkSystem.GetChunk(occChunkCoord);
-                if (chunk == null) continue;
-
-                chunk.Cells[chunk.CellIndex(cx, cy)].Occupied = true;
-                chunk.Dirty = true;
-                placed.OccupiedCells.Add((occChunkCoord, cx, cy));
-
-                var cellWorld = _chunkSystem.CellToWorld(occChunkCoord, cx, cy);
-                minX = Mathf.Min(minX, cellWorld.x);
-                maxX = Mathf.Max(maxX, cellWorld.x);
-                minZ = Mathf.Min(minZ, cellWorld.z);
-                maxZ = Mathf.Max(maxZ, cellWorld.z);
-            }
+            var spawnPos = MarkFootprint(anchorWorld, offsets, placed.OccupiedCells);
 
             if (data.Prefab != null)
             {
-                var spawnPos = new Vector3((minX + maxX) * 0.5f, 0f, (minZ + maxZ) * 0.5f);
                 placed.Instance = Object.Instantiate(data.Prefab, spawnPos, Quaternion.Euler(0, rotationY, 0));
 
                 if (data.Interactable)

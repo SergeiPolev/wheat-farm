@@ -79,6 +79,7 @@ namespace WheatFarm.Infrastructure.Save
         public int CellY;
         public float RotationY;
         public int Level;
+        // TODO(plan-A task5): add RotationSteps + bump Version to 2 so Step90 footprints restore correctly
     }
 
     /// <summary>Serializable placed tree.</summary>
