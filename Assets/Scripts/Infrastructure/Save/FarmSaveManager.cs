@@ -33,7 +33,8 @@ namespace WheatFarm.Infrastructure.Save
         private readonly IProductionService _production;
         private readonly ITreePlacementService _trees;
         private readonly PlantDatabase _plantDb;
-        private readonly PlaceableDatabase _placeableDb;        private readonly IPlantUnlockService _unlock;
+        private readonly PlaceableDatabase _placeableDb;
+        private readonly IPlantUnlockService _unlock;
 
 
         /// <summary>Must match PlantSystem.MinGrowthScale</summary>
@@ -63,7 +64,8 @@ namespace WheatFarm.Infrastructure.Save
             _production = production;
             _trees = trees;
             _plantDb = plantDb;
-            _placeableDb = placeableDb;            _unlock = unlock;
+            _placeableDb = placeableDb;
+            _unlock = unlock;
 
         }
 

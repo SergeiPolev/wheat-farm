@@ -86,26 +86,43 @@ namespace WheatFarm.Infrastructure.Save
                 return false;
             }
 
+            string json;
             try
             {
-                var json = File.ReadAllText(SavePath);
-                var data = JsonUtility.FromJson<FarmSaveData>(json);
-                if (data != null && data.Version >= MinCompatibleVersion)
-                {
-                    _hasCompatibleSaveCache = true;
-                    return true;
-                }
-
-                // Incompatible version — delete and start fresh.
-                Debug.LogWarning($"[FarmSaveService] Save version {data?.Version ?? 0} < {MinCompatibleVersion} (requires v{MinCompatibleVersion}+). Deleting incompatible save.");
-                File.Delete(SavePath);
+                json = File.ReadAllText(SavePath);
             }
             catch (System.Exception ex)
             {
-                Debug.LogWarning($"[FarmSaveService] Failed to parse save file, deleting. Error: {ex.Message}");
-                try { File.Delete(SavePath); } catch { /* best effort */ }
+                // Transient I/O failure (file locked by cloud sync / AV, etc.) — do NOT delete a
+                // potentially-valid save. Report no-compatible-save for this session; retry next launch.
+                Debug.LogWarning($"[FarmSaveService] Could not read save file (treating as no save, NOT deleting). Error: {ex.Message}");
+                _hasCompatibleSaveCache = false;
+                return false;
             }
 
+            FarmSaveData data;
+            try
+            {
+                data = JsonUtility.FromJson<FarmSaveData>(json);
+            }
+            catch (System.Exception ex)
+            {
+                // The bytes read fine but aren't valid save JSON — genuinely corrupt; delete and start fresh.
+                Debug.LogWarning($"[FarmSaveService] Save file is corrupt, deleting. Error: {ex.Message}");
+                try { File.Delete(SavePath); } catch { /* best effort */ }
+                _hasCompatibleSaveCache = false;
+                return false;
+            }
+
+            if (data != null && data.Version >= MinCompatibleVersion)
+            {
+                _hasCompatibleSaveCache = true;
+                return true;
+            }
+
+            // Parsed cleanly but is an old/incompatible version — delete and start fresh.
+            Debug.LogWarning($"[FarmSaveService] Save version {data?.Version ?? 0} < {MinCompatibleVersion} (requires v{MinCompatibleVersion}+). Deleting incompatible save.");
+            try { File.Delete(SavePath); } catch { /* best effort */ }
             _hasCompatibleSaveCache = false;
             return false;
         }
