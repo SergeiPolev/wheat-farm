@@ -1,6 +1,7 @@
 using UnityEngine;
 using WheatFarm.Buildings;
 using WheatFarm.Core.Data;
+using WheatFarm.Economy;
 using WheatFarm.Farming;
 
 namespace WheatFarm.Player.Tools
@@ -8,15 +9,24 @@ namespace WheatFarm.Player.Tools
     /// <summary>
     /// Removes placed objects (buildings, decor), clears paths, and uproots crops.
     /// Click on a building/decor prefab → PlacementService.Remove() with partial refund.
+    /// Click on a tree → TreePlacementService.Remove() with SeedCost/2 refund.
     /// Click on ground → clear path (reset GroundState) or uproot crop.
+    /// Hover highlights the building/tree under the cursor with a red tint.
     /// </summary>
     public class BulldozeTool : ITool, IBrushAction, IBrushPreviewSource
     {
-        // TODO(plan-A task6): BuildingProximityThreshold/DecorProximityThreshold removed; TryGetAt is cell-accurate
         private readonly IPlacementService _placementService;
         private readonly IPlantSystem _plantSystem;
         private readonly IChunkSystem _chunkSystem;
         private readonly IBrushService _brush;
+        private readonly IWalletService _wallet;
+        private readonly ITreePlacementService _treePlacement;
+
+        // Hover highlight state
+        private GameObject _hoveredInstance;
+        private Renderer[] _hoveredRenderers;
+        private static readonly MaterialPropertyBlock _mpb = new();
+        private static readonly Color HoverTint = new(1f, 0.5f, 0.5f, 1f);
 
         public ToolId Id => ToolId.Bulldoze;
         public bool RequiresResource => false;
@@ -25,16 +35,24 @@ namespace WheatFarm.Player.Tools
             IPlacementService placementService,
             IPlantSystem plantSystem,
             IChunkSystem chunkSystem,
-            IBrushService brush)
+            IBrushService brush,
+            IWalletService wallet,
+            ITreePlacementService treePlacement)
         {
             _placementService = placementService;
             _plantSystem = plantSystem;
             _chunkSystem = chunkSystem;
             _brush = brush;
+            _wallet = wallet;
+            _treePlacement = treePlacement;
         }
 
         public void OnEquip() { }
-        public void OnUnequip() { }
+
+        public void OnUnequip()
+        {
+            ClearHover();
+        }
 
         public void UseAtPosition(Vector3 worldPos)
         {
@@ -80,16 +98,81 @@ namespace WheatFarm.Player.Tools
         public bool PreviewActive => true;
         public Color PreviewCellColor => new(0.9f, 0.25f, 0.2f, 0.45f);
 
+        /// <summary>
+        /// Call each frame when the bulldoze tool is active and the cursor is over the ground.
+        /// Applies a red tint to the building or tree under the cursor.
+        /// </summary>
+        public void UpdateHover(Vector3 cursorWorldPos)
+        {
+            // Resolve which instance is under cursor
+            GameObject newInstance = null;
+            if (_placementService.TryGetAt(cursorWorldPos, out var placedObj) && placedObj.Instance != null)
+                newInstance = placedObj.Instance;
+            else if (_treePlacement.TryGetTreeAt(cursorWorldPos, out var tree) && tree.Instance != null)
+                newInstance = tree.Instance;
+
+            // Nothing changed — nothing to do
+            if (newInstance == _hoveredInstance)
+                return;
+
+            // Clear previous tint
+            ClearHoveredRenderers();
+
+            _hoveredInstance = newInstance;
+            if (_hoveredInstance == null)
+            {
+                _hoveredRenderers = null;
+                return;
+            }
+
+            // Apply red tint to all renderers on the new instance
+            _hoveredRenderers = _hoveredInstance.GetComponentsInChildren<Renderer>(true);
+            _mpb.SetColor("_BaseColor", HoverTint);
+            foreach (var r in _hoveredRenderers)
+                r.SetPropertyBlock(_mpb);
+        }
+
+        /// <summary>
+        /// Clears the red tint from the currently hovered instance.
+        /// Call when unequipping or when cursor is over UI / misses the ground.
+        /// </summary>
+        public void ClearHover()
+        {
+            ClearHoveredRenderers();
+            _hoveredInstance = null;
+            _hoveredRenderers = null;
+        }
+
+        private void ClearHoveredRenderers()
+        {
+            if (_hoveredRenderers == null) return;
+            foreach (var r in _hoveredRenderers)
+            {
+                // Guard against destroyed instances (Unity null check)
+                if (r != null)
+                    r.SetPropertyBlock(null);
+            }
+        }
+
         private bool TryRemovePlacedObject(Vector3 worldPos)
         {
-            // Buildings/decor: cell-accurate footprint hit. Final form.
+            // Buildings/decor: cell-accurate footprint hit.
             if (_placementService.TryGetAt(worldPos, out var obj))
             {
                 _placementService.Remove(obj);
                 Debug.Log($"[Bulldoze] Removed {obj.Data.DisplayName}");
                 return true;
             }
-            // TODO(plan-A task6): also remove trees (TryGetTreeAt + SeedCost/2 refund) and add hover highlight
+
+            if (_treePlacement.TryGetTreeAt(worldPos, out var tree))
+            {
+                _treePlacement.Remove(tree);
+                int refund = tree.Data.SeedCost / 2;
+                if (refund > 0) _wallet.Add(refund);
+                Debug.Log($"[Bulldoze] Removed tree {tree.Data.DisplayName} (+{refund})");
+                return true;
+            }
+
             return false;
         }
     }

@@ -91,7 +91,7 @@ namespace WheatFarm.Infrastructure
             builder.Register<DyeTool>(Lifetime.Singleton).As<ITool>();
             builder.Register<FertilizerTool>(Lifetime.Singleton).As<ITool>();
             builder.Register<UprootTool>(Lifetime.Singleton).As<ITool>();
-            builder.Register<BulldozeTool>(Lifetime.Singleton).As<ITool>();
+            builder.Register<BulldozeTool>(Lifetime.Singleton).As<BulldozeTool, ITool>();
 
             builder.Register<ToolService>(Lifetime.Singleton)
                 .As<IToolService, System.IDisposable>();
