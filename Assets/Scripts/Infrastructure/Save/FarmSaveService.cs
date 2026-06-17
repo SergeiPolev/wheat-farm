@@ -27,7 +27,7 @@ namespace WheatFarm.Infrastructure.Save
         private const string FileName = "farm_save.json";
         private const int MinCompatibleVersion = 2;
 
-        private string SavePath => Path.Combine(Application.persistentDataPath, FileName);
+        protected virtual string SavePath => Path.Combine(Application.persistentDataPath, FileName);
 
         /// <summary>
         /// Cached probe result. null = not yet probed this session.
