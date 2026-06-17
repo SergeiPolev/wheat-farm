@@ -19,7 +19,11 @@ MonoBehaviour:
   GridSize: {x: 4, y: 4}
   BlocksPlanting: 1
   Rotation: 1
-  FootprintRows: []
+  FootprintRows:
+  - XXXX
+  - XXXX
+  - XXXX
+  - XXXX
   PaddingCells: 0
   Prefab: {fileID: 7412385192354564968, guid: 85c9df40c0ca42e2b38cb36b297c8208, type: 3}
   PathSubtype: 0
