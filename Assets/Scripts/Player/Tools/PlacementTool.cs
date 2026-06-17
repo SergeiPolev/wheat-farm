@@ -19,7 +19,8 @@ namespace WheatFarm.Player.Tools
         private readonly ITreePlacementService _treePlacement;
         private readonly IBrushService _brush;
         private readonly IPlacementService _placementService;
-        private readonly IChunkSystem _chunkSystem;        private readonly IInventoryService _inventory;
+        private readonly IChunkSystem _chunkSystem;
+        private readonly IInventoryService _inventory;
 
 
         private readonly IPlacementGhostService _ghost;
@@ -54,7 +55,8 @@ namespace WheatFarm.Player.Tools
             _treePlacement = treePlacement;
             _brush = brush;
             _placementService = placementService;
-            _chunkSystem = chunkSystem;            _inventory = inventory;
+            _chunkSystem = chunkSystem;
+            _inventory = inventory;
             _ghost = ghost;
             _brushPreview = brushPreview;
             _config = config;
@@ -119,6 +121,8 @@ namespace WheatFarm.Player.Tools
             if (_selectedPlaceable == null || _selectedPlaceable.Category == PlaceableCategory.Path)
                 return;
 
+            // For Free5 the footprint is a conservative rasterization — highlighted cells may
+            // slightly exceed the visual ghost bounds at non-axis angles. This is intentional.
             var eval = _placementService.EvaluateFootprint(
                 _selectedPlaceable, cursorWorldPos, _pendingRotationSteps, _pendingRotation, _previewCells);
 

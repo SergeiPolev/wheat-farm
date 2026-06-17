@@ -116,9 +116,9 @@ namespace WheatFarm.Player.Preview
             var rp = new RenderParams(_cellMaterial)
             {
                 layer = _layer,
-                matProps = _mpb,
                 shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off,
                 receiveShadows = false
+                // matProps set per-batch below; RenderMeshInstanced captures MPB state at call time.
             };
 
             if (_matrices.Count > 0)
