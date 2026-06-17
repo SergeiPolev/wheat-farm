@@ -62,9 +62,11 @@ namespace WheatFarm.Player
             UpdateInteractionPosition();
             HandleToolSwitching();
             HandleBrushSize();
-            HandlePreview();
             HandlePlacementRotation();
             HandleToolUse();
+            // Preview/hover last: if a click this frame removed the hovered object,
+            // we won't tint a renderer that's about to be destroyed.
+            HandlePreview();
         }
 
         private void UpdateInteractionPosition()
