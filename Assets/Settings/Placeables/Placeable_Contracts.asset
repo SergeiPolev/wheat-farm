@@ -16,17 +16,23 @@ MonoBehaviour:
   DisplayName: Contracts
   Category: 0
   Icon: {fileID: 0}
-  GridSize: {x: 7, y: 7}
+  GridSize: {x: 13, y: 13}
   BlocksPlanting: 1
   Rotation: 0
   FootprintRows:
-  - XXXXXXX
-  - XXXXXXX
-  - XXXXXXX
-  - XXXXXXX
-  - XXXXXXX
-  - XXXXXXX
-  - XXXXXX.
+  - XXXXXXXXXXXXX
+  - XXXXXXXXXXXXX
+  - XXXXXXXXXXXXX
+  - XXXXXXXXXXXXX
+  - XXXXXXXXXXXXX
+  - XXXXXXXXXXXXX
+  - XXXXXXXXXXXXX
+  - XXXXXXXXXXXXX
+  - XXXXXXXXXXXXX
+  - XXXXXXXXXXXXX
+  - XXXXXXXXXXXXX
+  - XXXXXXXXXXXXX
+  - XXXXXXXXXXXXX
   PaddingCells: 0
   Prefab: {fileID: 7048966154199624163, guid: c40154968536ff446a6a5dc75232ab50, type: 3}
   PathSubtype: 0

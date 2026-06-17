@@ -1,30 +1,39 @@
-using System;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 using WheatFarm.Core.Data;
+using WheatFarm.Farming;
 
 namespace WheatFarm.Editor
 {
     /// <summary>
-    /// One-shot editor utility: migrates all PlaceableData assets from chunk-unit GridSize
-    /// to cell-unit GridSize by computing renderer bounds from each asset's prefab.
+    /// Editor utility: (re)generates per-cell footprint masks for all non-Path PlaceableData
+    /// assets by projecting each prefab's mesh geometry top-down onto the farm cell grid.
     ///
-    /// Cell world size = 0.5 m (ChunkWorldSize=4 / SubCellResolution=8).
-    /// Category=Path assets (PlaceableCategory.Path) are skipped — they use per-cell placement.
+    /// Cell world size is read from the project's FarmRenderConfig (ChunkWorldSize / SubCellResolution).
+    /// Each cell is marked occupied ('X') when at least <see cref="CoverageThreshold"/> of its area
+    /// is covered by the prefab geometry (3×3 sample points), otherwise free ('.').
     ///
-    /// Usage: WheatFarm > Migrate Placeable Footprints
-    ///    OR: WheatFarm.Editor.PlaceableFootprintMigration.Migrate() from execute_code.
+    /// Category=Path assets are skipped (they use brush-based per-cell placement).
+    ///
+    /// Usage: WheatFarm > Generate Placeable Footprints
+    ///    OR: WheatFarm.Editor.PlaceableFootprintMigration.Generate() from execute_code.
     /// </summary>
     public static class PlaceableFootprintMigration
     {
-        private const float CellWorldSize = 0.5f; // 4m chunk / 8 cells
+        /// <summary>Fraction of a cell that must be covered by geometry to count as occupied.</summary>
+        private const float CoverageThreshold = 0.30f;
 
-        [MenuItem("WheatFarm/Migrate Placeable Footprints")]
-        public static void Migrate()
+        /// <summary>Safety cap so a mis-scaled prefab can't produce an enormous mask.</summary>
+        private const int MaxGridSide = 32;
+
+        [MenuItem("WheatFarm/Generate Placeable Footprints")]
+        public static void Generate()
         {
+            float cell = ResolveCellWorldSize();
+
             string[] guids = AssetDatabase.FindAssets("t:PlaceableData");
-            int migrated = 0;
-            int skipped = 0;
+            int updated = 0, skipped = 0;
 
             foreach (string guid in guids)
             {
@@ -32,101 +41,155 @@ namespace WheatFarm.Editor
                 var data = AssetDatabase.LoadAssetAtPath<PlaceableData>(path);
                 if (data == null) continue;
 
-                // Paths keep their 1×1 cell GridSize — skip them.
                 if (data.Category == PlaceableCategory.Path)
                 {
-                    Debug.Log($"[FootprintMigration] SKIP (Path): {data.name}  GridSize={data.GridSize}");
                     skipped++;
                     continue;
                 }
 
-                Vector2Int newGridSize = ComputeCellGridSize(data);
+                if (data.Prefab == null)
+                {
+                    Debug.LogWarning($"[FootprintGen] {data.name}: no prefab — left unchanged.");
+                    skipped++;
+                    continue;
+                }
 
-                // Clear footprint rows — solid rectangle fallback from GridSize is correct after migration.
-                data.GridSize = newGridSize;
-                data.FootprintRows = null;
-
-                EditorUtility.SetDirty(data);
-                Debug.Log($"[FootprintMigration] MIGRATED: {data.name}  -> GridSize={newGridSize}  (Category={data.Category})");
-                migrated++;
+                if (TryBuildFootprint(data, cell, out var gridSize, out var rows))
+                {
+                    data.GridSize = gridSize;
+                    data.FootprintRows = rows;
+                    EditorUtility.SetDirty(data);
+                    updated++;
+                    Debug.Log($"[FootprintGen] {data.name} -> {gridSize.x}x{gridSize.y}: {string.Join("/", rows)}");
+                }
+                else
+                {
+                    Debug.LogWarning($"[FootprintGen] {data.name}: no mesh geometry — left unchanged.");
+                    skipped++;
+                }
             }
 
             AssetDatabase.SaveAssets();
-            Debug.Log($"[FootprintMigration] Done. Migrated={migrated}, Skipped={skipped}.");
+            Debug.Log($"[FootprintGen] Done. Updated={updated}, Skipped={skipped}, cell={cell}m.");
+        }
+
+        private static float ResolveCellWorldSize()
+        {
+            string[] cfgGuids = AssetDatabase.FindAssets("t:FarmRenderConfig");
+            foreach (string g in cfgGuids)
+            {
+                var cfg = AssetDatabase.LoadAssetAtPath<FarmRenderConfig>(AssetDatabase.GUIDToAssetPath(g));
+                if (cfg != null && cfg.SubCellResolution > 0)
+                    return cfg.ChunkWorldSize / cfg.SubCellResolution;
+            }
+            Debug.LogWarning("[FootprintGen] No FarmRenderConfig found — defaulting cell size to 0.25m.");
+            return 0.25f;
         }
 
         /// <summary>
-        /// Computes the cell-unit GridSize for a PlaceableData asset by examining its prefab's
-        /// renderer bounds. Falls back to max(1,1) when no prefab or no renderers are found.
+        /// Projects the prefab's mesh triangles onto the XZ plane and rasterizes them into a cell mask.
+        /// Returns false if the prefab has no readable mesh geometry.
         /// </summary>
-        private static Vector2Int ComputeCellGridSize(PlaceableData data)
+        private static bool TryBuildFootprint(PlaceableData data, float cell, out Vector2Int gridSize, out string[] rows)
         {
-            if (data.Prefab == null)
-            {
-                // No prefab: use existing GridSize converted from chunks to cells (×8 cells/chunk).
-                // This preserves the old intent for assets without prefabs.
-                int cx = Mathf.Max(1, data.GridSize.x * 8);
-                int cy = Mathf.Max(1, data.GridSize.y * 8);
-                Debug.LogWarning($"[FootprintMigration] {data.name}: no prefab — converting chunk GridSize {data.GridSize} → cell GridSize ({cx},{cy})");
-                return new Vector2Int(cx, cy);
-            }
+            gridSize = Vector2Int.one;
+            rows = null;
 
-            // Instantiate a temporary copy in the editor scene to read combined renderer bounds.
-            // We use hideFlags so it never shows in the hierarchy and is never saved.
-            GameObject temp = null;
+            GameObject temp = (GameObject)PrefabUtility.InstantiatePrefab(data.Prefab);
+            if (temp == null) return false;
+            temp.hideFlags = HideFlags.HideAndDontSave;
+            temp.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+
             try
             {
-                temp = (GameObject)PrefabUtility.InstantiatePrefab(data.Prefab);
-                if (temp == null)
+                // Gather all triangles in XZ world space (instance sits at origin, identity rotation).
+                var tris = new List<Vector2>();
+                float minX = float.MaxValue, maxX = float.MinValue, minZ = float.MaxValue, maxZ = float.MinValue;
+
+                foreach (var mf in temp.GetComponentsInChildren<MeshFilter>())
                 {
-                    Debug.LogWarning($"[FootprintMigration] {data.name}: could not instantiate prefab, falling back.");
-                    return FallbackCellGridSize(data);
+                    var mesh = mf.sharedMesh;
+                    if (mesh == null) continue;
+                    var verts = mesh.vertices;
+                    var tr = mf.transform;
+                    var xz = new Vector2[verts.Length];
+                    for (int i = 0; i < verts.Length; i++)
+                    {
+                        var w = tr.TransformPoint(verts[i]);
+                        xz[i] = new Vector2(w.x, w.z);
+                        if (w.x < minX) minX = w.x;
+                        if (w.x > maxX) maxX = w.x;
+                        if (w.z < minZ) minZ = w.z;
+                        if (w.z > maxZ) maxZ = w.z;
+                    }
+                    var idx = mesh.triangles;
+                    for (int i = 0; i + 2 < idx.Length; i += 3)
+                    {
+                        tris.Add(xz[idx[i]]);
+                        tris.Add(xz[idx[i + 1]]);
+                        tris.Add(xz[idx[i + 2]]);
+                    }
                 }
 
-                temp.hideFlags = HideFlags.HideAndDontSave;
+                if (tris.Count == 0) return false;
 
-                Renderer[] renderers = temp.GetComponentsInChildren<Renderer>(includeInactive: true);
-                if (renderers.Length == 0)
+                int gridW = Mathf.Clamp(Mathf.CeilToInt((maxX - minX) / cell), 1, MaxGridSide);
+                int gridH = Mathf.Clamp(Mathf.CeilToInt((maxZ - minZ) / cell), 1, MaxGridSide);
+
+                rows = new string[gridH];
+                int xCount = 0;
+                for (int z = 0; z < gridH; z++)
                 {
-                    Debug.LogWarning($"[FootprintMigration] {data.name}: prefab has no Renderers, falling back.");
-                    return FallbackCellGridSize(data);
+                    var chars = new char[gridW];
+                    for (int x = 0; x < gridW; x++)
+                    {
+                        float cx0 = minX + x * cell;
+                        float cz0 = minZ + z * cell;
+                        int inside = 0;
+                        for (int sx = 0; sx < 3; sx++)
+                        for (int sz = 0; sz < 3; sz++)
+                        {
+                            float px = cx0 + (sx + 1) / 4f * cell;
+                            float pz = cz0 + (sz + 1) / 4f * cell;
+                            if (CoveredByAnyTriangle(px, pz, tris)) inside++;
+                        }
+                        bool occ = inside / 9f >= CoverageThreshold;
+                        chars[x] = occ ? 'X' : '.';
+                        if (occ) xCount++;
+                    }
+                    rows[z] = new string(chars);
                 }
 
-                // Combine all renderer bounds into one.
-                Bounds combined = renderers[0].bounds;
-                for (int i = 1; i < renderers.Length; i++)
-                    combined.Encapsulate(renderers[i].bounds);
+                // Degenerate (all sub-threshold): fall back to a solid rectangle so the placeable still has a footprint.
+                if (xCount == 0)
+                    for (int z = 0; z < gridH; z++)
+                        rows[z] = new string('X', gridW);
 
-                // XZ footprint (Y is height, irrelevant for grid).
-                float sizeX = combined.size.x;
-                float sizeZ = combined.size.z;
-
-                int cellsX = Mathf.Max(1, Mathf.CeilToInt(sizeX / CellWorldSize));
-                int cellsZ = Mathf.Max(1, Mathf.CeilToInt(sizeZ / CellWorldSize));
-
-                return new Vector2Int(cellsX, cellsZ);
-            }
-            catch (Exception ex)
-            {
-                Debug.LogWarning($"[FootprintMigration] {data.name}: exception during bounds computation: {ex.Message}. Falling back.");
-                return FallbackCellGridSize(data);
+                gridSize = new Vector2Int(gridW, gridH);
+                return true;
             }
             finally
             {
-                if (temp != null)
-                    UnityEngine.Object.DestroyImmediate(temp);
+                Object.DestroyImmediate(temp);
             }
         }
 
-        /// <summary>
-        /// Fallback: treat old GridSize as being in chunk units and scale ×8 to get cell units.
-        /// Clamps to at least 1×1.
-        /// </summary>
-        private static Vector2Int FallbackCellGridSize(PlaceableData data)
+        private static bool CoveredByAnyTriangle(float px, float pz, List<Vector2> tris)
         {
-            return new Vector2Int(
-                Mathf.Max(1, data.GridSize.x * 8),
-                Mathf.Max(1, data.GridSize.y * 8));
+            for (int i = 0; i + 2 < tris.Count; i += 3)
+                if (PointInTriangle(px, pz, tris[i], tris[i + 1], tris[i + 2]))
+                    return true;
+            return false;
+        }
+
+        private static bool PointInTriangle(float px, float py, Vector2 a, Vector2 b, Vector2 c)
+        {
+            float d1 = Sign(a, b), d2 = Sign(b, c), d3 = Sign(c, a);
+            bool hasNeg = d1 < 0 || d2 < 0 || d3 < 0;
+            bool hasPos = d1 > 0 || d2 > 0 || d3 > 0;
+            return !(hasNeg && hasPos);
+
+            float Sign(Vector2 p2, Vector2 p3) => (px - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (py - p3.y);
         }
     }
 }

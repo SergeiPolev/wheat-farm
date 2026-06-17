@@ -16,14 +16,18 @@ MonoBehaviour:
   DisplayName: Mill
   Category: 0
   Icon: {fileID: 0}
-  GridSize: {x: 4, y: 4}
+  GridSize: {x: 8, y: 8}
   BlocksPlanting: 1
   Rotation: 1
   FootprintRows:
-  - XXXX
-  - XXXX
-  - XXXX
-  - XXXX
+  - XXXXXXXX
+  - XXXXXXXX
+  - XXXXXXXX
+  - XXXXXXXX
+  - XXXXXXXX
+  - XXXXXXXX
+  - XXXXXXXX
+  - XXXXXXXX
   PaddingCells: 0
   Prefab: {fileID: 5200165061132342746, guid: f368e5f161d77f34fb96cfeba4fd081b, type: 3}
   PathSubtype: 0

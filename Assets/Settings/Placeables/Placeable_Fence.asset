@@ -16,11 +16,11 @@ MonoBehaviour:
   DisplayName: Fence
   Category: 1
   Icon: {fileID: 0}
-  GridSize: {x: 2, y: 1}
+  GridSize: {x: 4, y: 1}
   BlocksPlanting: 1
   Rotation: 1
   FootprintRows:
-  - XX
+  - XXXX
   PaddingCells: 0
   Prefab: {fileID: 6311320024963066995, guid: b89d3c5cc39f72344b3c06b3cf53f56f, type: 3}
   PathSubtype: 0
