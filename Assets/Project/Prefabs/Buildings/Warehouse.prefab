@@ -240,4 +240,4 @@ Transform:
   - {fileID: 1398892181704985428}
   - {fileID: 5405979915145748468}
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
