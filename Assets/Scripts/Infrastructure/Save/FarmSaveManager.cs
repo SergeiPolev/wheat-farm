@@ -131,7 +131,8 @@ namespace WheatFarm.Infrastructure.Save
                     CellX = obj.CellX,
                     CellY = obj.CellY,
                     RotationY = obj.RotationY,
-                    Level = obj.Level
+                    Level = obj.Level,
+                    RotationSteps = obj.RotationSteps
                 });
             }
 
@@ -282,10 +283,9 @@ namespace WheatFarm.Infrastructure.Save
                     if (placeableData == null) continue;
 
                     var coord = new Vector2Int(poSave.ChunkCoordX, poSave.ChunkCoordY);
-                    // TODO(plan-A task5): read RotationSteps from save data (save format v2); passing 0 for now
                     _placement.RestorePlace(
                         placeableData, coord, poSave.CellX, poSave.CellY,
-                        0, poSave.RotationY, poSave.Level);
+                        poSave.RotationSteps, poSave.RotationY, poSave.Level);
                 }
             }
 
@@ -294,11 +294,11 @@ namespace WheatFarm.Infrastructure.Save
             {
                 foreach (var slotData in data.ProductionSlots)
                 {
-                    // TODO(plan-A task5): match also by CellX/CellY — two same-type buildings in one chunk
-                    // currently collide and steal each other's production slots.
                     var building = _placement.PlacedObjects
                         .FirstOrDefault(po => po.Data.PlaceableId == slotData.PlaceableId
-                            && po.ChunkCoord == slotData.ChunkCoord);
+                            && po.ChunkCoord == slotData.ChunkCoord
+                            && po.CellX == slotData.CellX
+                            && po.CellY == slotData.CellY);
                     if (building == null) continue;
 
                     var recipe = building.Data.Recipes?
