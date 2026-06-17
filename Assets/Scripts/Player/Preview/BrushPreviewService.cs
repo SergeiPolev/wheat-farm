@@ -8,8 +8,11 @@ namespace WheatFarm.Player.Preview
     {
         /// <summary>Call every frame while a brush tool is active; draws this frame only.</summary>
         void RenderBrush(Vector3 worldPos, IBrushAction action, Color cellColor);
-        /// <summary>One-frame footprint quad (building ghost), colored by validity.</summary>
-        void RenderFootprint(Vector3 center, Vector2 worldSize, bool valid);
+        /// <summary>
+        /// One-frame per-cell footprint preview (building ghost).
+        /// ok cells tinted green, !ok cells tinted red. Nothing is drawn if the list is empty.
+        /// </summary>
+        void RenderFootprintCells(List<(Vector3 worldPos, bool ok)> cells);
     }
 
     /// <summary>
@@ -32,6 +35,7 @@ namespace WheatFarm.Player.Preview
         private readonly Material _ringMaterial;
         private readonly MaterialPropertyBlock _mpb = new();
         private readonly List<Matrix4x4> _matrices = new(256);
+        private readonly List<Matrix4x4> _matricesRed = new(256);
         private readonly int _layer;
 
         public BrushPreviewService(IBrushService brush, IChunkSystem chunks)
@@ -89,10 +93,26 @@ namespace WheatFarm.Player.Preview
                 Matrix4x4.TRS(ringPos, Quaternion.identity, new Vector3(d, 1f, d)));
         }
 
-        public void RenderFootprint(Vector3 center, Vector2 worldSize, bool valid)
+        public void RenderFootprintCells(List<(Vector3 worldPos, bool ok)> cells)
         {
-            _mpb.Clear();
-            _mpb.SetColor(ColorId, valid ? ValidColor : InvalidColor);
+            if (cells == null || cells.Count == 0) return;
+
+            _matrices.Clear();
+            _matricesRed.Clear();
+
+            float cell = _chunks.CellWorldSize;
+            var scale = new Vector3(cell, 1f, cell);
+
+            foreach (var (wp, ok) in cells)
+            {
+                var p = new Vector3(wp.x, QuadY, wp.z);
+                var m = Matrix4x4.TRS(p, Quaternion.identity, scale);
+                if (ok)
+                    _matrices.Add(m);
+                else
+                    _matricesRed.Add(m);
+            }
+
             var rp = new RenderParams(_cellMaterial)
             {
                 layer = _layer,
@@ -100,9 +120,22 @@ namespace WheatFarm.Player.Preview
                 shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off,
                 receiveShadows = false
             };
-            var pos = new Vector3(center.x, QuadY, center.z);
-            Graphics.RenderMesh(rp, _quad, 0,
-                Matrix4x4.TRS(pos, Quaternion.identity, new Vector3(worldSize.x, 1f, worldSize.y)));
+
+            if (_matrices.Count > 0)
+            {
+                _mpb.Clear();
+                _mpb.SetColor(ColorId, ValidColor);
+                rp.matProps = _mpb;
+                Graphics.RenderMeshInstanced(rp, _quad, 0, _matrices);
+            }
+
+            if (_matricesRed.Count > 0)
+            {
+                _mpb.Clear();
+                _mpb.SetColor(ColorId, InvalidColor);
+                rp.matProps = _mpb;
+                Graphics.RenderMeshInstanced(rp, _quad, 0, _matricesRed);
+            }
         }
 
         private static Mesh BuildQuad()

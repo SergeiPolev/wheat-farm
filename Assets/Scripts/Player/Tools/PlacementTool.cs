@@ -1,7 +1,9 @@
+using System.Collections.Generic;
 using UnityEngine;
 using WheatFarm.Buildings;
 using WheatFarm.Core.Data;
-using WheatFarm.Farming;using WheatFarm.Inventory;
+using WheatFarm.Farming;
+using WheatFarm.Inventory;
 using WheatFarm.Player.Preview;
 
 
@@ -27,6 +29,8 @@ namespace WheatFarm.Player.Tools
         private PlantData _selectedPlant;
         private PlaceableData _selectedPlaceable;
         private float _pendingRotation;
+        private int _pendingRotationSteps;
+        private readonly List<(Vector3 worldPos, bool ok)> _previewCells = new(64);
 
         public ToolId Id => ToolId.Placement;
         public bool RequiresResource => true;
@@ -62,6 +66,7 @@ namespace WheatFarm.Player.Tools
             _selectedPlaceable = null;
             _selectedPlant = plant;
             _pendingRotation = 0f;
+            _pendingRotationSteps = 0;
             _ghost.Hide();
         }
 
@@ -70,6 +75,7 @@ namespace WheatFarm.Player.Tools
             _selectedPlant = null;
             _selectedPlaceable = placeable;
             _pendingRotation = 0f;
+            _pendingRotationSteps = 0;
             _ghost.Hide();
             if (placeable != null && placeable.Category != PlaceableCategory.Path && placeable.Prefab != null)
                 _ghost.Show(placeable.Prefab);
@@ -82,6 +88,7 @@ namespace WheatFarm.Player.Tools
             _selectedPlant = null;
             _selectedPlaceable = null;
             _pendingRotation = 0f;
+            _pendingRotationSteps = 0;
             _ghost.Hide();
         }
 
@@ -111,19 +118,14 @@ namespace WheatFarm.Player.Tools
         {
             if (_selectedPlaceable == null || _selectedPlaceable.Category == PlaceableCategory.Path)
                 return;
-            Vector3 snappedPos = SnapPosition(cursorWorldPos);
-            _ghost.UpdatePose(snappedPos, _pendingRotation);
 
-                // TODO(plan-A task4): pass rotationSteps + per-cell EvaluateFootprint; full rework in Task 4
-            bool canPlace = _placementService.CanPlace(_selectedPlaceable, cursorWorldPos, 0, _pendingRotation);
-            _ghost.SetValid(canPlace);
-            _brushPreview.RenderFootprint(snappedPos, FootprintWorldSize(), canPlace);
-        }
+            var eval = _placementService.EvaluateFootprint(
+                _selectedPlaceable, cursorWorldPos, _pendingRotationSteps, _pendingRotation, _previewCells);
 
-        private Vector2 FootprintWorldSize()
-        {
-            // TODO(plan-A task4): compute from actual footprint bounding box via EvaluateFootprint
-            return Vector2.one * _chunkSystem.CellWorldSize;
+            // Ghost sits on the occupied-cells bounding box center (not raw cursor cell)
+            _ghost.UpdatePose(eval.BBoxCenter, _pendingRotation);
+            _ghost.SetValid(eval.AllOk);
+            _brushPreview.RenderFootprintCells(_previewCells);
         }
 
         /// <summary>
@@ -133,19 +135,23 @@ namespace WheatFarm.Player.Tools
         {
             if (_selectedPlaceable == null) return;
 
-            float step = _selectedPlaceable.Rotation switch
+            int dir = scrollDelta > 0 ? 1 : (scrollDelta < 0 ? -1 : 0);
+            if (dir == 0) return;
+
+            switch (_selectedPlaceable.Rotation)
             {
-                RotationMode.Step90 => 90f,
-                RotationMode.Free5 => 5f,
-                _ => 0f
-            };
-
-            if (step <= 0f) return;
-
-            if (scrollDelta > 0) _pendingRotation += step;
-            else if (scrollDelta < 0) _pendingRotation -= step;
-
-            _pendingRotation = (_pendingRotation % 360f + 360f) % 360f;
+                case RotationMode.Step90:
+                    // Wrap steps 0..3; keep _pendingRotation in sync for ghost visual
+                    _pendingRotationSteps = (_pendingRotationSteps + 4 + dir) % 4;
+                    _pendingRotation = _pendingRotationSteps * 90f;
+                    break;
+                case RotationMode.Free5:
+                    // Free5 uses float angle; rotationSteps stays 0 (RasterizeRotated path)
+                    _pendingRotation += dir * 5f;
+                    _pendingRotation = (_pendingRotation % 360f + 360f) % 360f;
+                    break;
+                // RotationMode.Fixed: no-op
+            }
         }
 
         // --- Plant placement ---
@@ -238,8 +244,7 @@ namespace WheatFarm.Player.Tools
                 return;
             }
 
-            // TODO(plan-A task4): pass _pendingRotationSteps; full rework in Task 4
-            var result = _placementService.Place(_selectedPlaceable, worldPos, 0, _pendingRotation);
+            var result = _placementService.Place(_selectedPlaceable, worldPos, _pendingRotationSteps, _pendingRotation);
             if (result != null)
                 Debug.Log($"[Placement] Placed {_selectedPlaceable.DisplayName}");
             else
@@ -273,11 +278,5 @@ namespace WheatFarm.Player.Tools
             return c;
         }
 
-        private Vector3 SnapPosition(Vector3 worldPos)
-        {
-            // TODO(plan-A task4): chunk-level snap removed; always snap to cell center
-            var (chunkCoord, cellX, cellY) = _chunkSystem.WorldToCell(worldPos);
-            return _chunkSystem.CellToWorld(chunkCoord, cellX, cellY);
-        }
     }
 }
