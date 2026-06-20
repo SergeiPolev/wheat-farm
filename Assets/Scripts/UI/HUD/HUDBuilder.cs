@@ -64,39 +64,20 @@ namespace WheatFarm.UI
                 "<color=#FFD700>$</color>", 28, TextAlignmentOptions.Right,
                 new Vector2(10, 0), new Vector2(-10, 0));
 
-            // === Tool Bar (bottom-center) ===
-            var toolBar = CreatePanel(canvasGo.transform, "ToolBar",
-                TextAnchor.LowerCenter, new Vector2(0.5f, 0), new Vector2(0.5f, 0),
-                new Vector2(0, 15), new Vector2(420, 65));
+            // Tool bar removed — tool selection lives in the CatalogTabBar (Tools tab).
+            var toolIcons = new Image[0];
 
-            var toolLayout = toolBar.AddComponent<HorizontalLayoutGroup>();
-            toolLayout.spacing = 6;
-            toolLayout.padding = new RectOffset(8, 8, 6, 6);
-            toolLayout.childAlignment = TextAnchor.MiddleCenter;
-            toolLayout.childForceExpandWidth = false;
-            toolLayout.childForceExpandHeight = false;
+            // === Brush Size Indicator (bottom-right, clear of the catalog) ===
+            var brushPanel = CreatePanel(canvasGo.transform, "BrushPanel",
+                TextAnchor.LowerRight, new Vector2(1, 0), new Vector2(1, 0),
+                new Vector2(-20, 20), new Vector2(200, 34));
 
-            var toolIcons = new Image[ToolNames.Length];
-            for (int i = 0; i < ToolNames.Length; i++)
-            {
-                var toolGo = new GameObject($"Tool_{ToolNames[i]}");
-                toolGo.transform.SetParent(toolBar.transform, false);
+            var brushText = CreateTMPText(brushPanel.transform, "BrushText",
+                "Brush: Medium", 18, TextAlignmentOptions.Center,
+                new Vector2(8, 0), new Vector2(-8, 0));
 
-                var toolImg = toolGo.AddComponent<Image>();
-                toolImg.color = ToolBgColor;
 
-                var toolLE = toolGo.AddComponent<LayoutElement>();
-                toolLE.preferredWidth = 60;
-                toolLE.preferredHeight = 50;
-
-                var toolLabel = CreateTMPText(toolGo.transform, "Label",
-                    $"{i + 1}\n{ToolNames[i]}", 14, TextAlignmentOptions.Center,
-                    Vector2.zero, Vector2.zero, true);
-
-                toolIcons[i] = toolImg;
-            }
-
-            // === Time Panel (top-right) ===
+// === Time Panel (top-right) ===
             var timePanel = CreatePanel(canvasGo.transform, "TimePanel",
                 TextAnchor.UpperRight, new Vector2(1, 1), new Vector2(1, 1),
                 new Vector2(-20, -20), new Vector2(180, 50));
@@ -132,10 +113,33 @@ namespace WheatFarm.UI
             fillImg.fillAmount = 0.25f;
 
             // === Wire HUDView serialized fields via reflection ===
-            SetPrivateField(hudView, "_coinsText", coinsText);
+            // === Seed Count (bottom-right, above brush) ===
+            var seedPanel = CreatePanel(canvasGo.transform, "SeedPanel",
+                TextAnchor.LowerRight, new Vector2(1, 0), new Vector2(1, 0),
+                new Vector2(-20, 60), new Vector2(200, 30));
+            var seedText = CreateTMPText(seedPanel.transform, "SeedText",
+                "", 16, TextAlignmentOptions.Center,
+                new Vector2(8, 0), new Vector2(-8, 0));
+
+            
+// === Active Tool (top-center) ===
+            var toolPanel = CreatePanel(canvasGo.transform, "ToolPanel",
+                TextAnchor.UpperCenter, new Vector2(0.5f, 1), new Vector2(0.5f, 1),
+                new Vector2(0, -15), new Vector2(240, 40));
+            var toolText = CreateTMPText(toolPanel.transform, "ToolText",
+                "Tool: Plant", 18, TextAlignmentOptions.Center,
+                new Vector2(8, 0), new Vector2(-8, 0));
+
+            
+SetPrivateField(hudView, "_coinsText", coinsText);
             SetPrivateField(hudView, "_toolIcons", toolIcons);
             SetPrivateField(hudView, "_timeText", timeText);
-            SetPrivateField(hudView, "_timeFill", fillImg);
+            SetPrivateField(hudView, "_timeFill", fillImg);            SetPrivateField(hudView, "_brushText", brushText);
+            SetPrivateField(hudView, "_seedText", seedText);
+            SetPrivateField(hudView, "_toolText", toolText);
+
+
+
 
             BuiltHUDView = hudView;
         }

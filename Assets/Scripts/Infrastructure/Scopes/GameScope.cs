@@ -24,6 +24,14 @@ namespace WheatFarm.Infrastructure
 
             // Data: databases (available to all child scopes)
             builder.RegisterInstance(_plantDatabase);
+            builder.Register<PlantUnlockService>(Lifetime.Singleton)
+                .As<IPlantUnlockService>();
+
+            // Debug / god-mode flags
+            builder.Register<WheatFarm.Core.DebugFlags>(Lifetime.Singleton)
+                .As<WheatFarm.Core.IDebugFlags>();
+
+
 
             if (_placeableDatabase != null)
                 builder.RegisterInstance(_placeableDatabase);
@@ -32,10 +40,12 @@ namespace WheatFarm.Infrastructure
                 builder.RegisterInstance(_contractDatabase);
 
             // Phase 5: Economy
-            builder.Register<WalletService>(Lifetime.Singleton)
+            builder.Register<WalletService>(Lifetime.Singleton).AsSelf();
+            builder.Register<WheatFarm.Infrastructure.Cheats.DebugWalletService>(Lifetime.Singleton)
                 .As<IWalletService, System.IDisposable>();
 
-            builder.Register<InventoryService>(Lifetime.Singleton)
+            builder.Register<InventoryService>(Lifetime.Singleton).AsSelf();
+            builder.Register<WheatFarm.Infrastructure.Cheats.DebugInventoryService>(Lifetime.Singleton)
                 .As<IInventoryService, System.IDisposable>();
 
             builder.Register<ShopService>(Lifetime.Singleton)

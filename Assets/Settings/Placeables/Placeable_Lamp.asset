@@ -16,15 +16,19 @@ MonoBehaviour:
   DisplayName: Lamp
   Category: 1
   Icon: {fileID: 0}
-  GridSize: {x: 1, y: 1}
+  GridSize: {x: 2, y: 2}
   BlocksPlanting: 1
-  Level: 0
   Rotation: 2
+  FootprintRows:
+  - X.
+  - ..
+  PaddingCells: 0
   Prefab: {fileID: 2981089138366730683, guid: 56d95669b3dca614ab3c375ad676ecf5, type: 3}
   PathSubtype: 0
   PathColor: {r: 1, g: 1, b: 1, a: 1}
   Cost: 15
   UnlockedByDefault: 1
   Interactable: 0
+  Role: 0
   Recipes: []
   MaxLevel: 1

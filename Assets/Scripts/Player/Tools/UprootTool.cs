@@ -6,7 +6,7 @@ namespace WheatFarm.Player.Tools
     /// <summary>
     /// Removes plants from cells in brush radius. No harvest yield.
     /// </summary>
-    public class UprootTool : ITool, IBrushAction
+    public class UprootTool : ITool, IBrushAction, IBrushPreviewSource
     {
         private readonly IPlantSystem _plantSystem;
         private readonly IBrushService _brush;
@@ -28,9 +28,15 @@ namespace WheatFarm.Player.Tools
             _brush.ApplyAtWorldPos(worldPos, this);
         }
 
+        public bool CanApply(ChunkData chunk, int cellX, int cellY) =>
+            BrushPredicates.PlantTargeting(chunk.Cells[chunk.CellIndex(cellX, cellY)]);
+
         public void Apply(ChunkData chunk, int cellX, int cellY)
         {
             _plantSystem.Uproot(chunk.ChunkCoord, cellX, cellY);
         }
+
+        public bool PreviewActive => true;
+        public Color PreviewCellColor => new(0.9f, 0.25f, 0.2f, 0.45f);
     }
 }

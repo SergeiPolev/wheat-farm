@@ -2,7 +2,8 @@ using System;
 using R3;
 using UnityEngine;
 using VContainer.Unity;
-using WheatFarm.Core.Data;
+using WheatFarm.Core.Data;using WheatFarm.Core;
+
 using WheatFarm.Inventory;
 
 namespace WheatFarm.Farming
@@ -11,19 +12,22 @@ namespace WheatFarm.Farming
     {
         public string PlantId;
         public int Yield;
-        public Vector3 WorldPosition;
+        public Vector3 WorldPosition;        public int SeedYield;
+
     }
 
     public interface IPlantSystem
     {
         Subject<HarvestData> OnHarvested { get; }
 
-        void Plant(Vector2Int chunkCoord, int cellX, int cellY, PlantData data);
+        bool Plant(Vector2Int chunkCoord, int cellX, int cellY, PlantData data);
         void Water(Vector2Int chunkCoord, int cellX, int cellY);
         void Fertilize(Vector2Int chunkCoord, int cellX, int cellY, float multiplier);
         HarvestData? Harvest(Vector2Int chunkCoord, int cellX, int cellY);
         void Uproot(Vector2Int chunkCoord, int cellX, int cellY);
         void Dye(Vector2Int chunkCoord, int cellX, int cellY, Color color);
+        void ForceMature(Vector2Int chunkCoord, int cellX, int cellY);
+
     }
 
     public class PlantSystem : IPlantSystem, ITickable, IDisposable
@@ -42,15 +46,17 @@ namespace WheatFarm.Farming
 
         private readonly IChunkSystem _chunkSystem;
         private readonly PlantDatabase _plantDb;
-        private readonly IInventoryService _inventory;
+        private readonly IInventoryService _inventory;        private readonly IFeedbackService _feedback;
+
 
         public Subject<HarvestData> OnHarvested { get; } = new();
 
-        public PlantSystem(IChunkSystem chunkSystem, PlantDatabase plantDb, IInventoryService inventory)
+        public PlantSystem(IChunkSystem chunkSystem, PlantDatabase plantDb, IInventoryService inventory, IFeedbackService feedback = null)
         {
             _chunkSystem = chunkSystem;
             _plantDb = plantDb;
-            _inventory = inventory;
+            _inventory = inventory;            _feedback = feedback;
+
         }
 
         public void Dispose()
@@ -77,7 +83,6 @@ namespace WheatFarm.Farming
                     float growthRate = cell.FertilizerMultiplier / plantData.GrowthDuration;
                     cell.Growth = Mathf.Min(1f, cell.Growth + growthRate * dt);
 
-                    // Update GPU data: growth value + visual scale
                     ref var props = ref chunk.MeshProps[i];
                     props.cropState.y = cell.Growth;
                     RebuildMatrix(ref cell, ref props);
@@ -90,28 +95,27 @@ namespace WheatFarm.Farming
             }
         }
 
-        public void Plant(Vector2Int chunkCoord, int cellX, int cellY, PlantData data)
+        public bool Plant(Vector2Int chunkCoord, int cellX, int cellY, PlantData data)
         {
             var chunk = _chunkSystem.GetChunk(chunkCoord);
-            if (chunk == null || !chunk.Unlocked) return;
+            if (chunk == null || !chunk.Unlocked) return false;
 
             int idx = chunk.CellIndex(cellX, cellY);
             ref var cell = ref chunk.Cells[idx];
-            if (cell.Occupied || cell.HasPlant) return;
-            if (cell.GroundState >= GroundState.PathStone) return; // paths block planting
+            if (cell.Occupied || cell.HasPlant) return false;
+            if (cell.GroundState >= GroundState.PathStone) return false; // paths block planting
 
             // Gameplay state
             cell.PlantId = data.PlantId;
             cell.Growth = InitialGrowth;
-            cell.Watered = true; // Auto-water so crops grow immediately
+            cell.Watered = false; // must be watered (watering can) before it grows
             cell.FertilizerMultiplier = 1f;
-            cell.GroundState = GroundState.Watered;
+            cell.GroundState = GroundState.Tilled;
 
             // Placement data (for matrix reconstruction during growth)
             float baseScale = _chunkSystem.CellWorldSize * ScaleMultiplier;
             cell.BaseScale = baseScale * UnityEngine.Random.Range(data.ScaleRange.x, data.ScaleRange.y);
             // Restrict rotation to front-facing range for flat mesh models
-            // Camera looks from isometric angle; mesh faces need ~165° base + variance
             cell.RotationY = CropRotation.BaseAngle + UnityEngine.Random.Range(-CropRotation.Variance, CropRotation.Variance);
 
             // Sync to GPU: positions RELATIVE to chunk bounds center (shader requirement)
@@ -125,7 +129,7 @@ namespace WheatFarm.Farming
             // gr matrix is NOT modified here — ground tile keeps its fixed size from chunk init
 
             // cropState.x = MeshId (must match material _Id); cropState.y = growth (>0 = visible)
-            // cropState.z = ground state (0=grass, 1=tilled, 2=watered, 3=fertilized)
+            // cropState.z = ground state (1=tilled until watered)
             props.cropState.x = data.MeshId;
             props.cropState.y = InitialGrowth;
             props.cropState.z = (float)cell.GroundState;
@@ -134,6 +138,8 @@ namespace WheatFarm.Farming
 
             chunk.Dirty = true;
             _chunkSystem.UpdateGroundNeighborFlags(chunkCoord, cellX, cellY);
+            _feedback?.PlayEffect(FarmFxType.Plant, worldPos);
+            return true;
         }
 
         public void Water(Vector2Int chunkCoord, int cellX, int cellY)
@@ -152,6 +158,8 @@ namespace WheatFarm.Farming
             props.cropState.z = (float)GroundState.Watered;
             props.cropState.w = Time.time;
             chunk.Dirty = true;
+
+            _feedback?.PlayEffect(FarmFxType.Water, _chunkSystem.CellToWorld(chunkCoord, cellX, cellY));
         }
 
         public void Fertilize(Vector2Int chunkCoord, int cellX, int cellY, float multiplier)
@@ -188,7 +196,8 @@ namespace WheatFarm.Farming
             {
                 PlantId = cell.PlantId,
                 Yield = plantData.SellPrice,
-                WorldPosition = _chunkSystem.CellToWorld(chunkCoord, cellX, cellY)
+                WorldPosition = _chunkSystem.CellToWorld(chunkCoord, cellX, cellY),
+                SeedYield = plantData.RenewableHarvest ? 0 : plantData.HarvestSeedYield
             };
 
             if (plantData.RenewableHarvest)
@@ -212,6 +221,8 @@ namespace WheatFarm.Farming
             chunk.Dirty = true;
             _chunkSystem.UpdateGroundNeighborFlags(chunkCoord, cellX, cellY);
             OnHarvested.OnNext(harvestData);
+            _feedback?.PlayEffect(FarmFxType.Harvest, harvestData.WorldPosition);
+
             return harvestData;
         }
 
@@ -240,7 +251,28 @@ namespace WheatFarm.Farming
             ClearCell(ref cell, ref chunk.MeshProps[idx]);
             chunk.Dirty = true;
             _chunkSystem.UpdateGroundNeighborFlags(chunkCoord, cellX, cellY);
+            _feedback?.PlayEffect(FarmFxType.Uproot, _chunkSystem.CellToWorld(chunkCoord, cellX, cellY));
         }
+
+        /// <summary>Instantly mature a planted cell (waters it and sets growth to full). Neutral API.</summary>
+        public void ForceMature(Vector2Int chunkCoord, int cellX, int cellY)
+        {
+            var chunk = _chunkSystem.GetChunk(chunkCoord);
+            if (chunk == null) return;
+
+            int idx = chunk.CellIndex(cellX, cellY);
+            ref var cell = ref chunk.Cells[idx];
+            if (!cell.HasPlant) return;
+
+            cell.Watered = true;
+            cell.Growth = 1f;
+
+            ref var props = ref chunk.MeshProps[idx];
+            props.cropState.y = 1f;
+            RebuildMatrix(ref cell, ref props);
+            chunk.Dirty = true;
+        }
+
 
         public void Dye(Vector2Int chunkCoord, int cellX, int cellY, Color color)
         {

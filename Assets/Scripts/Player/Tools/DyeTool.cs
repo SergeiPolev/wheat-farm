@@ -7,12 +7,14 @@ namespace WheatFarm.Player.Tools
     /// Applies a dye color to plants in brush radius.
     /// Requires a selected color (set via SelectColor before use).
     /// </summary>
-    public class DyeTool : ITool, IBrushAction
+    public class DyeTool : ITool, IBrushAction, IBrushPreviewSource
     {
         private readonly IPlantSystem _plantSystem;
         private readonly IBrushService _brush;
 
-        private Color _selectedColor = Color.white;
+        // Visible default until a color-picker UI exists (SelectColor is never called yet);
+        // white would make both dyeing and the brush preview look like nothing happened.
+        private Color _selectedColor = new(0.85f, 0.3f, 0.75f, 1f);
 
         public ToolId Id => ToolId.Dye;
         public bool RequiresResource => true;
@@ -35,9 +37,24 @@ namespace WheatFarm.Player.Tools
             _brush.ApplyAtWorldPos(worldPos, this);
         }
 
+        public bool CanApply(ChunkData chunk, int cellX, int cellY) =>
+            BrushPredicates.PlantTargeting(chunk.Cells[chunk.CellIndex(cellX, cellY)]);
+
         public void Apply(ChunkData chunk, int cellX, int cellY)
         {
             _plantSystem.Dye(chunk.ChunkCoord, cellX, cellY, _selectedColor);
+        }
+
+        public bool PreviewActive => true;
+
+        public Color PreviewCellColor
+        {
+            get
+            {
+                var c = _selectedColor;
+                c.a = 0.45f;
+                return c;
+            }
         }
     }
 }

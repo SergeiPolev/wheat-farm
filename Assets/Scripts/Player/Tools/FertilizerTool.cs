@@ -6,7 +6,7 @@ namespace WheatFarm.Player.Tools
     /// <summary>
     /// Applies fertilizer to plants in brush radius, boosting growth speed.
     /// </summary>
-    public class FertilizerTool : ITool, IBrushAction
+    public class FertilizerTool : ITool, IBrushAction, IBrushPreviewSource
     {
         private readonly IPlantSystem _plantSystem;
         private readonly IBrushService _brush;
@@ -31,9 +31,15 @@ namespace WheatFarm.Player.Tools
             _brush.ApplyAtWorldPos(worldPos, this);
         }
 
+        public bool CanApply(ChunkData chunk, int cellX, int cellY) =>
+            BrushPredicates.PlantTargeting(chunk.Cells[chunk.CellIndex(cellX, cellY)]);
+
         public void Apply(ChunkData chunk, int cellX, int cellY)
         {
             _plantSystem.Fertilize(chunk.ChunkCoord, cellX, cellY, FertilizerMultiplier);
         }
+
+        public bool PreviewActive => true;
+        public Color PreviewCellColor => new(0.85f, 0.65f, 0.2f, 0.45f);
     }
 }

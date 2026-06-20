@@ -24,7 +24,8 @@ MonoBehaviour:
   SeedCost: 25
   SellPrice: 40
   RenewableHarvest: 1
+  HarvestSeedYield: 0
   TrunkSize: {x: 3, y: 3}
-  UnlockedByDefault: 0
   UprootYieldId: wood
   UprootYieldAmount: 3
+  UnlockedByDefault: 0

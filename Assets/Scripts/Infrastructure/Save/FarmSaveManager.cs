@@ -34,6 +34,8 @@ namespace WheatFarm.Infrastructure.Save
         private readonly ITreePlacementService _trees;
         private readonly PlantDatabase _plantDb;
         private readonly PlaceableDatabase _placeableDb;
+        private readonly IPlantUnlockService _unlock;
+
 
         /// <summary>Must match PlantSystem.MinGrowthScale</summary>
         private const float MinGrowthScale = 0.3f;
@@ -50,7 +52,8 @@ namespace WheatFarm.Infrastructure.Save
             IProductionService production,
             ITreePlacementService trees,
             PlantDatabase plantDb,
-            PlaceableDatabase placeableDb = null)
+            PlaceableDatabase placeableDb = null,
+            IPlantUnlockService unlock = null)
         {
             _saveService = saveService;
             _chunkSystem = chunkSystem;
@@ -62,6 +65,8 @@ namespace WheatFarm.Infrastructure.Save
             _trees = trees;
             _plantDb = plantDb;
             _placeableDb = placeableDb;
+            _unlock = unlock;
+
         }
 
         public async UniTask SaveGame()
@@ -128,20 +133,33 @@ namespace WheatFarm.Infrastructure.Save
                     CellX = obj.CellX,
                     CellY = obj.CellY,
                     RotationY = obj.RotationY,
-                    Level = obj.Level
+                    Level = obj.Level,
+                    RotationSteps = obj.RotationSteps
                 });
             }
 
             // Trees
             foreach (var t in _trees.PlacedTrees)
             {
+                // Tree growth lives in the center cell tracked by PlantSystem.
+                float growth = 0f;
+                var centerChunk = _chunkSystem.GetChunk(t.CenterChunk);
+                if (centerChunk != null)
+                {
+                    int idx = centerChunk.CellIndex(t.CenterCellX, t.CenterCellY);
+                    if (idx >= 0 && idx < centerChunk.CellCount)
+                        growth = centerChunk.Cells[idx].Growth;
+                }
+
                 data.Trees.Add(new TreeSaveData
                 {
                     PlantId = t.Data.PlantId,
                     PosX = t.WorldPosition.x,
                     PosY = t.WorldPosition.y,
                     PosZ = t.WorldPosition.z,
-                    Growth = 0f, // TODO: read from PlantSystem when tree growth tracking is added
+                    Growth = growth,
+                    Scale = t.Scale,
+                    RotationY = t.RotationY,
                     Color = Color.white
                 });
             }
@@ -159,6 +177,8 @@ namespace WheatFarm.Infrastructure.Save
 
             // Production slots
             data.ProductionSlots = _production.GetSaveData();
+            data.UnlockedPlants = _unlock?.ToSaveList() ?? new List<string>();
+
 
             Debug.Log($"[FarmSaveManager] Collected: {data.Chunks.Count} chunks, " +
                       $"{data.PlacedObjects.Count} placed objects, {data.Trees.Count} trees, " +
@@ -174,6 +194,11 @@ namespace WheatFarm.Infrastructure.Save
 
             // Wallet
             _wallet.SetCoins(data.Coins);
+
+            // Unlocked plants
+            if (_unlock != null)
+                _unlock.LoadFrom(data.UnlockedPlants);
+
 
             // Day/Night time
             _dayNight.SetTime(data.DayNightTime);
@@ -248,7 +273,7 @@ namespace WheatFarm.Infrastructure.Save
                 if (plantData == null) continue;
 
                 var worldPos = new Vector3(treeSave.PosX, treeSave.PosY, treeSave.PosZ);
-                _trees.Place(plantData, worldPos);
+                _trees.RestoreTree(plantData, worldPos, treeSave.Scale, treeSave.RotationY);
             }
 
             // Placed objects (restore via PlaceableDatabase lookup)
@@ -262,7 +287,7 @@ namespace WheatFarm.Infrastructure.Save
                     var coord = new Vector2Int(poSave.ChunkCoordX, poSave.ChunkCoordY);
                     _placement.RestorePlace(
                         placeableData, coord, poSave.CellX, poSave.CellY,
-                        poSave.RotationY, poSave.Level);
+                        poSave.RotationSteps, poSave.RotationY, poSave.Level);
                 }
             }
 
@@ -273,7 +298,9 @@ namespace WheatFarm.Infrastructure.Save
                 {
                     var building = _placement.PlacedObjects
                         .FirstOrDefault(po => po.Data.PlaceableId == slotData.PlaceableId
-                            && po.ChunkCoord == slotData.ChunkCoord);
+                            && po.ChunkCoord == slotData.ChunkCoord
+                            && po.CellX == slotData.CellX
+                            && po.CellY == slotData.CellY);
                     if (building == null) continue;
 
                     var recipe = building.Data.Recipes?

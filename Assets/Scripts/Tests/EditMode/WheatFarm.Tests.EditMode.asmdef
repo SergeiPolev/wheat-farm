@@ -1,0 +1,26 @@
+{
+    "name": "WheatFarm.Tests.EditMode",
+    "rootNamespace": "WheatFarm.Tests",
+    "references": [
+        "WheatFarm.Core",
+        "WheatFarm.Farming",
+        "WheatFarm.Buildings",
+        "WheatFarm.Economy",
+        "WheatFarm.Inventory",
+        "WheatFarm.Player",
+        "WheatFarm.Infrastructure",
+        "UniTask",
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner",
+        "R3.Unity"
+    ],
+    "includePlatforms": ["Editor"],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": ["nunit.framework.dll", "R3.dll"],
+    "autoReferenced": false,
+    "defineConstraints": ["UNITY_INCLUDE_TESTS"],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

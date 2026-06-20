@@ -10,7 +10,7 @@ namespace WheatFarm.Infrastructure.Save
     [System.Serializable]
     public class FarmSaveData
     {
-        public int Version = 1;
+        public int Version = 2;
         public int Coins;
         public float DayNightTime;
         public List<ChunkSaveData> Chunks = new();
@@ -79,6 +79,7 @@ namespace WheatFarm.Infrastructure.Save
         public int CellY;
         public float RotationY;
         public int Level;
+        public int RotationSteps;
     }
 
     /// <summary>Serializable placed tree.</summary>
@@ -89,6 +90,8 @@ namespace WheatFarm.Infrastructure.Save
         public float PosX;
         public float PosY;
         public float PosZ;
+        public float Scale;
+        public float RotationY;
         public float Growth;
         public Color32 Color;
     }

@@ -206,6 +206,8 @@ namespace WheatFarm.Buildings
                     {
                         PlaceableId = building.Data.PlaceableId,
                         ChunkCoord = building.ChunkCoord,
+                        CellX = building.CellX,
+                        CellY = building.CellY,
                         RecipeId = slot.Recipe.RecipeId,
                         TimeRemaining = slot.TimeRemaining,
                         AutoRepeat = slot.AutoRepeat
@@ -248,6 +250,8 @@ namespace WheatFarm.Buildings
     {
         public string PlaceableId;
         public Vector2Int ChunkCoord;
+        public int CellX;
+        public int CellY;
         public string RecipeId;
         public float TimeRemaining;
         public bool AutoRepeat;

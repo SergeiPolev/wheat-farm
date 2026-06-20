@@ -56,12 +56,18 @@ namespace WheatFarm.UI
 
             // Clear existing
             for (int i = _slotContainer.childCount - 1; i >= 0; i--)
-                Destroy(_slotContainer.GetChild(i).gameObject);
+                {
+                    var old = _slotContainer.GetChild(i);
+                    old.SetParent(null); // drop from container now (Destroy is deferred to end of frame)
+                    Destroy(old.gameObject);
+                }
 
             // Create slots
             for (int i = 0; i < itemNames.Length; i++)
             {
                 var go = Instantiate(_slotPrefab, _slotContainer);
+                go.SetActive(true);
+
                 var texts = go.GetComponentsInChildren<TextMeshProUGUI>();
                 if (texts.Length > 0) texts[0].text = itemNames[i];
                 if (texts.Length > 1) texts[1].text = amounts[i].ToString();

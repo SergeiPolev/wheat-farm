@@ -24,7 +24,9 @@ namespace WheatFarm.Core.Data
         [Header("Economy")]
         public int SeedCost = 5;
         public int SellPrice = 10;
-        public bool RenewableHarvest;
+        public bool RenewableHarvest;        /// <summary>Seeds returned to inventory when harvesting a (non-renewable) crop.</summary>
+        public int HarvestSeedYield = 1;
+
 
         [Header("Placement")]
         public Vector2Int TrunkSize = Vector2Int.one;

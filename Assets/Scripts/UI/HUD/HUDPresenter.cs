@@ -3,6 +3,7 @@ using R3;
 using VContainer.Unity;
 using WheatFarm.DayNight;
 using WheatFarm.Economy;
+using WheatFarm.Farming;
 using WheatFarm.Player.Tools;
 
 namespace WheatFarm.UI
@@ -17,18 +18,21 @@ namespace WheatFarm.UI
         private readonly IWalletService _wallet;
         private readonly IToolService _toolService;
         private readonly IDayNightService _dayNight;
+        private readonly IBrushService _brush;
         private readonly CompositeDisposable _disposables = new();
 
         public HUDPresenter(
             HUDView view,
             IWalletService wallet,
             IToolService toolService,
-            IDayNightService dayNight)
+            IDayNightService dayNight,
+            IBrushService brush)
         {
             _view = view;
             _wallet = wallet;
             _toolService = toolService;
             _dayNight = dayNight;
+            _brush = brush;
         }
 
         public void Initialize()
@@ -38,7 +42,7 @@ namespace WheatFarm.UI
                 .AddTo(_disposables);
 
             _toolService.CurrentToolId
-                .Subscribe(id => _view.HighlightTool((int)id))
+                .Subscribe(id => _view.UpdateTool("Tool: " + ToolName(id)))
                 .AddTo(_disposables);
 
             _dayNight.CurrentPhase
@@ -48,8 +52,26 @@ namespace WheatFarm.UI
             _dayNight.TimeNormalized
                 .Subscribe(t => _view.UpdateTimeFill(t))
                 .AddTo(_disposables);
+
+            _brush.CurrentSize
+                .Subscribe(size => _view.UpdateBrushSize($"Brush: {size}"))
+                .AddTo(_disposables);
         }
 
         public void Dispose() => _disposables.Dispose();
+
+        private static string ToolName(WheatFarm.Player.Tools.ToolId id) => id switch
+        {
+            WheatFarm.Player.Tools.ToolId.Placement => "Plant",
+            WheatFarm.Player.Tools.ToolId.WateringCan => "Water",
+            WheatFarm.Player.Tools.ToolId.Sickle => "Sickle",
+            WheatFarm.Player.Tools.ToolId.Dye => "Dye",
+            WheatFarm.Player.Tools.ToolId.Fertilizer => "Fertilizer",
+            WheatFarm.Player.Tools.ToolId.Uproot => "Uproot",
+            WheatFarm.Player.Tools.ToolId.Bulldoze => "Bulldoze",
+            WheatFarm.Player.Tools.ToolId.Build => "Build",
+            _ => id.ToString()
+        };
+
     }
 }

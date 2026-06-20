@@ -11,7 +11,9 @@ namespace WheatFarm.Farming
         public Vector2Int CenterChunk;
         public int CenterCellX;
         public int CenterCellY;
-        public GameObject Instance;
+        public GameObject Instance;        public float Scale;
+        public float RotationY;
+
     }
 
     public interface ITreePlacementService
@@ -19,7 +21,9 @@ namespace WheatFarm.Farming
         IReadOnlyList<PlacedTree> PlacedTrees { get; }
         bool CanPlace(PlantData treeData, Vector3 worldPos);
         PlacedTree Place(PlantData treeData, Vector3 worldPos);
+        PlacedTree RestoreTree(PlantData treeData, Vector3 worldPos, float scale, float rotationY);
         void Remove(PlacedTree tree);
+        bool TryGetTreeAt(Vector3 worldPos, out PlacedTree tree);
     }
 
     public class TreePlacementService : ITreePlacementService
@@ -74,6 +78,9 @@ namespace WheatFarm.Farming
 
             // Plant the tree in the center cell for growth tracking
             _plantSystem.Plant(centerChunk, centerX, centerY, treeData);
+            // Trees grow without the watering can — water the growth-tracking cell on placement.
+            _plantSystem.Water(centerChunk, centerX, centerY);
+
 
             var tree = new PlacedTree
             {
@@ -87,27 +94,83 @@ namespace WheatFarm.Farming
             // Create visual GameObject from mesh + material
             if (treeData.Mesh != null)
             {
-                var go = new GameObject($"Tree_{treeData.PlantId}");
-                go.transform.position = worldPos + Vector3.up * 0.01f;
-
-                var mf = go.AddComponent<MeshFilter>();
-                mf.sharedMesh = treeData.Mesh;
-
-                var mr = go.AddComponent<MeshRenderer>();
-                if (treeData.Material != null)
-                    mr.sharedMaterial = treeData.Material;
-
-                // Scale from PlantData range
                 float scale = Random.Range(treeData.ScaleRange.x, treeData.ScaleRange.y);
-                go.transform.localScale = Vector3.one * scale;
-                go.transform.rotation = Quaternion.Euler(0, CropRotation.BaseAngle + Random.Range(-CropRotation.Variance, CropRotation.Variance), 0);
-
-                tree.Instance = go;
+                float rotationY = CropRotation.BaseAngle + Random.Range(-CropRotation.Variance, CropRotation.Variance);
+                tree.Scale = scale;
+                tree.RotationY = rotationY;
+                tree.Instance = BuildTreeVisual(treeData, worldPos, scale, rotationY);
             }
 
             _trees.Add(tree);
             return tree;
         }
+
+        /// <summary>
+        /// Recreate a tree from save data. Unlike Place(), this skips the CanPlace guard
+        /// (the trunk cells are already restored as occupied by the chunk loader) and does
+        /// not re-plant — growth already lives in the restored center cell.
+        /// </summary>
+        public PlacedTree RestoreTree(PlantData treeData, Vector3 worldPos, float scale, float rotationY)
+        {
+            if (treeData == null || treeData.Category != PlantCategory.Tree) return null;
+
+            var (centerChunk, centerX, centerY) = _chunkSystem.WorldToCell(worldPos);
+
+            // Backward-compat: older saves had no scale/rotation — generate them.
+            if (scale <= 0f)
+            {
+                scale = Random.Range(treeData.ScaleRange.x, treeData.ScaleRange.y);
+                rotationY = CropRotation.BaseAngle + Random.Range(-CropRotation.Variance, CropRotation.Variance);
+            }
+
+            // Re-mark trunk cells occupied and hide their crop rendering (tree shows its own mesh).
+            var trunkCells = GetTrunkCells(treeData, worldPos);
+            foreach (var (chunkCoord, cx, cy) in trunkCells)
+            {
+                var chunk = _chunkSystem.GetChunk(chunkCoord);
+                if (chunk == null) continue;
+
+                int idx = chunk.CellIndex(cx, cy);
+                chunk.Cells[idx].Occupied = true;
+                chunk.MeshProps[idx].cropState = Vector4.zero;
+                chunk.Dirty = true;
+            }
+
+            var tree = new PlacedTree
+            {
+                Data = treeData,
+                WorldPosition = worldPos,
+                CenterChunk = centerChunk,
+                CenterCellX = centerX,
+                CenterCellY = centerY,
+                Scale = scale,
+                RotationY = rotationY
+            };
+
+            if (treeData.Mesh != null)
+                tree.Instance = BuildTreeVisual(treeData, worldPos, scale, rotationY);
+
+            _trees.Add(tree);
+            return tree;
+        }
+
+        private static GameObject BuildTreeVisual(PlantData treeData, Vector3 worldPos, float scale, float rotationY)
+        {
+            var go = new GameObject($"Tree_{treeData.PlantId}");
+            go.transform.position = worldPos + Vector3.up * 0.01f;
+
+            var mf = go.AddComponent<MeshFilter>();
+            mf.sharedMesh = treeData.Mesh;
+
+            var mr = go.AddComponent<MeshRenderer>();
+            if (treeData.Material != null)
+                mr.sharedMaterial = treeData.Material;
+
+            go.transform.localScale = Vector3.one * scale;
+            go.transform.rotation = Quaternion.Euler(0, rotationY, 0);
+            return go;
+        }
+
 
         public void Remove(PlacedTree tree)
         {
@@ -130,6 +193,25 @@ namespace WheatFarm.Farming
                 Object.Destroy(tree.Instance);
 
             _trees.Remove(tree);
+        }
+
+        public bool TryGetTreeAt(Vector3 worldPos, out PlacedTree tree)
+        {
+            var (probeChunk, probeCx, probeCy) = _chunkSystem.WorldToCell(worldPos);
+            foreach (var t in _trees)
+            {
+                var trunkCells = GetTrunkCells(t.Data, t.WorldPosition);
+                foreach (var (chunkCoord, cx, cy) in trunkCells)
+                {
+                    if (chunkCoord == probeChunk && cx == probeCx && cy == probeCy)
+                    {
+                        tree = t;
+                        return true;
+                    }
+                }
+            }
+            tree = null;
+            return false;
         }
 
         private List<(Vector2Int chunkCoord, int cx, int cy)> GetTrunkCells(PlantData data, Vector3 worldPos)
