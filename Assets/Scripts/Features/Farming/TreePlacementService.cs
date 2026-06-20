@@ -20,9 +20,10 @@ namespace WheatFarm.Farming
     {
         IReadOnlyList<PlacedTree> PlacedTrees { get; }
         bool CanPlace(PlantData treeData, Vector3 worldPos);
-        PlacedTree Place(PlantData treeData, Vector3 worldPos);        PlacedTree RestoreTree(PlantData treeData, Vector3 worldPos, float scale, float rotationY);
-
+        PlacedTree Place(PlantData treeData, Vector3 worldPos);
+        PlacedTree RestoreTree(PlantData treeData, Vector3 worldPos, float scale, float rotationY);
         void Remove(PlacedTree tree);
+        bool TryGetTreeAt(Vector3 worldPos, out PlacedTree tree);
     }
 
     public class TreePlacementService : ITreePlacementService
@@ -192,6 +193,25 @@ namespace WheatFarm.Farming
                 Object.Destroy(tree.Instance);
 
             _trees.Remove(tree);
+        }
+
+        public bool TryGetTreeAt(Vector3 worldPos, out PlacedTree tree)
+        {
+            var (probeChunk, probeCx, probeCy) = _chunkSystem.WorldToCell(worldPos);
+            foreach (var t in _trees)
+            {
+                var trunkCells = GetTrunkCells(t.Data, t.WorldPosition);
+                foreach (var (chunkCoord, cx, cy) in trunkCells)
+                {
+                    if (chunkCoord == probeChunk && cx == probeCx && cy == probeCy)
+                    {
+                        tree = t;
+                        return true;
+                    }
+                }
+            }
+            tree = null;
+            return false;
         }
 
         private List<(Vector2Int chunkCoord, int cx, int cy)> GetTrunkCells(PlantData data, Vector3 worldPos)

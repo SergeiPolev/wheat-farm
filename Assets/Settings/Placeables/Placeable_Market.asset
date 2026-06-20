@@ -16,10 +16,24 @@ MonoBehaviour:
   DisplayName: Market
   Category: 0
   Icon: {fileID: 0}
-  GridSize: {x: 1, y: 1}
+  GridSize: {x: 13, y: 13}
   BlocksPlanting: 1
-  Level: 1
   Rotation: 0
+  FootprintRows:
+  - XXXXXXXXXXXXX
+  - XXXXXXXXXXXXX
+  - XXXXXXXXXXXXX
+  - XXXXXXXXXXXXX
+  - XXXXXXXXXXXXX
+  - XXXXXXXXXXXXX
+  - XXXXXXXXXXXXX
+  - XXXXXXXXXXXXX
+  - XXXXXXXXXXXXX
+  - XXXXXXXXXXXXX
+  - XXXXXXXXXXXXX
+  - XXXXXXXXXXXXX
+  - XXXXXXXXXXXXX
+  PaddingCells: 0
   Prefab: {fileID: 5200165061132342746, guid: 8693da25c0e7c6944b711e4c0b3b92bc, type: 3}
   PathSubtype: 0
   PathColor: {r: 1, g: 1, b: 1, a: 1}

@@ -3,8 +3,8 @@ using UnityEngine;
 namespace WheatFarm.Core.Data
 {
     public enum PlaceableCategory { Building, Decor, Path }
-    public enum PlacementLevel { Cell, Chunk }
-    public enum RotationMode { Fixed, Step90, Free5 }    public enum BuildingRole { Production, Market, Warehouse, Contracts }
+    public enum RotationMode { Fixed, Step90, Free5 }
+    public enum BuildingRole { Production, Market, Warehouse, Contracts }
 
 
     [CreateAssetMenu(menuName = "WheatFarm/PlaceableData")]
@@ -19,8 +19,11 @@ namespace WheatFarm.Core.Data
         [Header("Placement")]
         public Vector2Int GridSize = Vector2Int.one;
         public bool BlocksPlanting = true;
-        public PlacementLevel Level;
         public RotationMode Rotation = RotationMode.Fixed;
+        [Tooltip("Маска футпринта: 'X' занято, '.' свободно. Пусто = прямоугольник GridSize (в КЛЕТКАХ).")]
+        public string[] FootprintRows;
+        [Tooltip("Зазор валидности вокруг маски, в клетках. Не помечает клетки занятыми.")]
+        public int PaddingCells = 0;
 
         [Header("Visual")]
         public GameObject Prefab;
@@ -34,7 +37,8 @@ namespace WheatFarm.Core.Data
         public bool UnlockedByDefault = true;
 
         [Header("Interaction")]
-        public bool Interactable;        public BuildingRole Role;
+        public bool Interactable;
+        public BuildingRole Role;
 
         public RecipeData[] Recipes;
         public int MaxLevel = 1;

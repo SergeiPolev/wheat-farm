@@ -81,4 +81,9 @@ namespace WheatFarm.UI
         {
             if (_slotContainer == null || index < 0 || index >= _slotContainer.childCount) return;
 
-            var texts = _slo
+            var texts = _slotContainer.GetChild(index).GetComponentsInChildren<TextMeshProUGUI>();
+            if (texts.Length > 0) texts[0].text = itemName;
+            if (texts.Length > 1) texts[1].text = amount.ToString();
+        }
+    }
+}

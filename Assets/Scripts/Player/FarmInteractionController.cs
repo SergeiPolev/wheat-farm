@@ -20,6 +20,7 @@ namespace WheatFarm.Player
         private IToolService _toolService;
         private IBrushService _brushService;
         private PlacementTool _placementTool;
+        private BulldozeTool _bulldozeTool;
         private WheatFarm.Player.Preview.IPlacementGhostService _ghostService;
         private WheatFarm.Player.Preview.IBrushPreviewService _brushPreview;
         private Camera _cam;
@@ -37,13 +38,15 @@ namespace WheatFarm.Player
             IBrushService brushService,
             WheatFarm.Player.Preview.IPlacementGhostService ghostService,
             WheatFarm.Player.Preview.IBrushPreviewService brushPreview,
-            PlacementTool placementTool = null)
+            PlacementTool placementTool = null,
+            BulldozeTool bulldozeTool = null)
         {
             _toolService = toolService;
             _brushService = brushService;
             _ghostService = ghostService;
             _brushPreview = brushPreview;
             _placementTool = placementTool;
+            _bulldozeTool = bulldozeTool;
         }
 
         private void Start()
@@ -59,9 +62,11 @@ namespace WheatFarm.Player
             UpdateInteractionPosition();
             HandleToolSwitching();
             HandleBrushSize();
-            HandlePreview();
             HandlePlacementRotation();
             HandleToolUse();
+            // Preview/hover last: if a click this frame removed the hovered object,
+            // we won't tint a renderer that's about to be destroyed.
+            HandlePreview();
         }
 
         private void UpdateInteractionPosition()
@@ -169,6 +174,15 @@ namespace WheatFarm.Player
                 _ghostService.SetVisible(hitPoint.HasValue);
                 if (hitPoint.HasValue)
                     _placementTool.UpdatePreview(hitPoint.Value);
+            }
+
+            // Bulldoze hover highlight
+            if (_bulldozeTool != null && _toolService.CurrentToolId.CurrentValue == ToolId.Bulldoze)
+            {
+                if (hitPoint.HasValue)
+                    _bulldozeTool.UpdateHover(hitPoint.Value);
+                else
+                    _bulldozeTool.ClearHover();
             }
 
             // Brush cell preview (any tool that is IBrushAction + IBrushPreviewSource)

@@ -1,7 +1,10 @@
 {
     "name": "WheatFarm.Editor",
     "rootNamespace": "WheatFarm.Editor",
-    "references": [],
+    "references": [
+        "WheatFarm.Core",
+        "WheatFarm.Farming"
+    ],
     "includePlatforms": [
         "Editor"
     ],

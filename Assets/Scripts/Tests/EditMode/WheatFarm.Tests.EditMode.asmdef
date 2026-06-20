@@ -5,8 +5,11 @@
         "WheatFarm.Core",
         "WheatFarm.Farming",
         "WheatFarm.Buildings",
+        "WheatFarm.Economy",
         "WheatFarm.Inventory",
         "WheatFarm.Player",
+        "WheatFarm.Infrastructure",
+        "UniTask",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
         "R3.Unity"

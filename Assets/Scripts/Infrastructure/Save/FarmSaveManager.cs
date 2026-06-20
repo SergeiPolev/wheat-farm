@@ -33,7 +33,8 @@ namespace WheatFarm.Infrastructure.Save
         private readonly IProductionService _production;
         private readonly ITreePlacementService _trees;
         private readonly PlantDatabase _plantDb;
-        private readonly PlaceableDatabase _placeableDb;        private readonly IPlantUnlockService _unlock;
+        private readonly PlaceableDatabase _placeableDb;
+        private readonly IPlantUnlockService _unlock;
 
 
         /// <summary>Must match PlantSystem.MinGrowthScale</summary>
@@ -63,7 +64,8 @@ namespace WheatFarm.Infrastructure.Save
             _production = production;
             _trees = trees;
             _plantDb = plantDb;
-            _placeableDb = placeableDb;            _unlock = unlock;
+            _placeableDb = placeableDb;
+            _unlock = unlock;
 
         }
 
@@ -131,7 +133,8 @@ namespace WheatFarm.Infrastructure.Save
                     CellX = obj.CellX,
                     CellY = obj.CellY,
                     RotationY = obj.RotationY,
-                    Level = obj.Level
+                    Level = obj.Level,
+                    RotationSteps = obj.RotationSteps
                 });
             }
 
@@ -284,7 +287,7 @@ namespace WheatFarm.Infrastructure.Save
                     var coord = new Vector2Int(poSave.ChunkCoordX, poSave.ChunkCoordY);
                     _placement.RestorePlace(
                         placeableData, coord, poSave.CellX, poSave.CellY,
-                        poSave.RotationY, poSave.Level);
+                        poSave.RotationSteps, poSave.RotationY, poSave.Level);
                 }
             }
 
@@ -295,7 +298,9 @@ namespace WheatFarm.Infrastructure.Save
                 {
                     var building = _placement.PlacedObjects
                         .FirstOrDefault(po => po.Data.PlaceableId == slotData.PlaceableId
-                            && po.ChunkCoord == slotData.ChunkCoord);
+                            && po.ChunkCoord == slotData.ChunkCoord
+                            && po.CellX == slotData.CellX
+                            && po.CellY == slotData.CellY);
                     if (building == null) continue;
 
                     var recipe = building.Data.Recipes?
