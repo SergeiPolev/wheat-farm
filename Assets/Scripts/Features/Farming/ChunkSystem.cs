@@ -320,7 +320,10 @@ namespace WheatFarm.Farming
                     if (nChunk == null || !nChunk.Unlocked) continue;
 
                     int idx = nChunk.CellIndex(nx, ny);
-                    if (nChunk.Cells[idx].GroundState != GroundState.Grass)
+                    // Only real farmland (Tilled/Watered/Fertilized) bleeds soil into nearby grass.
+                    // Paths are hard surfaces — they must not cast a muddy proximity halo.
+                    var gs = nChunk.Cells[idx].GroundState;
+                    if (gs != GroundState.Grass && gs < GroundState.PathStone)
                     {
                         float distSq = dx * dx + dy * dy;
                         if (distSq < minDistSq)
