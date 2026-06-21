@@ -283,10 +283,26 @@ namespace WheatFarm.Farming
             ref var cell = ref chunk.Cells[idx];
             if (!cell.HasPlant) return;
 
-            cell.Color = color;
+            // Pre-compensate for the crop shader's lighting wash, which brightens/desaturates the
+            // tint toward pastel. Boosting saturation (and slightly lowering value) makes the painted
+            // plant read closer to the picked swatch. Near-white (the "reset" dye) is left neutral.
+            var dyed = VividDye(color);
+            cell.Color = dyed;
             ref var props = ref chunk.MeshProps[idx];
-            props.color = new Vector4(color.r, color.g, color.b, color.a);
+            props.color = new Vector4(dyed.r, dyed.g, dyed.b, dyed.a);
             chunk.Dirty = true;
+        }
+
+        /// <summary>Punch up a dye color to survive the crop shader's lighting wash.</summary>
+        private static Color VividDye(Color c)
+        {
+            Color.RGBToHSV(c, out float h, out float s, out float v);
+            if (s < 0.1f) return c; // white / grey reset stays neutral (no tint)
+            s = Mathf.Clamp01(s * 1.5f + 0.05f);
+            v = Mathf.Clamp01(v * 0.82f);
+            var o = Color.HSVToRGB(h, s, v);
+            o.a = c.a;
+            return o;
         }
 
         /// <summary>
