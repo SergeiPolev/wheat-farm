@@ -34,5 +34,5 @@ MonoBehaviour:
   - State: 6
     Albedo: {fileID: 2800000, guid: d5b605148647e7c43806c50e153c3de5, type: 3}
     Normal: {fileID: 2800000, guid: 1542f92f4dabc8f49ab12fa606cf6cec, type: 3}
-  AlbedoArray: {fileID: 0}
-  NormalArray: {fileID: 0}
+  AlbedoArray: {fileID: 18700000, guid: ead6196f1a21afc46b076fbf5a2c1f2f, type: 2}
+  NormalArray: {fileID: 18700000, guid: 5017f27a10847a441920a3b6bd46a77c, type: 2}
