@@ -6,6 +6,9 @@ Shader "WheatFarm/Ground Instanced"
         _GroundAlbedoArray ("Ground Albedo Array", 2DArray) = "white" {}
         _GroundNormalArray ("Ground Normal Array", 2DArray) = "bump" {}
         _PathTileSize ("Path Tile Size (world units)", Float) = 1.0
+        _PathSpecular ("Path Specular", Range(0, 1)) = 0.1
+        _PathSmoothness ("Path Smoothness", Range(0, 1)) = 0.5
+        _FlipNormalY ("Flip Normal Y (fix inverted relief)", Float) = 0
         [HDR] _TintGrass ("Grass Tint", Color) = (0.45, 0.65, 0.25, 1)
         [HDR] _TintTilled ("Tilled Tint", Color) = (0.35, 0.22, 0.1, 1)
         [HDR] _TintWatered ("Watered Tint", Color) = (0.2, 0.14, 0.08, 1)
@@ -55,6 +58,9 @@ Shader "WheatFarm/Ground Instanced"
             CBUFFER_START(UnityPerMaterial)
                 float4 _GroundAtlas_ST;
                 float _PathTileSize;
+                float _PathSpecular;
+                float _PathSmoothness;
+                float _FlipNormalY;
                 half4 _TintGrass;
                 half4 _TintTilled;
                 half4 _TintWatered;
@@ -161,9 +167,16 @@ Shader "WheatFarm/Ground Instanced"
                 float2 uvSel = (state >= 4) ? worldUV : input.tileUV;
                 half4 texColor = SAMPLE_TEXTURE2D_ARRAY(_GroundAlbedoArray, sampler_GroundAlbedoArray, uvSel, state);
 
-                // Simple directional lighting
+                // Perturbed normal from the per-state normal slice. The ground is flat, so use a
+                // fixed tangent basis T=(1,0,0), B=(0,0,1), N=(0,1,0) → worldN = (n.x, n.z, n.y).
+                // _FlipNormalY corrects DirectX/OpenGL handedness if the relief looks inverted.
+                float3 nTS = UnpackNormal(SAMPLE_TEXTURE2D_ARRAY(_GroundNormalArray, sampler_GroundNormalArray, uvSel, state));
+                nTS.y *= (_FlipNormalY > 0.5) ? -1.0 : 1.0;
+                float3 N = normalize(float3(nTS.x, nTS.z, nTS.y));
+
+                // Directional lighting using the perturbed normal
                 Light mainLight = GetMainLight();
-                half NdotL = saturate(dot(input.normalWS, mainLight.direction));
+                half NdotL = saturate(dot(N, mainLight.direction));
 
                 // Grass base color
                 half3 grassBase = texColor.rgb * _TintGrass.rgb;
@@ -209,6 +222,21 @@ Shader "WheatFarm/Ground Instanced"
 
                 half3 stateColor = texColor.rgb * stateTint.rgb;
                 half3 stateLit = stateColor * NdotL * mainLight.color + stateColor * 0.4;
+
+                // Paths get a soft Blinn-Phong highlight; bare soil/grass stay matte.
+                if (state >= 4)
+                {
+                    float3 V = GetWorldSpaceNormalizeViewDir(input.positionWS);
+                    float3 H = normalize(mainLight.direction + V);
+                    float specPower = exp2(_PathSmoothness * 8.0) + 1.0;
+                    // Weight by micro-facet tilt: the flat base orientation (N ~ up) gets ~no
+                    // specular, so an orthographic camera no longer washes the whole path at once —
+                    // only the tilted facets of stones/planks glint. nTS.xy length = sin(facet angle).
+                    float facet = saturate(length(nTS.xy) * 1.5);
+                    float spec = pow(saturate(dot(N, H)), specPower) * _PathSpecular * facet;
+                    // Gate by NdotL so the highlight fades where the path faces away from the sun.
+                    stateLit += spec * NdotL * mainLight.color;
+                }
 
                 return half4(stateLit, 1.0);
             }
