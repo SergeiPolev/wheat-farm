@@ -10,6 +10,7 @@
         "WheatFarm.Player",
         "WheatFarm.Infrastructure",
         "WheatFarm.Editor",
+        "WheatFarm.UI",
         "UniTask",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",

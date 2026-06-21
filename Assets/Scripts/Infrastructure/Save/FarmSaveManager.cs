@@ -35,6 +35,7 @@ namespace WheatFarm.Infrastructure.Save
         private readonly PlantDatabase _plantDb;
         private readonly PlaceableDatabase _placeableDb;
         private readonly IPlantUnlockService _unlock;
+        private readonly IDyeUnlockService _dyeUnlock;
 
 
         /// <summary>Must match PlantSystem.MinGrowthScale</summary>
@@ -53,7 +54,8 @@ namespace WheatFarm.Infrastructure.Save
             ITreePlacementService trees,
             PlantDatabase plantDb,
             PlaceableDatabase placeableDb = null,
-            IPlantUnlockService unlock = null)
+            IPlantUnlockService unlock = null,
+            IDyeUnlockService dyeUnlock = null)
         {
             _saveService = saveService;
             _chunkSystem = chunkSystem;
@@ -66,6 +68,7 @@ namespace WheatFarm.Infrastructure.Save
             _plantDb = plantDb;
             _placeableDb = placeableDb;
             _unlock = unlock;
+            _dyeUnlock = dyeUnlock;
 
         }
 
@@ -178,6 +181,7 @@ namespace WheatFarm.Infrastructure.Save
             // Production slots
             data.ProductionSlots = _production.GetSaveData();
             data.UnlockedPlants = _unlock?.ToSaveList() ?? new List<string>();
+            data.UnlockedDyes = _dyeUnlock?.ToSaveList() ?? new List<string>();
 
 
             Debug.Log($"[FarmSaveManager] Collected: {data.Chunks.Count} chunks, " +
@@ -198,6 +202,10 @@ namespace WheatFarm.Infrastructure.Save
             // Unlocked plants
             if (_unlock != null)
                 _unlock.LoadFrom(data.UnlockedPlants);
+
+            // Unlocked dyes
+            if (_dyeUnlock != null && data.UnlockedDyes != null)
+                _dyeUnlock.LoadFrom(data.UnlockedDyes);
 
 
             // Day/Night time

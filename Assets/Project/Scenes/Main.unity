@@ -738,6 +738,7 @@ MonoBehaviour:
   _plantDatabase: {fileID: 11400000, guid: 75c5887918b92b049b355a6c277f0cfa, type: 2}
   _placeableDatabase: {fileID: 11400000, guid: bc075a597eeefb947b23c19fb60b3472, type: 2}
   _contractDatabase: {fileID: 11400000, guid: d66f0a7bbc8d8604c9786b93e849f50c, type: 2}
+  _dyeDatabase: {fileID: 11400000, guid: 4fd5aca9a5431294e97a1a65c95b323c, type: 2}
 --- !u!1 &1222661519 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 33196867889606974, guid: ef998306f8c49e744b6050443c233747, type: 3}

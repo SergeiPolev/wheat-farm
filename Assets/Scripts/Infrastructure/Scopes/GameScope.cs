@@ -17,6 +17,7 @@ namespace WheatFarm.Infrastructure
         [SerializeField] private PlantDatabase _plantDatabase;
         [SerializeField] private PlaceableDatabase _placeableDatabase;
         [SerializeField] private ContractDatabase _contractDatabase;
+        [SerializeField] private DyeDatabase _dyeDatabase;
 
         protected override void Configure(IContainerBuilder builder)
         {
@@ -26,6 +27,8 @@ namespace WheatFarm.Infrastructure
             builder.RegisterInstance(_plantDatabase);
             builder.Register<PlantUnlockService>(Lifetime.Singleton)
                 .As<IPlantUnlockService>();
+            builder.Register<DyeUnlockService>(Lifetime.Singleton)
+                .As<IDyeUnlockService>();
 
             // Debug / god-mode flags
             builder.Register<WheatFarm.Core.DebugFlags>(Lifetime.Singleton)
@@ -38,6 +41,9 @@ namespace WheatFarm.Infrastructure
 
             if (_contractDatabase != null)
                 builder.RegisterInstance(_contractDatabase);
+
+            if (_dyeDatabase != null)
+                builder.RegisterInstance(_dyeDatabase);
 
             // Phase 5: Economy
             builder.Register<WalletService>(Lifetime.Singleton).AsSelf();
