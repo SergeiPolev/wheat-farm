@@ -17,6 +17,7 @@ namespace WheatFarm.Infrastructure
         [SerializeField] private PlantDatabase _plantDatabase;
         [SerializeField] private PlaceableDatabase _placeableDatabase;
         [SerializeField] private ContractDatabase _contractDatabase;
+        [SerializeField] private DyeDatabase _dyeDatabase;
 
         protected override void Configure(IContainerBuilder builder)
         {
@@ -38,6 +39,9 @@ namespace WheatFarm.Infrastructure
 
             if (_contractDatabase != null)
                 builder.RegisterInstance(_contractDatabase);
+
+            if (_dyeDatabase != null)
+                builder.RegisterInstance(_dyeDatabase);
 
             // Phase 5: Economy
             builder.Register<WalletService>(Lifetime.Singleton).AsSelf();

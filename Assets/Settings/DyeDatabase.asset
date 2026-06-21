@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a6d595393463f949b0a42bce212f3ec, type: 3}
+  m_Name: DyeDatabase
+  m_EditorClassIdentifier: 
+  Items:
+  - {fileID: 11400000, guid: 0fe348bdc79974145ac69d80ee96561e, type: 2}
+  - {fileID: 11400000, guid: 0d7e28a1bd35c0e4483d760d9da0e697, type: 2}
+  - {fileID: 11400000, guid: 7923a5bb1327a284da2a56547a34f477, type: 2}
+  - {fileID: 11400000, guid: e5540fa677c8c2446840f51b6baa5da8, type: 2}
+  - {fileID: 11400000, guid: 8c7bc69ead24aa540ab3748d5bfec397, type: 2}
+  - {fileID: 11400000, guid: 9856d63025c75934788b3e0166d00caa, type: 2}
+  - {fileID: 11400000, guid: 42c18285efaf2404d8440076713d567c, type: 2}
+  - {fileID: 11400000, guid: ebf6ce00276e2784eb2275245bb69eeb, type: 2}
