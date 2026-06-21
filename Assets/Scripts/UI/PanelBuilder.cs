@@ -368,6 +368,43 @@ namespace WheatFarm.UI
             return view;
         }
 
+        /// <summary>Dye palette: a small bottom-center bar of color swatches (hidden by default).</summary>
+        public static DyeColorPaletteView BuildDyePalettePanel(Transform canvasRoot)
+        {
+            var panel = new GameObject("DyePalettePanel");
+            panel.transform.SetParent(canvasRoot, false);
+            var rect = panel.AddComponent<RectTransform>();
+            rect.anchorMin = new Vector2(0.5f, 0f);
+            rect.anchorMax = new Vector2(0.5f, 0f);
+            rect.pivot = new Vector2(0.5f, 0f);
+            rect.anchoredPosition = new Vector2(0, 96); // sit just above the catalog tab bar
+            rect.sizeDelta = new Vector2(460, 64);
+            panel.AddComponent<Image>().color = PanelBg;
+
+            var container = new GameObject("Swatches");
+            container.transform.SetParent(panel.transform, false);
+            var crect = container.AddComponent<RectTransform>();
+            crect.anchorMin = Vector2.zero;
+            crect.anchorMax = Vector2.one;
+            crect.offsetMin = new Vector2(8, 8);
+            crect.offsetMax = new Vector2(-8, -8);
+
+            var layout = container.AddComponent<HorizontalLayoutGroup>();
+            layout.spacing = 6;
+            layout.childAlignment = TextAnchor.MiddleCenter;
+            layout.childForceExpandWidth = false;
+            layout.childForceExpandHeight = false;
+            layout.childControlWidth = false;
+            layout.childControlHeight = false;
+
+            var view = panel.AddComponent<DyeColorPaletteView>();
+            SetField(view, "_panel", panel);
+            SetField(view, "_container", container.transform);
+
+            panel.SetActive(false);
+            return view;
+        }
+
         /// <summary>Available contract entry: description TMP + Accept button (no slider).</summary>
         private static GameObject CreateAvailableEntryPrefab()
         {
