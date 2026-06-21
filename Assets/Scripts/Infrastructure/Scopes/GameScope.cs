@@ -27,6 +27,8 @@ namespace WheatFarm.Infrastructure
             builder.RegisterInstance(_plantDatabase);
             builder.Register<PlantUnlockService>(Lifetime.Singleton)
                 .As<IPlantUnlockService>();
+            builder.Register<DyeUnlockService>(Lifetime.Singleton)
+                .As<IDyeUnlockService>();
 
             // Debug / god-mode flags
             builder.Register<WheatFarm.Core.DebugFlags>(Lifetime.Singleton)
