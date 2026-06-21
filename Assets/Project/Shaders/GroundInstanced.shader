@@ -2,7 +2,6 @@ Shader "WheatFarm/Ground Instanced"
 {
     Properties
     {
-        _GroundAtlas ("Ground Atlas (2x2, legacy)", 2D) = "white" {}
         _GroundAlbedoArray ("Ground Albedo Array", 2DArray) = "white" {}
         _GroundNormalArray ("Ground Normal Array", 2DArray) = "bump" {}
         _PathTileSize ("Path Tile Size (world units)", Float) = 1.0
@@ -49,15 +48,12 @@ Shader "WheatFarm/Ground Instanced"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
             #include "Assets/Project/Shaders/GetStructedBuffer.hlsl"
 
-            TEXTURE2D(_GroundAtlas);
-            SAMPLER(sampler_GroundAtlas);
             TEXTURE2D_ARRAY(_GroundAlbedoArray);
             SAMPLER(sampler_GroundAlbedoArray);
             TEXTURE2D_ARRAY(_GroundNormalArray);
             SAMPLER(sampler_GroundNormalArray);
 
             CBUFFER_START(UnityPerMaterial)
-                float4 _GroundAtlas_ST;
                 float _PathTileSize;
                 float _PathSpecular;
                 float _PathSmoothness;
@@ -87,7 +83,6 @@ Shader "WheatFarm/Ground Instanced"
             struct Varyings
             {
                 float4 positionCS : SV_POSITION;
-                float2 atlasUV : TEXCOORD0;
                 float2 tileUV : TEXCOORD1;
                 float3 normalWS : TEXCOORD2;
                 float3 positionWS : TEXCOORD3;
@@ -151,13 +146,6 @@ Shader "WheatFarm/Ground Instanced"
                 output.neighborFlags = nFlags;
                 output.proximity = prox;
                 output.farmDir = fDir;
-
-                // Compute atlas UV: 2x2 grid (states 0-3 map to atlas tiles, paths 4-6 reuse Tilled tile)
-                float atlasState = (state > 3.5) ? 1.0 : state; // paths reuse Tilled atlas tile
-                float col = fmod(atlasState, 2.0);
-                float row = floor(atlasState / 2.0);
-                float2 atlasOffset = float2(col * 0.5, (1.0 - row) * 0.5);
-                output.atlasUV = input.uv * 0.5 + atlasOffset;
 
                 return output;
             }
