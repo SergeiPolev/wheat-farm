@@ -2,7 +2,10 @@ Shader "WheatFarm/Ground Instanced"
 {
     Properties
     {
-        _GroundAtlas ("Ground Atlas (2x2)", 2D) = "white" {}
+        _GroundAtlas ("Ground Atlas (2x2, legacy)", 2D) = "white" {}
+        _GroundAlbedoArray ("Ground Albedo Array", 2DArray) = "white" {}
+        _GroundNormalArray ("Ground Normal Array", 2DArray) = "bump" {}
+        _PathTileSize ("Path Tile Size (world units)", Float) = 1.0
         [HDR] _TintGrass ("Grass Tint", Color) = (0.45, 0.65, 0.25, 1)
         [HDR] _TintTilled ("Tilled Tint", Color) = (0.35, 0.22, 0.1, 1)
         [HDR] _TintWatered ("Watered Tint", Color) = (0.2, 0.14, 0.08, 1)
@@ -44,9 +47,14 @@ Shader "WheatFarm/Ground Instanced"
 
             TEXTURE2D(_GroundAtlas);
             SAMPLER(sampler_GroundAtlas);
+            TEXTURE2D_ARRAY(_GroundAlbedoArray);
+            SAMPLER(sampler_GroundAlbedoArray);
+            TEXTURE2D_ARRAY(_GroundNormalArray);
+            SAMPLER(sampler_GroundNormalArray);
 
             CBUFFER_START(UnityPerMaterial)
                 float4 _GroundAtlas_ST;
+                float _PathTileSize;
                 half4 _TintGrass;
                 half4 _TintTilled;
                 half4 _TintWatered;
@@ -147,8 +155,11 @@ Shader "WheatFarm/Ground Instanced"
 
                 int state = (int)input.groundState;
 
-                // Sample atlas texture
-                half4 texColor = SAMPLE_TEXTURE2D(_GroundAtlas, sampler_GroundAtlas, input.atlasUV);
+                // Paths (4-6) use a seamless world-space projection so the texture flows across
+                // cell boundaries; farmable states (0-3) use the per-tile UV. Slice = GroundState ordinal.
+                float2 worldUV = input.positionWS.xz / _PathTileSize;
+                float2 uvSel = (state >= 4) ? worldUV : input.tileUV;
+                half4 texColor = SAMPLE_TEXTURE2D_ARRAY(_GroundAlbedoArray, sampler_GroundAlbedoArray, uvSel, state);
 
                 // Simple directional lighting
                 Light mainLight = GetMainLight();
@@ -177,7 +188,9 @@ Shader "WheatFarm/Ground Instanced"
 
                         if (prox > 0.001)
                         {
-                            half3 soilBase = texColor.rgb * _TintTilled.rgb;
+                            // Soil preview = Tilled slice (1), sampled with the same per-tile UV.
+                            half3 soilTex = SAMPLE_TEXTURE2D_ARRAY(_GroundAlbedoArray, sampler_GroundAlbedoArray, input.tileUV, 1).rgb;
+                            half3 soilBase = soilTex * _TintTilled.rgb;
                             half3 soilLit = soilBase * NdotL * mainLight.color + soilBase * 0.4;
                             return half4(lerp(grassLit, soilLit, prox), 1.0);
                         }
