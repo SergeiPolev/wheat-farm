@@ -88,7 +88,7 @@ namespace WheatFarm.Infrastructure
             builder.Register<PlacementTool>(Lifetime.Singleton).As<PlacementTool, ITool>();
             builder.Register<WateringCanTool>(Lifetime.Singleton).As<ITool>();
             builder.Register<SickleTool>(Lifetime.Singleton).As<ITool>();
-            builder.Register<DyeTool>(Lifetime.Singleton).As<ITool>();
+            builder.Register<DyeTool>(Lifetime.Singleton).As<DyeTool, ITool>();
             builder.Register<FertilizerTool>(Lifetime.Singleton).As<ITool>();
             builder.Register<UprootTool>(Lifetime.Singleton).As<ITool>();
             builder.Register<BulldozeTool>(Lifetime.Singleton).As<BulldozeTool, ITool>();
@@ -239,6 +239,15 @@ namespace WheatFarm.Infrastructure
                     builder.Register<MarketPresenter>(Lifetime.Singleton)
                         .As<IInitializable, System.IDisposable>();
                 }
+            }
+
+            // Dye color palette (shown only while the Dye tool is active)
+            if (canvasRoot != null)
+            {
+                var dyePalette = PanelBuilder.BuildDyePalettePanel(canvasRoot);
+                builder.RegisterComponent(dyePalette).As<IDyeColorPaletteView>();
+                builder.Register<DyeColorPalettePresenter>(Lifetime.Singleton)
+                    .As<IInitializable, System.IDisposable>();
             }
 
             // Catalog tab bar (bottom of screen — category selection)
