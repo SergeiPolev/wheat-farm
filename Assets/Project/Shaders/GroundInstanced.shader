@@ -19,6 +19,7 @@ Shader "WheatFarm/Ground Instanced"
         _TransitionDuration ("Transition Duration (s)", Float) = 0.6
         _EdgeSoftness ("Edge Softness", Range(0.01, 0.5)) = 0.15
         _CornerRadius ("Corner Radius", Range(0.0, 0.5)) = 0.25
+        _TypeBlendWidth ("Path Type Blend Width", Range(0.05, 0.5)) = 0.15
         _ProximityStrength ("Proximity Blend Strength", Range(0.0, 1.0)) = 0.35
     }
     SubShader
@@ -71,6 +72,7 @@ Shader "WheatFarm/Ground Instanced"
                 float _TransitionDuration;
                 float _EdgeSoftness;
                 float _CornerRadius;
+                float _TypeBlendWidth;
                 float _ProximityStrength;
             CBUFFER_END
 
@@ -96,6 +98,8 @@ Shader "WheatFarm/Ground Instanced"
                 // For grass tiles: proximity (0..1) and offset (dx,dy) to nearest farmland
                 nointerpolation float proximity : TEXCOORD7;
                 nointerpolation float2 farmDir : TEXCOORD8;
+                // For path tiles: neighbor GroundState per direction, packed N/E/S/W nibbles
+                nointerpolation uint neighborTypes : TEXCOORD9;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
@@ -121,6 +125,7 @@ Shader "WheatFarm/Ground Instanced"
                 uint nFlags = 0xFF;
                 float prox = 0;
                 float2 fDir = float2(0, 0);
+                uint nTypes = 0;
 
                 #if UNITY_ANY_INSTANCING_ENABLED
                     MeshProperties data = _PerInstanceData[unity_InstanceID];
@@ -130,6 +135,7 @@ Shader "WheatFarm/Ground Instanced"
                     if (state > 0.5)
                     {
                         nFlags = (uint)data.uv.w;
+                        nTypes = data.neighborTypes; // packed neighbor states (paths only; 0 otherwise)
                     }
                     else
                     {
@@ -139,6 +145,7 @@ Shader "WheatFarm/Ground Instanced"
                     }
                 #endif
 
+                output.neighborTypes = nTypes;
                 output.groundState = state;
                 output.transitionStart = startTime;
                 output.neighborFlags = nFlags;
@@ -183,6 +190,13 @@ Shader "WheatFarm/Ground Instanced"
                 }
 
                 return smoothstep(0.0, _EdgeSoftness, d);
+            }
+
+            half3 TintForState(uint s)
+            {
+                if (s == 5u) return _TintPathWood.rgb;
+                if (s == 6u) return _TintPathBrick.rgb;
+                return _TintPathStone.rgb; // s == 4 (only path states reach here)
             }
 
             half4 frag(Varyings input) : SV_Target
@@ -251,6 +265,39 @@ Shader "WheatFarm/Ground Instanced"
                 else if (state == 6) stateTint = _TintPathBrick;
 
                 half3 stateColor = texColor.rgb * stateTint.rgb;
+
+                // Soft blend across a seam with a DIFFERENT path type: in a narrow band near the
+                // shared edge, mix in the neighbor type's slice. Each side mixes 50% at the seam,
+                // so both sides match there (continuous). Dominant neighbor = largest band weight.
+                if (state >= 4)
+                {
+                    uint nt = input.neighborTypes;
+                    uint nN = (nt >> 0) & 0xFu;
+                    uint nE = (nt >> 4) & 0xFu;
+                    uint nS = (nt >> 8) & 0xFu;
+                    uint nW = (nt >> 12) & 0xFu;
+                    uint cur = (uint)state;
+                    float bw = _TypeBlendWidth;
+
+                    float wN = (nN >= 4u && nN != cur) ? smoothstep(1.0 - bw, 1.0, input.tileUV.y) : 0.0;
+                    float wS = (nS >= 4u && nS != cur) ? smoothstep(1.0 - bw, 1.0, 1.0 - input.tileUV.y) : 0.0;
+                    float wE = (nE >= 4u && nE != cur) ? smoothstep(1.0 - bw, 1.0, input.tileUV.x) : 0.0;
+                    float wW = (nW >= 4u && nW != cur) ? smoothstep(1.0 - bw, 1.0, 1.0 - input.tileUV.x) : 0.0;
+
+                    float wMax = max(max(wN, wS), max(wE, wW));
+                    if (wMax > 0.001)
+                    {
+                        uint nbr = nN; float best = wN;
+                        if (wE > best) { best = wE; nbr = nE; }
+                        if (wS > best) { best = wS; nbr = nS; }
+                        if (wW > best) { best = wW; nbr = nW; }
+
+                        // Neighbor type sampled with the same world-UV (paths are world-projected).
+                        half3 nbrTex = SAMPLE_TEXTURE2D_ARRAY(_GroundAlbedoArray, sampler_GroundAlbedoArray, uvSel, nbr).rgb;
+                        stateColor = lerp(stateColor, nbrTex * TintForState(nbr), wMax * 0.5);
+                    }
+                }
+
                 half3 stateLit = stateColor * NdotL * mainLight.color + stateColor * 0.4;
 
                 // Paths get a soft Blinn-Phong highlight; bare soil/grass stay matte.
