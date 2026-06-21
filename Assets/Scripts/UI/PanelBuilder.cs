@@ -377,7 +377,7 @@ namespace WheatFarm.UI
             rect.anchorMin = new Vector2(0.5f, 0f);
             rect.anchorMax = new Vector2(0.5f, 0f);
             rect.pivot = new Vector2(0.5f, 0f);
-            rect.anchoredPosition = new Vector2(0, 96); // sit just above the catalog tab bar
+            rect.anchoredPosition = new Vector2(0, 150); // float clear above the catalog item panel
             rect.sizeDelta = new Vector2(460, 64);
             panel.AddComponent<Image>().color = PanelBg;
 
