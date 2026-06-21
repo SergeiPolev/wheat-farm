@@ -40,6 +40,10 @@ namespace WheatFarm.Farming
         [Tooltip("Material with Ground Instanced shader")]
         public Material GroundMaterial;
 
+        [Tooltip("Albedo+normal textures per GroundState. GroundTextureArrayBuilder packs these " +
+                 "into the Texture2DArrays assigned to GroundMaterial.")]
+        public GroundTextureSet GroundTextures;
+
         [Header("Chunk Settings")]
         [Tooltip("World size of one chunk in units")]
         public float ChunkWorldSize = 4f;

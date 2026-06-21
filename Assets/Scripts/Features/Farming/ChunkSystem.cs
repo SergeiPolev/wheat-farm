@@ -202,6 +202,11 @@ namespace WheatFarm.Farming
                     {
                         // Farmed cell: store 8-bit neighbor flags
                         props.uv.w = ComputeNeighborFlags(nChunkCoord, nx, ny);
+                        // Path cells also store neighbor GroundStates so the shader can blend at
+                        // seams between different path types. Non-path farmed cells don't blend → 0.
+                        props.neighborTypes = nChunk.Cells[idx].GroundState >= GroundState.PathStone
+                            ? ComputeNeighborTypes(nChunkCoord, nx, ny)
+                            : 0u;
                     }
                     else
                     {
@@ -212,6 +217,8 @@ namespace WheatFarm.Farming
                         // Store offset to nearest farmland in color.xy
                         // (color is unused for grass cells — no plant to tint)
                         props.color = new Vector4(nearDx, nearDy, 0, 0);
+                        // Clear any stale path-neighbor data (e.g. after a path is bulldozed).
+                        props.neighborTypes = 0u;
                     }
                     nChunk.Dirty = true;
                 }
@@ -262,6 +269,33 @@ namespace WheatFarm.Farming
         }
 
         /// <summary>
+        /// Pack the GroundState of the 4 orthogonal neighbors into nibbles of a uint:
+        /// nibble0=N(+Y), nibble1=E(+X), nibble2=S(-Y), nibble3=W(-X). Out-of-bounds / locked /
+        /// missing neighbors read as 0 (Grass). The ground shader unpacks this to blend at the
+        /// seam between different path types. Direction order matches the first 4 entries used
+        /// by ComputeNeighborFlags (DxArr/DyArr).
+        /// </summary>
+        private uint ComputeNeighborTypes(Vector2Int chunkCoord, int cellX, int cellY)
+        {
+            uint packed = 0;
+
+            for (int dir = 0; dir < 4; dir++) // 0=N, 1=E, 2=S, 3=W
+            {
+                ResolveCell(chunkCoord, cellX + DxArr[dir], cellY + DyArr[dir],
+                    out var nChunkCoord, out int nx, out int ny);
+
+                var nChunk = GetChunk(nChunkCoord);
+                uint state = 0;
+                if (nChunk != null && nChunk.Unlocked)
+                    state = (uint)nChunk.Cells[nChunk.CellIndex(nx, ny)].GroundState;
+
+                packed |= (state & 0xF) << (dir * 4);
+            }
+
+            return packed;
+        }
+
+        /// <summary>
         /// For a grass cell, find the nearest farmed cell within ProximityRadius.
         /// Stores proximity (0..1) in uv.w and the cell offset (dx,dy) to nearest
         /// farmland in color.xy (so the shader can compute per-pixel distance).
@@ -286,7 +320,10 @@ namespace WheatFarm.Farming
                     if (nChunk == null || !nChunk.Unlocked) continue;
 
                     int idx = nChunk.CellIndex(nx, ny);
-                    if (nChunk.Cells[idx].GroundState != GroundState.Grass)
+                    // Only real farmland (Tilled/Watered/Fertilized) bleeds soil into nearby grass.
+                    // Paths are hard surfaces — they must not cast a muddy proximity halo.
+                    var gs = nChunk.Cells[idx].GroundState;
+                    if (gs != GroundState.Grass && gs < GroundState.PathStone)
                     {
                         float distSq = dx * dx + dy * dy;
                         if (distSq < minDistSq)
@@ -360,6 +397,7 @@ namespace WheatFarm.Farming
                         1f / chunk.Resolution,
                         0f); // uv.w = 0: no neighbor flags / no proximity
                     props.cropState = Vector4.zero;
+                    props.neighborTypes = 0u; // no path-neighbor data until a path is painted
 
                     chunk.MeshProps[idx] = props;
                 }

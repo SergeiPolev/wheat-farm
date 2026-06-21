@@ -33,6 +33,7 @@ struct MeshProperties
     float4 color;
     float4 uv;
     float4 cropstate;
+    uint neighborTypes;
 };
 
 StructuredBuffer<MeshProperties> _PerInstanceData;
@@ -143,6 +144,10 @@ void GetUV_float(float ID, out float4 UV)
 void GetCropState_float(float ID, out float4 cropState)
 {
 	cropState = _PerInstanceData[ID].cropstate;
+}
+void GetNeighborTypes_float(float ID, out float Out)
+{
+    Out = (float)_PerInstanceData[(uint)ID].neighborTypes;
 }
 void GetColor_float(float ID, out float4 color)
 {
