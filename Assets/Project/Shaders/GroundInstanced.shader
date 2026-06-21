@@ -155,6 +155,36 @@ Shader "WheatFarm/Ground Instanced"
                 return output;
             }
 
+            // Path coverage mask (1 = path, 0 = grass understory) based on which orthogonal
+            // neighbors are grass (flag bit clear). Exposed edges soften over _EdgeSoftness;
+            // corners where both adjacent edges are exposed are rounded by _CornerRadius (SDF).
+            float PathCoverage(float2 uv, uint flags)
+            {
+                bool eN = ((flags >> 0) & 1u) == 0u; // +Y neighbor is grass
+                bool eE = ((flags >> 1) & 1u) == 0u; // +X
+                bool eS = ((flags >> 2) & 1u) == 0u; // -Y
+                bool eW = ((flags >> 3) & 1u) == 0u; // -X
+
+                // Distance inward from each exposed edge (1.0 = no boundary on that side).
+                float dN = eN ? (1.0 - uv.y) : 1.0;
+                float dS = eS ? uv.y : 1.0;
+                float dE = eE ? (1.0 - uv.x) : 1.0;
+                float dW = eW ? uv.x : 1.0;
+
+                float d = min(min(dN, dS), min(dE, dW)); // straight edges (square corners)
+
+                float r = _CornerRadius;
+                if (r > 0.001)
+                {
+                    if (eN && eE) { float2 q = max(float2(r - dE, r - dN), 0.0); d = min(d, r - length(q)); }
+                    if (eS && eE) { float2 q = max(float2(r - dE, r - dS), 0.0); d = min(d, r - length(q)); }
+                    if (eN && eW) { float2 q = max(float2(r - dW, r - dN), 0.0); d = min(d, r - length(q)); }
+                    if (eS && eW) { float2 q = max(float2(r - dW, r - dS), 0.0); d = min(d, r - length(q)); }
+                }
+
+                return smoothstep(0.0, _EdgeSoftness, d);
+            }
+
             half4 frag(Varyings input) : SV_Target
             {
                 UNITY_SETUP_INSTANCE_ID(input);
@@ -236,6 +266,18 @@ Shader "WheatFarm/Ground Instanced"
                     float spec = pow(saturate(dot(N, H)), specPower) * _PathSpecular * facet;
                     // Gate by NdotL so the highlight fades where the path faces away from the sun.
                     stateLit += spec * NdotL * mainLight.color;
+
+                    // Round/soften exposed path edges by revealing a grass understory in the cuts,
+                    // so an isolated path cell reads as a rounded island and bends round their outer corner.
+                    float cov = PathCoverage(input.tileUV, input.neighborFlags);
+                    if (cov < 0.999)
+                    {
+                        half3 grassTex = SAMPLE_TEXTURE2D_ARRAY(_GroundAlbedoArray, sampler_GroundAlbedoArray, input.tileUV, 0).rgb;
+                        half3 grassBaseU = grassTex * _TintGrass.rgb;
+                        half grassN = saturate(dot(float3(0, 1, 0), mainLight.direction)); // flat understory
+                        half3 grassLitU = grassBaseU * grassN * mainLight.color + grassBaseU * 0.4;
+                        stateLit = lerp(grassLitU, stateLit, cov);
+                    }
                 }
 
                 return half4(stateLit, 1.0);
