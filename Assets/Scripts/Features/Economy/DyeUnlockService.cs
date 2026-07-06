@@ -16,6 +16,8 @@ namespace WheatFarm.Economy
         event Action Changed;
         bool IsUnlocked(DyeData dye);
         bool TryUnlock(DyeData dye);
+        /// <summary>Free by-id grant (contract rewards bypass the coin cost).</summary>
+        void Grant(string dyeId);
         List<string> ToSaveList();
         void LoadFrom(IEnumerable<string> ids);
     }
@@ -50,6 +52,12 @@ namespace WheatFarm.Economy
             _unlocked.Add(dye.DyeId);
             Changed?.Invoke();
             return true;
+        }
+
+        public void Grant(string dyeId)
+        {
+            if (!string.IsNullOrEmpty(dyeId) && _unlocked.Add(dyeId))
+                Changed?.Invoke();
         }
 
         public List<string> ToSaveList() => _unlocked.ToList();
