@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ada93cdf56786fb4ab8b8b3b7646f1e5, type: 3}
   m_Name: ContractDatabase
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier:
   Contracts:
   - ContractId: wheat_harvest
     Description: Harvest 5 wheat
@@ -19,8 +19,47 @@ MonoBehaviour:
     - ItemId: wheat
       Amount: 5
     CoinReward: 50
-    UnlockPlantId: 
+    UnlockPlantId:
+    UnlockDyeId:
     RewardMultiplier: 1.5
+  - ContractId: corn_delivery
+    Description: Deliver 8 corn
+    Required:
+    - ItemId: corn
+      Amount: 8
+    CoinReward: 80
+    UnlockPlantId:
+    UnlockDyeId:
+    RewardMultiplier: 1.5
+  - ContractId: tomato_crate
+    Description: Pack a crate of 8 tomatoes
+    Required:
+    - ItemId: tomato
+      Amount: 8
+    CoinReward: 90
+    UnlockPlantId:
+    UnlockDyeId:
+    RewardMultiplier: 1.5
+  - ContractId: sunflower_bunch
+    Description: Gather 6 sunflowers
+    Required:
+    - ItemId: sunflower
+      Amount: 6
+    CoinReward: 70
+    UnlockPlantId:
+    UnlockDyeId: yellow
+    RewardMultiplier: 1.5
+  - ContractId: mixed_harvest
+    Description: Deliver 10 wheat and 10 corn
+    Required:
+    - ItemId: wheat
+      Amount: 10
+    - ItemId: corn
+      Amount: 10
+    CoinReward: 180
+    UnlockPlantId:
+    UnlockDyeId: green
+    RewardMultiplier: 2
   - ContractId: big_wheat
     Description: Harvest 20 wheat
     Required:
@@ -28,6 +67,7 @@ MonoBehaviour:
       Amount: 20
     CoinReward: 200
     UnlockPlantId: rose
+    UnlockDyeId:
     RewardMultiplier: 2
   - ContractId: flour_delivery
     Description: Produce 3 flour
@@ -35,5 +75,60 @@ MonoBehaviour:
     - ItemId: flour
       Amount: 3
     CoinReward: 150
-    UnlockPlantId: 
+    UnlockPlantId:
+    UnlockDyeId: red
     RewardMultiplier: 2
+  - ContractId: bread_order
+    Description: Bake 3 bread
+    Required:
+    - ItemId: bread
+      Amount: 3
+    CoinReward: 250
+    UnlockPlantId:
+    UnlockDyeId: orange
+    RewardMultiplier: 2
+  - ContractId: sauce_batch
+    Description: Cook 4 tomato sauce
+    Required:
+    - ItemId: sauce
+      Amount: 4
+    CoinReward: 200
+    UnlockPlantId:
+    UnlockDyeId: blue
+    RewardMultiplier: 2
+  - ContractId: rose_bouquet
+    Description: Arrange 2 bouquets
+    Required:
+    - ItemId: bouquet
+      Amount: 2
+    CoinReward: 300
+    UnlockPlantId:
+    UnlockDyeId: pink
+    RewardMultiplier: 2.5
+  - ContractId: rose_garden
+    Description: Deliver 8 roses
+    Required:
+    - ItemId: rose
+      Amount: 8
+    CoinReward: 280
+    UnlockPlantId: cherry
+    UnlockDyeId:
+    RewardMultiplier: 2.5
+  - ContractId: cherry_jam
+    Description: Preserve 2 jars of cherry jam
+    Required:
+    - ItemId: jam
+      Amount: 2
+    CoinReward: 350
+    UnlockPlantId:
+    UnlockDyeId: purple
+    RewardMultiplier: 3
+  - ContractId: lumber_order
+    Description: Deliver 6 planks
+    Required:
+    - ItemId: planks
+      Amount: 6
+    CoinReward: 260
+    UnlockPlantId:
+    UnlockDyeId:
+    RewardMultiplier: 2.5
