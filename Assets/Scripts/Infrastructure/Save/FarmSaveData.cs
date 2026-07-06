@@ -20,6 +20,8 @@ namespace WheatFarm.Infrastructure.Save
         public List<TreeSaveData> Trees = new();
         public List<InventoryItemSaveData> Inventory = new();
         public List<ContractSaveData> ActiveContracts = new();
+        public List<string> AvailableContractIds = new();
+        public int ContractDayIndex;
         public List<string> UnlockedPlants = new();
         public List<string> UnlockedDyes = new();
         public List<ProductionSlotSaveData> ProductionSlots = new();
