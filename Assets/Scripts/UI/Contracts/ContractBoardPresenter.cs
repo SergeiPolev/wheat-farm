@@ -6,6 +6,7 @@ using R3;
 using VContainer.Unity;
 using WheatFarm.Core.Data;
 using WheatFarm.Economy;
+using WheatFarm.Inventory;
 
 namespace WheatFarm.UI
 {
@@ -17,25 +18,37 @@ namespace WheatFarm.UI
     {
         private readonly ContractBoardView _view;
         private readonly IContractService _contracts;
-        private readonly ContractDatabase _contractDb;
+        private readonly ContractRotationService _rotation;
+        private readonly IInventoryService _inventory;
+        private readonly PlantDatabase _plantDb;
+        private readonly DyeDatabase _dyeDb;
         private readonly CompositeDisposable _disposables = new();
 
         public ContractBoardPresenter(
             ContractBoardView view,
             IContractService contracts,
-            ContractDatabase contractDb)
+            ContractRotationService rotation,
+            IInventoryService inventory,
+            PlantDatabase plantDb,
+            DyeDatabase dyeDb)
         {
             _view = view;
             _contracts = contracts;
-            _contractDb = contractDb;
+            _rotation = rotation;
+            _inventory = inventory;
+            _plantDb = plantDb;
+            _dyeDb = dyeDb;
         }
 
         public void Initialize()
         {
             _view.OnAcceptClicked += OnAccept;
             _view.OnCompleteClicked += OnComplete;
+            _view.OnAbandonClicked += OnAbandon;
 
             _contracts.ActiveContracts.CollectionChanged += OnContractsChanged;
+            _inventory.Items.CollectionChanged += OnInventoryChanged;
+            _rotation.Available.CollectionChanged += OnAvailableChanged;
 
             RefreshAll();
         }
@@ -44,8 +57,21 @@ namespace WheatFarm.UI
         {
             _view.OnAcceptClicked -= OnAccept;
             _view.OnCompleteClicked -= OnComplete;
+            _view.OnAbandonClicked -= OnAbandon;
             _contracts.ActiveContracts.CollectionChanged -= OnContractsChanged;
+            _inventory.Items.CollectionChanged -= OnInventoryChanged;
+            _rotation.Available.CollectionChanged -= OnAvailableChanged;
             _disposables.Dispose();
+        }
+
+        private void OnInventoryChanged(in NotifyCollectionChangedEventArgs<InventoryItem> e)
+        {
+            RefreshActive(); // progress is inventory-derived
+        }
+
+        private void OnAvailableChanged(in NotifyCollectionChangedEventArgs<ContractData> e)
+        {
+            RefreshAvailable();
         }
 
         private void OnContractsChanged(in NotifyCollectionChangedEventArgs<ActiveContract> e)
@@ -61,19 +87,13 @@ namespace WheatFarm.UI
 
         private void RefreshAvailable()
         {
-            if (_contractDb == null || _contractDb.Contracts == null)
-            {
-                _view.SetAvailableContracts(Array.Empty<string>(), Array.Empty<bool>());
-                return;
-            }
-
-            // Filter out contracts already accepted
+            // Filter out contracts already accepted (rotation excludes them only at rotate time)
             var activeIds = new HashSet<string>();
             for (int i = 0; i < _contracts.ActiveContracts.Count; i++)
                 activeIds.Add(_contracts.ActiveContracts[i].Data.ContractId);
 
             var available = new List<ContractData>();
-            foreach (var c in _contractDb.Contracts)
+            foreach (var c in _rotation.Available)
             {
                 if (!activeIds.Contains(c.ContractId))
                     available.Add(c);
@@ -113,7 +133,7 @@ namespace WheatFarm.UI
                 var c = active[i];
                 descriptions[i] = FormatActive(c);
                 progress[i] = CalculateProgress(c);
-                canComplete[i] = c.IsComplete;
+                canComplete[i] = _contracts.CanComplete(c);
             }
 
             _view.SetContracts(descriptions, progress, canComplete);
@@ -133,7 +153,12 @@ namespace WheatFarm.UI
             _contracts.TryCompleteContract(index);
         }
 
-        private static string FormatAvailable(ContractData contract)
+        private void OnAbandon(int index)
+        {
+            _contracts.AbandonContract(index);
+        }
+
+        private string FormatAvailable(ContractData contract)
         {
             var sb = new StringBuilder();
             sb.Append(contract.Description);
@@ -143,11 +168,12 @@ namespace WheatFarm.UI
                 if (i > 0) sb.Append(", ");
                 sb.Append($"{contract.Required[i].Amount} {contract.Required[i].ItemId}");
             }
-            sb.Append($"]  +{contract.CoinReward}c");
+            sb.Append(']');
+            AppendReward(sb, contract);
             return sb.ToString();
         }
 
-        private static string FormatActive(ActiveContract contract)
+        private string FormatActive(ActiveContract contract)
         {
             var sb = new StringBuilder();
             sb.Append(contract.Data.Description);
@@ -156,24 +182,42 @@ namespace WheatFarm.UI
             {
                 if (i > 0) sb.Append(", ");
                 var req = contract.Data.Required[i];
-                sb.Append($"{contract.Progress[i]}/{req.Amount} {req.ItemId}");
+                int have = Math.Min(_inventory.GetAmount(req.ItemId), req.Amount);
+                sb.Append($"{have}/{req.Amount} {req.ItemId}");
             }
-            sb.Append($")  +{contract.Data.CoinReward}c");
+            sb.Append(')');
+            AppendReward(sb, contract.Data);
             return sb.ToString();
         }
 
-        private static float CalculateProgress(ActiveContract contract)
+        private void AppendReward(StringBuilder sb, ContractData contract)
+        {
+            sb.Append($"  +{contract.CoinReward}c");
+            if (!string.IsNullOrEmpty(contract.UnlockPlantId))
+            {
+                var plant = _plantDb != null ? _plantDb.GetById(contract.UnlockPlantId) : null;
+                sb.Append($" +{plant?.DisplayName ?? contract.UnlockPlantId}");
+            }
+            if (!string.IsNullOrEmpty(contract.UnlockDyeId))
+            {
+                var dye = _dyeDb != null ? _dyeDb.GetById(contract.UnlockDyeId) : null;
+                sb.Append($" +{dye?.DisplayName ?? contract.UnlockDyeId} dye");
+            }
+        }
+
+        /// <summary>Inventory coverage: sum of min(have, need) over sum of need.</summary>
+        private float CalculateProgress(ActiveContract contract)
         {
             if (contract.Data.Required.Length == 0) return 1f;
 
-            float total = 0f;
+            int have = 0, need = 0;
             for (int i = 0; i < contract.Data.Required.Length; i++)
             {
-                float req = contract.Data.Required[i].Amount;
-                if (req > 0)
-                    total += contract.Progress[i] / req;
+                var req = contract.Data.Required[i];
+                have += Math.Min(_inventory.GetAmount(req.ItemId), req.Amount);
+                need += req.Amount;
             }
-            return total / contract.Data.Required.Length;
+            return need > 0 ? (float)have / need : 1f;
         }
     }
 }

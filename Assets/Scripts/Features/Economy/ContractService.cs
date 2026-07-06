@@ -28,22 +28,31 @@ namespace WheatFarm.Economy
         ObservableList<ActiveContract> ActiveContracts { get; }
         Subject<ActiveContract> OnContractCompleted { get; }
         void AcceptContract(ContractData contract);
-        void TryCompleteContract(int index);
-        void ContributeItem(string itemId, int amount);
+        bool TryCompleteContract(int index);
+        void AbandonContract(int index);
+        bool CanComplete(ActiveContract contract);
     }
 
     public class ContractService : IContractService
     {
         private readonly IWalletService _wallet;
         private readonly IInventoryService _inventory;
+        private readonly IPlantUnlockService _plants;
+        private readonly IDyeUnlockService _dyes;
 
         public ObservableList<ActiveContract> ActiveContracts { get; } = new();
         public Subject<ActiveContract> OnContractCompleted { get; } = new();
 
-        public ContractService(IWalletService wallet, IInventoryService inventory)
+        public ContractService(
+            IWalletService wallet,
+            IInventoryService inventory,
+            IPlantUnlockService plants,
+            IDyeUnlockService dyes)
         {
             _wallet = wallet;
             _inventory = inventory;
+            _plants = plants;
+            _dyes = dyes;
         }
 
         public void AcceptContract(ContractData contract)
@@ -56,34 +65,39 @@ namespace WheatFarm.Economy
             ActiveContracts.Add(active);
         }
 
-        public void ContributeItem(string itemId, int amount)
+        /// <summary>Completion is inventory-derived: true when every requirement is covered.</summary>
+        public bool CanComplete(ActiveContract contract)
         {
-            for (int c = 0; c < ActiveContracts.Count; c++)
-            {
-                var contract = ActiveContracts[c];
-                for (int i = 0; i < contract.Data.Required.Length; i++)
-                {
-                    if (contract.Data.Required[i].ItemId != itemId) continue;
-                    int needed = contract.Data.Required[i].Amount - contract.Progress[i];
-                    if (needed <= 0) continue;
-
-                    int contribute = System.Math.Min(amount, needed);
-                    contract.Progress[i] += contribute;
-                    amount -= contribute;
-                    ActiveContracts[c] = contract;
-                }
-                if (amount <= 0) break;
-            }
+            for (int i = 0; i < contract.Data.Required.Length; i++)
+                if (!_inventory.HasItem(contract.Data.Required[i].ItemId, contract.Data.Required[i].Amount))
+                    return false;
+            return true;
         }
 
-        public void TryCompleteContract(int index)
+        public bool TryCompleteContract(int index)
         {
-            if (index < 0 || index >= ActiveContracts.Count) return;
+            if (index < 0 || index >= ActiveContracts.Count) return false;
             var contract = ActiveContracts[index];
-            if (!contract.IsComplete) return;
+            if (!CanComplete(contract)) return false;
+
+            // All-or-nothing: CanComplete guaranteed coverage, so consumes cannot fail mid-way
+            foreach (var req in contract.Data.Required)
+                _inventory.TryConsume(req.ItemId, req.Amount);
 
             _wallet.Add(contract.Data.CoinReward);
+            if (!string.IsNullOrEmpty(contract.Data.UnlockPlantId))
+                _plants.Unlock(contract.Data.UnlockPlantId);
+            if (!string.IsNullOrEmpty(contract.Data.UnlockDyeId))
+                _dyes.Grant(contract.Data.UnlockDyeId);
+
             OnContractCompleted.OnNext(contract);
+            ActiveContracts.RemoveAt(index);
+            return true;
+        }
+
+        public void AbandonContract(int index)
+        {
+            if (index < 0 || index >= ActiveContracts.Count) return;
             ActiveContracts.RemoveAt(index);
         }
 

@@ -60,6 +60,9 @@ namespace WheatFarm.Infrastructure
             builder.Register<ContractService>(Lifetime.Singleton)
                 .As<IContractService, System.IDisposable>();
 
+            builder.Register<ContractRotationService>(Lifetime.Singleton)
+                .As<ContractRotationService, IStartable, System.IDisposable>();
+
             // Phase 8: Day/Night cycle
             builder.Register<DayNightService>(Lifetime.Singleton)
                 .As<IDayNightService, ITickable, System.IDisposable>();

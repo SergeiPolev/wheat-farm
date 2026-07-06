@@ -518,8 +518,8 @@ namespace WheatFarm.UI
             var btnGo = new GameObject("CompleteBtn");
             btnGo.transform.SetParent(go.transform, false);
             var btnRect = btnGo.AddComponent<RectTransform>();
-            btnRect.anchorMin = new Vector2(0.65f, 0.05f);
-            btnRect.anchorMax = new Vector2(0.95f, 0.38f);
+            btnRect.anchorMin = new Vector2(0.62f, 0.05f);
+            btnRect.anchorMax = new Vector2(0.85f, 0.38f);
             btnRect.offsetMin = Vector2.zero;
             btnRect.offsetMax = Vector2.zero;
 
@@ -540,6 +540,33 @@ namespace WheatFarm.UI
             btnTmp.fontSize = 12;
             btnTmp.alignment = TextAlignmentOptions.Center;
             btnTmp.color = Color.white;
+
+            // Abandon button (GetComponentsInChildren<Button>[1] — must stay after CompleteBtn)
+            var abandonGo = new GameObject("AbandonBtn");
+            abandonGo.transform.SetParent(go.transform, false);
+            var abandonRect = abandonGo.AddComponent<RectTransform>();
+            abandonRect.anchorMin = new Vector2(0.87f, 0.05f);
+            abandonRect.anchorMax = new Vector2(0.98f, 0.38f);
+            abandonRect.offsetMin = Vector2.zero;
+            abandonRect.offsetMax = Vector2.zero;
+
+            var abandonImg = abandonGo.AddComponent<Image>();
+            abandonImg.color = CloseColor;
+            var abandonBtn = abandonGo.AddComponent<Button>();
+            abandonBtn.targetGraphic = abandonImg;
+
+            var abandonLabel = new GameObject("Text");
+            abandonLabel.transform.SetParent(abandonGo.transform, false);
+            var abandonLabelRect = abandonLabel.AddComponent<RectTransform>();
+            abandonLabelRect.anchorMin = Vector2.zero;
+            abandonLabelRect.anchorMax = Vector2.one;
+            abandonLabelRect.offsetMin = Vector2.zero;
+            abandonLabelRect.offsetMax = Vector2.zero;
+            var abandonTmp = abandonLabel.AddComponent<TextMeshProUGUI>();
+            abandonTmp.text = "X";
+            abandonTmp.fontSize = 12;
+            abandonTmp.alignment = TextAlignmentOptions.Center;
+            abandonTmp.color = Color.white;
 
             return go;
         }

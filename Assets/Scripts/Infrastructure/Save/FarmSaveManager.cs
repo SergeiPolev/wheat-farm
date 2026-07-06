@@ -36,6 +36,9 @@ namespace WheatFarm.Infrastructure.Save
         private readonly PlaceableDatabase _placeableDb;
         private readonly IPlantUnlockService _unlock;
         private readonly IDyeUnlockService _dyeUnlock;
+        private readonly IContractService _contracts;
+        private readonly ContractRotationService _rotation;
+        private readonly ContractDatabase _contractDb;
 
 
         /// <summary>Must match PlantSystem.MinGrowthScale</summary>
@@ -55,7 +58,10 @@ namespace WheatFarm.Infrastructure.Save
             PlantDatabase plantDb,
             PlaceableDatabase placeableDb = null,
             IPlantUnlockService unlock = null,
-            IDyeUnlockService dyeUnlock = null)
+            IDyeUnlockService dyeUnlock = null,
+            IContractService contracts = null,
+            ContractRotationService rotation = null,
+            ContractDatabase contractDb = null)
         {
             _saveService = saveService;
             _chunkSystem = chunkSystem;
@@ -69,6 +75,9 @@ namespace WheatFarm.Infrastructure.Save
             _placeableDb = placeableDb;
             _unlock = unlock;
             _dyeUnlock = dyeUnlock;
+            _contracts = contracts;
+            _rotation = rotation;
+            _contractDb = contractDb;
 
         }
 
@@ -183,6 +192,25 @@ namespace WheatFarm.Infrastructure.Save
             data.UnlockedPlants = _unlock?.ToSaveList() ?? new List<string>();
             data.UnlockedDyes = _dyeUnlock?.ToSaveList() ?? new List<string>();
 
+            // Contracts: active board + daily rotation state
+            if (_contracts != null)
+            {
+                foreach (var active in _contracts.ActiveContracts)
+                {
+                    data.ActiveContracts.Add(new ContractSaveData
+                    {
+                        ContractId = active.Data.ContractId,
+                        Progress = active.Progress
+                    });
+                }
+            }
+            if (_rotation != null)
+            {
+                var (availableIds, dayIndex) = _rotation.ToSave();
+                data.AvailableContractIds = availableIds;
+                data.ContractDayIndex = dayIndex;
+            }
+
 
             Debug.Log($"[FarmSaveManager] Collected: {data.Chunks.Count} chunks, " +
                       $"{data.PlacedObjects.Count} placed objects, {data.Trees.Count} trees, " +
@@ -206,6 +234,21 @@ namespace WheatFarm.Infrastructure.Save
             // Unlocked dyes
             if (_dyeUnlock != null && data.UnlockedDyes != null)
                 _dyeUnlock.LoadFrom(data.UnlockedDyes);
+
+            // Contracts: active board + daily rotation state (after unlocks so
+            // rotation eligibility on the next Dawn sees the restored sets)
+            if (_contracts != null && _contractDb != null && data.ActiveContracts != null)
+            {
+                while (_contracts.ActiveContracts.Count > 0)
+                    _contracts.AbandonContract(0);
+                foreach (var saved in data.ActiveContracts)
+                {
+                    var contract = _contractDb.GetById(saved.ContractId);
+                    if (contract != null)
+                        _contracts.AcceptContract(contract);
+                }
+            }
+            _rotation?.LoadFrom(data.AvailableContractIds, data.ContractDayIndex);
 
 
             // Day/Night time
