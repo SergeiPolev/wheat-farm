@@ -4,6 +4,7 @@
     "references": [
         "WheatFarm.Core",
         "WheatFarm.Inventory",
+        "WheatFarm.DayNight",
         "VContainer",
         "UniTask",
         "R3.Unity"

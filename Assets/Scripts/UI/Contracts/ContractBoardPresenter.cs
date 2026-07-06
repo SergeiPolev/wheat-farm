@@ -18,7 +18,7 @@ namespace WheatFarm.UI
     {
         private readonly ContractBoardView _view;
         private readonly IContractService _contracts;
-        private readonly ContractDatabase _contractDb;
+        private readonly ContractRotationService _rotation;
         private readonly IInventoryService _inventory;
         private readonly PlantDatabase _plantDb;
         private readonly DyeDatabase _dyeDb;
@@ -27,14 +27,14 @@ namespace WheatFarm.UI
         public ContractBoardPresenter(
             ContractBoardView view,
             IContractService contracts,
-            ContractDatabase contractDb,
+            ContractRotationService rotation,
             IInventoryService inventory,
             PlantDatabase plantDb,
             DyeDatabase dyeDb)
         {
             _view = view;
             _contracts = contracts;
-            _contractDb = contractDb;
+            _rotation = rotation;
             _inventory = inventory;
             _plantDb = plantDb;
             _dyeDb = dyeDb;
@@ -48,6 +48,7 @@ namespace WheatFarm.UI
 
             _contracts.ActiveContracts.CollectionChanged += OnContractsChanged;
             _inventory.Items.CollectionChanged += OnInventoryChanged;
+            _rotation.Available.CollectionChanged += OnAvailableChanged;
 
             RefreshAll();
         }
@@ -59,12 +60,18 @@ namespace WheatFarm.UI
             _view.OnAbandonClicked -= OnAbandon;
             _contracts.ActiveContracts.CollectionChanged -= OnContractsChanged;
             _inventory.Items.CollectionChanged -= OnInventoryChanged;
+            _rotation.Available.CollectionChanged -= OnAvailableChanged;
             _disposables.Dispose();
         }
 
         private void OnInventoryChanged(in NotifyCollectionChangedEventArgs<InventoryItem> e)
         {
             RefreshActive(); // progress is inventory-derived
+        }
+
+        private void OnAvailableChanged(in NotifyCollectionChangedEventArgs<ContractData> e)
+        {
+            RefreshAvailable();
         }
 
         private void OnContractsChanged(in NotifyCollectionChangedEventArgs<ActiveContract> e)
@@ -80,19 +87,13 @@ namespace WheatFarm.UI
 
         private void RefreshAvailable()
         {
-            if (_contractDb == null || _contractDb.Contracts == null)
-            {
-                _view.SetAvailableContracts(Array.Empty<string>(), Array.Empty<bool>());
-                return;
-            }
-
-            // Filter out contracts already accepted
+            // Filter out contracts already accepted (rotation excludes them only at rotate time)
             var activeIds = new HashSet<string>();
             for (int i = 0; i < _contracts.ActiveContracts.Count; i++)
                 activeIds.Add(_contracts.ActiveContracts[i].Data.ContractId);
 
             var available = new List<ContractData>();
-            foreach (var c in _contractDb.Contracts)
+            foreach (var c in _rotation.Available)
             {
                 if (!activeIds.Contains(c.ContractId))
                     available.Add(c);
