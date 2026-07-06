@@ -32,6 +32,9 @@ namespace WheatFarm.UI
         /// <summary>Raised when a complete button is clicked. Arg = index in active list.</summary>
         public event Action<int> OnCompleteClicked;
 
+        /// <summary>Raised when an abandon button is clicked. Arg = index in active list.</summary>
+        public event Action<int> OnAbandonClicked;
+
         public bool IsOpen => _panel != null && _panel.activeSelf;
 
         private void Awake()
@@ -119,13 +122,18 @@ namespace WheatFarm.UI
                     sliders[0].interactable = false;
                 }
 
-                // Complete button
+                // Buttons: [0] = complete, [1] = abandon (hierarchy order in entry prefab)
                 int idx = i;
                 var buttons = go.GetComponentsInChildren<Button>();
                 if (buttons.Length > 0)
                 {
                     buttons[0].interactable = canComplete[i];
                     buttons[0].onClick.AddListener(() => OnCompleteClicked?.Invoke(idx));
+                }
+                if (buttons.Length > 1)
+                {
+                    buttons[1].interactable = true;
+                    buttons[1].onClick.AddListener(() => OnAbandonClicked?.Invoke(idx));
                 }
             }
         }
