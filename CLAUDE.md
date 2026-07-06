@@ -102,11 +102,12 @@ CatalogTabBar (UI) -> CatalogPresenter -> PlacementTool.SelectPlant/SelectPlacea
 | **ProductionService** | Processing queues, timers, recipes, auto-repeat, slot limits | Working |
 | **BuildingPanelPresenter** | MVP UI for building interaction, recipes, upgrades | Working |
 | **TreePlacementService** | Multi-cell tree placement | Working |
-| **WalletService** | Coins add/spend with reactive events | Stub |
-| **ShopService** | Catalog, purchase, unlock | Stub |
-| **ContractService** | Optional contracts, progress tracking | Stub |
-| **InventoryService** | Seeds, dyes, fertilizers, harvest | Stub |
-| **DayNightService** | 14-min cycle, lighting | Stub |
+| **WalletService** | Coins add/spend with reactive events | Working |
+| **ShopService** | Catalog, purchase, unlock | Working |
+| **ContractService** | Delivery contracts: consume-on-complete, coin+plant+dye rewards, abandon | Working |
+| **ContractRotationService** | 4 eligible contracts/day, rotates on Dawn, persisted | Working |
+| **InventoryService** | Seeds, dyes, fertilizers, harvest | Working |
+| **DayNightService** | 14-min cycle, lighting | Working |
 
 ## Crop Rendering Pipeline (CRITICAL)
 
@@ -265,6 +266,13 @@ Plants scale from 30% to 100% as they grow (0 -> 1). `RebuildMatrix()` in `Plant
 - **Save/load**: Active production slots persist across save/load
 - Legacy `BuildingService` and `BuildingData` removed — `PlacementService` + `PlacedObject` is the sole building system
 
+### Contracts & Unlocks (Stage D)
+- Completion is inventory-derived: CanComplete → consume all-or-nothing → coins + UnlockPlantId + UnlockDyeId (DyeUnlockService.Grant, free)
+- ContractRotationService (GameScope): 4/day on transition into Dawn; excludes unlocked rewards, requirements from locked plants, active contracts; seed = DayIndex
+- Save round-trips AvailableContractIds + ContractDayIndex + ActiveContracts
+- Catalog: 13 contracts in Assets/Settings/ContractDatabase.asset (big_wheat→rose, rose_garden→cherry, 7 dye rewards)
+- ContractStarter is a no-op placeholder (superseded by rotation, safe to delete)
+
 ### Git History
 ```
 bf28b5f fix: use Shader.SetGlobalVector for _Interaction_Position (global shader property)
@@ -278,18 +286,21 @@ ff6150d fix: GPU instanced crop rendering — proper scale, cropState, TRS matri
 ```
 
 ### What's Next (polish & content)
-1. **Contract system UI** — ContractBoardView/Presenter exist, need scene setup + data.
-2. **Ground atlas texture** — actual soil textures instead of flat tint colors.
-3. **Building 3D models** — replace placeholder cubes with actual meshes.
-4. **Smoke particles on buildings** — add ParticleSystem named "SmokeEffect" to building prefabs (code already handles it).
-5. **More production chains** — additional recipes, new building types.
+1. **Building 3D models** — replace placeholder cubes with actual meshes.
+2. **Building unlock gating** — Bakery et al. via contracts or shop.
+3. **Smoke particles on buildings** — add ParticleSystem named "SmokeEffect" to building prefabs (code already handles it).
+4. **More production chains** — additional recipes, new building types.
 
 ### Known Issues
 - Graphy FPS counter shows 1 FPS on first frame after entering Play Mode (screenshot artifact, normalizes after).
 - No visual feedback for brush size changes.
-- Tree growth not saved (hardcoded 0 in FarmSaveManager).
-- Unlocked plants and contracts not persisted in save data.
-- Bakery UnlockedByDefault=false but no unlock system exists yet (set to true for testing).
+- Bakery UnlockedByDefault=false but no building-unlock system exists yet (set to true for testing). Contracts unlock plants/dyes only.
+
+## Dev Environment Notes
+- Tests asmdef has overrideReferences=true — new precompiled deps go into precompiledReferences (e.g. ObservableCollections.dll)
+- git push: remote must be https://SergeiPolev@github.com/... (two GitHub accounts in Windows Credential Manager; bare github.com resolves to the wrong one → 403)
+- gh CLI not installed — create PRs via GitHub API, token from `git credential fill` (works from Git Bash, not PS pipe)
+- EditMode tests: Unity MCP run_tests → get_test_job; Play Mode e2e: execute_code (roslyn) can resolve services from FarmScope.Container
 
 ## Obsidian Knowledge Base
 
