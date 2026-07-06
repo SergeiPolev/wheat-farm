@@ -62,7 +62,17 @@ namespace WheatFarm.Farming
 
             var (centerChunk, centerX, centerY) = _chunkSystem.WorldToCell(worldPos);
 
-            // Mark trunk cells as occupied
+            // Plant the tree in the center cell for growth tracking. Must happen BEFORE
+            // trunk cells are marked Occupied — Plant() rejects Occupied cells.
+            // Can still fail (e.g. center on a path); bail out so we never create a tree
+            // visual without a growth-tracking plant behind it.
+            if (!_plantSystem.Plant(centerChunk, centerX, centerY, treeData)) return null;
+            // Trees grow without the watering can — water the growth-tracking cell on placement.
+            _plantSystem.Water(centerChunk, centerX, centerY);
+
+            // Mark trunk cells as occupied — including the center cell, which keeps brush
+            // actions (BrushService skips Occupied) from uprooting/harvesting the
+            // growth-tracking plant out from under the tree visual.
             var trunkCells = GetTrunkCells(treeData, worldPos);
             foreach (var (chunkCoord, cx, cy) in trunkCells)
             {
@@ -71,15 +81,10 @@ namespace WheatFarm.Farming
 
                 int idx = chunk.CellIndex(cx, cy);
                 chunk.Cells[idx].Occupied = true;
-                // Clear any crop rendering for trunk cells
+                // Clear crop rendering for trunk cells — the tree GameObject is the visual
                 chunk.MeshProps[idx].cropState = Vector4.zero;
                 chunk.Dirty = true;
             }
-
-            // Plant the tree in the center cell for growth tracking
-            _plantSystem.Plant(centerChunk, centerX, centerY, treeData);
-            // Trees grow without the watering can — water the growth-tracking cell on placement.
-            _plantSystem.Water(centerChunk, centerX, centerY);
 
 
             var tree = new PlacedTree
