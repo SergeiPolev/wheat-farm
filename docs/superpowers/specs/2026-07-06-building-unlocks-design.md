@@ -50,8 +50,9 @@ public interface IBuildingUnlockService
 ```
 
 Implementation folds the coin purchase in, exactly like `DyeUnlockService.TryUnlock`.
-`TryUnlock` on an already-unlocked building returns true without spending. `TryUnlock` with
-`UnlockCost <= 0` returns false (contract-only).
+Check order matters: **already-unlocked wins** — `TryUnlock` on an already-unlocked building
+(including one granted by contract) returns true without spending; only then does
+`UnlockCost <= 0` return false (contract-only).
 
 ### 3. Integrations
 
@@ -59,8 +60,10 @@ Implementation folds the coin purchase in, exactly like `DyeUnlockService.TryUnl
   rewards, `if (!string.IsNullOrEmpty(UnlockBuildingId)) _buildings.Grant(id)`.
 - **CatalogPresenter:**
   - `PopulatePlaceables`: `locked = !_buildingUnlock.IsUnlocked(p)` (replaces `!p.UnlockedByDefault`).
-  - `OnItemSelected` for a locked `PlaceableData` with `Category == Building`: call `TryUnlock`;
-    on failure log and return (same flow as locked plants); on success fall through to select.
+  - `OnItemSelected` for a locked `PlaceableData` with `Category == Building`: call
+    `IBuildingUnlockService.TryUnlock` **directly** (no `ShopService.TryUnlockBuilding`
+    indirection — plants route through ShopService for historical reasons; UX parity, not code
+    path parity); on failure log and return; on success fall through to select.
   - Subscribe `Changed` → repopulate current tab (mirror the existing plant `OnUnlocksChanged` wiring).
 - **ContractBoardPresenter.AppendReward:** `+<DisplayName>` for `UnlockBuildingId` via
   `PlaceableDatabase.GetById` (third branch after plant and dye).
@@ -79,12 +82,17 @@ a "deliver 3 bread" contract is impossible but still offered. Fix:
   contract excluded. Items that are plants keep the existing plant-unlock check. Items in neither
   set (e.g. `wood` from uprooting trees) remain obtainable.
 - Reward eligibility: a contract whose `UnlockBuildingId` is already unlocked is excluded
-  (symmetric with plant/dye reward exclusion).
+  (symmetric with plant/dye reward exclusion). Use `IsUnlocked(placeableDb.GetById(id))`, not
+  `UnlockedIds.Contains(id)` — the latter misses default-unlocked buildings (their ids are never
+  in the granted set).
 
 ### 5. Content
 
 - 2–3 contracts gain building rewards (e.g. `flour_delivery` → Bakery; a mid-tier delivery →
   Sawmill; exact mapping balanced in the content task).
+- **Constraint:** a building's unlock contract must not require that building's own output
+  (e.g. never map `lumber_order` → Sawmill). Coin purchase prevents a hard deadlock, but
+  contract-only buildings (`UnlockCost = 0`) would soft-lock.
 - Existing contracts requiring produced goods (`bread_order`, `cherry_jam`, `rose_bouquet`,
   `lumber_order`, `sauce_batch`) are automatically hidden by rotation until their producer is
   unlocked — no data changes needed for them.
@@ -112,7 +120,8 @@ Save/Load → FarmSaveManager ↔ BuildingUnlockService.ToSaveList/LoadFrom
 
 - `BuildingUnlockServiceTests` (clone of DyeUnlockServiceTests): default-unlocked, coin purchase
   spends once, insufficient funds, contract-only (`UnlockCost=0`) not purchasable, `Grant` free,
-  save/load round-trip.
+  Grant-then-TryUnlock on contract-only building → true with no spend (check-order), save/load
+  round-trip.
 - `ContractServiceTests`: completing a contract with `UnlockBuildingId` grants the building.
 - `ContractRotationServiceTests`: requirement produced only by a locked building → excluded;
   unlocked producer → included; reward building already unlocked → excluded.
