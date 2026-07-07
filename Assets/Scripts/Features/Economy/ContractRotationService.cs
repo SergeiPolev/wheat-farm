@@ -27,8 +27,11 @@ namespace WheatFarm.Economy
         private readonly IDyeUnlockService _dyes;
         private readonly IContractService _contracts;
         private readonly PlantDatabase _plantDb;
+        private readonly PlaceableDatabase _placeableDb;
+        private readonly IBuildingUnlockService _buildings;
         private IDisposable _subscription;
         private bool _sawFirstPhase; // ReadOnlyReactiveProperty replays current value on subscribe
+        private Dictionary<string, List<PlaceableData>> _producers;
 
         public ObservableList<ContractData> Available { get; } = new();
         public int DayIndex { get; private set; }
@@ -39,7 +42,9 @@ namespace WheatFarm.Economy
             IPlantUnlockService plants,
             IDyeUnlockService dyes,
             IContractService contracts,
-            PlantDatabase plantDb)
+            PlantDatabase plantDb,
+            PlaceableDatabase placeableDb = null,
+            IBuildingUnlockService buildings = null)
         {
             _db = db;
             _dayNight = dayNight;
@@ -47,6 +52,29 @@ namespace WheatFarm.Economy
             _dyes = dyes;
             _contracts = contracts;
             _plantDb = plantDb;
+            _placeableDb = placeableDb;
+            _buildings = buildings;
+        }
+
+        /// <summary>Lazy map: recipe output item → buildings able to produce it.</summary>
+        private Dictionary<string, List<PlaceableData>> Producers
+        {
+            get
+            {
+                if (_producers != null) return _producers;
+                _producers = new Dictionary<string, List<PlaceableData>>();
+                if (_placeableDb?.Items != null)
+                    foreach (var p in _placeableDb.Items)
+                        if (p?.Recipes != null)
+                            foreach (var r in p.Recipes)
+                                if (r != null && !string.IsNullOrEmpty(r.Output.ItemId))
+                                {
+                                    if (!_producers.TryGetValue(r.Output.ItemId, out var list))
+                                        _producers[r.Output.ItemId] = list = new List<PlaceableData>();
+                                    list.Add(p);
+                                }
+                return _producers;
+            }
         }
 
         public void Start()
@@ -129,18 +157,29 @@ namespace WheatFarm.Economy
                 return false;
             if (!string.IsNullOrEmpty(c.UnlockDyeId) && _dyes.UnlockedIds.Contains(c.UnlockDyeId))
                 return false;
+            // IsUnlocked (not UnlockedIds.Contains): default-unlocked ids never enter the granted set
+            if (_buildings != null && !string.IsNullOrEmpty(c.UnlockBuildingId)
+                && _buildings.IsUnlocked(_placeableDb?.GetById(c.UnlockBuildingId)))
+                return false;
 
             // Already on the active board
             for (int i = 0; i < _contracts.ActiveContracts.Count; i++)
                 if (_contracts.ActiveContracts[i].Data.ContractId == c.ContractId)
                     return false;
 
-            // Requirements must be obtainable: an item that IS a plant must be unlocked.
-            // Non-plant items (produced goods, wood, …) are always considered obtainable.
+            // Requirements must be obtainable: an item that IS a plant must be unlocked, and a
+            // recipe-produced item needs at least one unlocked producer building. Items in neither
+            // set (e.g. wood from uprooting trees) are always obtainable.
             if (c.Required != null)
                 foreach (var req in c.Required)
+                {
                     if (_plantDb?.GetById(req.ItemId) != null && !_plants.IsUnlocked(req.ItemId))
                         return false;
+                    if (_buildings != null
+                        && Producers.TryGetValue(req.ItemId, out var producers)
+                        && !producers.Exists(p => _buildings.IsUnlocked(p)))
+                        return false;
+                }
 
             return true;
         }
