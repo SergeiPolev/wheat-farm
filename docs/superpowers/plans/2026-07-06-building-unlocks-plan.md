@@ -340,7 +340,7 @@ namespace WheatFarm.Economy
         private static PlaceableDatabase PlaceableDb(params PlaceableData[] placeables)
         {
             var db = ScriptableObject.CreateInstance<PlaceableDatabase>();
-            db.Placeables = placeables; // verify field name in PlaceableDatabase.cs; adjust if different
+            db.Items = placeables; // field is `Items` (PlaceableDatabase.cs:9), NOT `Placeables`
             return db;
         }
 ```
@@ -413,8 +413,8 @@ namespace WheatFarm.Economy
             {
                 if (_producers != null) return _producers;
                 _producers = new Dictionary<string, List<PlaceableData>>();
-                if (_placeableDb?.Placeables != null)
-                    foreach (var p in _placeableDb.Placeables)
+                if (_placeableDb?.Items != null)
+                    foreach (var p in _placeableDb.Items)
                         if (p?.Recipes != null)
                             foreach (var r in p.Recipes)
                                 if (r != null && !string.IsNullOrEmpty(r.Output.ItemId))
@@ -457,7 +457,10 @@ namespace WheatFarm.Economy
 ```csharp
             else if (item is PlaceableData placeable)
             {
-                if (!_buildingUnlock.IsUnlocked(placeable))
+                // Gate ONLY buildings (spec §3). Placeable_PathBrick has UnlockedByDefault=0 with
+                // no unlock path — gating all categories would make it permanently unselectable.
+                if (placeable.Category == PlaceableCategory.Building
+                    && !_buildingUnlock.IsUnlocked(placeable))
                 {
                     if (!_buildingUnlock.TryUnlock(placeable))
                     {
@@ -475,7 +478,7 @@ namespace WheatFarm.Economy
                 Debug.Log($"[Catalog] Selected placeable: {placeable.DisplayName}");
             }
 ```
-- [ ] **Step 2: ContractBoardPresenter:** ctor gains `PlaceableDatabase placeableDb` (nullable-tolerant like the others); in `AppendReward` add third branch:
+- [ ] **Step 2: ContractBoardPresenter:** ctor gains `PlaceableDatabase placeableDb = null` (optional default, like FarmSaveManager's `dyeUnlock = null` — GameScope registers the database instance conditionally, resolution must not fail on an unwired scene); in `AppendReward` add third branch:
 ```csharp
             if (!string.IsNullOrEmpty(contract.UnlockBuildingId))
             {
@@ -504,15 +507,20 @@ namespace WheatFarm.Economy
 **Files:** Modify `Assets/Settings/Placeables/Placeable_Bakery.asset`, `Placeable_Kitchen.asset`, `Placeable_Workshop.asset`, `Placeable_Sawmill.asset`, `Assets/Settings/ContractDatabase.asset`.
 
 - [ ] **Step 1: Placeable assets** (YAML edit: `UnlockedByDefault: 0`, add `UnlockCost:` line next to it; field appears in YAML after a `refresh_unity` reserialize — safe to add manually):
-  - Bakery: `UnlockCost: 300`
+  - Bakery: `UnlockCost: 300` (already `UnlockedByDefault: 0` in the asset — the CLAUDE.md "set to true for testing" note is stale; expect no diff on that line)
   - Kitchen: `UnlockCost: 400`
   - Workshop: `UnlockCost: 400`
   - Sawmill: `UnlockCost: 500`
-  - Mill, Lamp, Fence, paths: untouched.
+  - Untouched: Mill, Lamp, Fence, paths, and the non-production buildings `Market`, `Warehouse`, `Contracts` (all `UnlockedByDefault: 1`).
 - [ ] **Step 2: ContractDatabase.asset** — add `UnlockBuildingId:` to all 13 entries (empty), set:
-  - `flour_delivery` → `UnlockBuildingId: bakery` (requires flour = Mill output — constraint OK)
-  - `tomato_crate` → `UnlockBuildingId: kitchen` (requires tomato, a crop — OK)
-  - `mixed_harvest` → `UnlockBuildingId: sawmill` (requires wheat+corn — OK)
+  - Bakery reward: **NOT `flour_delivery`** — it already carries `UnlockDyeId: red`, and rotation
+    hides a contract once ANY of its unlock rewards is owned (buy red dye → contract gone → Bakery
+    stranded to coin-only). Building-reward contracts must carry **no other unlock reward**. Pick a
+    reward-free crop/flour contract from the catalog; if none exists, add one:
+    `golden_harvest: 10 wheat + 5 corn → 120 coins + UnlockBuildingId: bakery`.
+  - `tomato_crate` → `UnlockBuildingId: kitchen` (requires tomato, a crop — OK; verify it carries
+    no dye/plant reward first, same rule as above)
+  - `mixed_harvest` → `UnlockBuildingId: sawmill` (requires wheat+corn — OK; same verification)
   - Workshop stays coin-only (400c).
   - Constraint check: no unlock contract requires its own building's output. `bread_order`/`sauce_batch`/`cherry_jam`/`rose_bouquet`/`lumber_order` auto-hidden by rotation until producers unlock.
 - [ ] **Step 3:** `refresh_unity mode=force` → `read_console` clean; verify via `execute_code`: load ContractDatabase + 4 placeables, assert `UnlockCost`/`UnlockBuildingId` parsed.
