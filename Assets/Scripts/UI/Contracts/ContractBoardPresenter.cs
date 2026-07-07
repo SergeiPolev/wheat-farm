@@ -22,6 +22,7 @@ namespace WheatFarm.UI
         private readonly IInventoryService _inventory;
         private readonly PlantDatabase _plantDb;
         private readonly DyeDatabase _dyeDb;
+        private readonly PlaceableDatabase _placeableDb;
         private readonly CompositeDisposable _disposables = new();
 
         public ContractBoardPresenter(
@@ -30,7 +31,8 @@ namespace WheatFarm.UI
             ContractRotationService rotation,
             IInventoryService inventory,
             PlantDatabase plantDb,
-            DyeDatabase dyeDb)
+            DyeDatabase dyeDb,
+            PlaceableDatabase placeableDb = null) // GameScope registers the instance conditionally
         {
             _view = view;
             _contracts = contracts;
@@ -38,6 +40,7 @@ namespace WheatFarm.UI
             _inventory = inventory;
             _plantDb = plantDb;
             _dyeDb = dyeDb;
+            _placeableDb = placeableDb;
         }
 
         public void Initialize()
@@ -202,6 +205,11 @@ namespace WheatFarm.UI
             {
                 var dye = _dyeDb != null ? _dyeDb.GetById(contract.UnlockDyeId) : null;
                 sb.Append($" +{dye?.DisplayName ?? contract.UnlockDyeId} dye");
+            }
+            if (!string.IsNullOrEmpty(contract.UnlockBuildingId))
+            {
+                var building = _placeableDb != null ? _placeableDb.GetById(contract.UnlockBuildingId) : null;
+                sb.Append($" +{building?.DisplayName ?? contract.UnlockBuildingId}");
             }
         }
 
