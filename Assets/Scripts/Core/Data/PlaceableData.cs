@@ -35,6 +35,8 @@ namespace WheatFarm.Core.Data
         [Header("Economy")]
         public int Cost;
         public bool UnlockedByDefault = true;
+        [Tooltip("Coin price to unlock a locked building from the catalog. 0 = contract-only.")]
+        public int UnlockCost;
 
         [Header("Interaction")]
         public bool Interactable;

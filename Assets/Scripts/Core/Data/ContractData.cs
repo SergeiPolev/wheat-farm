@@ -15,6 +15,8 @@ namespace WheatFarm.Core.Data
         public string UnlockPlantId;
         /// <summary>Nullable — reward: unlock a dye color (free grant, no coin cost).</summary>
         public string UnlockDyeId;
+        /// <summary>Nullable — reward: unlock a building (free grant).</summary>
+        public string UnlockBuildingId;
         /// <summary>Reward multiplier over base sell price (1.5-3x).</summary>
         public float RewardMultiplier = 1.5f;
     }
