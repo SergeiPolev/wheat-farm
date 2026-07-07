@@ -39,6 +39,7 @@ namespace WheatFarm.Economy
         private readonly IInventoryService _inventory;
         private readonly IPlantUnlockService _plants;
         private readonly IDyeUnlockService _dyes;
+        private readonly IBuildingUnlockService _buildings;
 
         public ObservableList<ActiveContract> ActiveContracts { get; } = new();
         public Subject<ActiveContract> OnContractCompleted { get; } = new();
@@ -47,12 +48,14 @@ namespace WheatFarm.Economy
             IWalletService wallet,
             IInventoryService inventory,
             IPlantUnlockService plants,
-            IDyeUnlockService dyes)
+            IDyeUnlockService dyes,
+            IBuildingUnlockService buildings)
         {
             _wallet = wallet;
             _inventory = inventory;
             _plants = plants;
             _dyes = dyes;
+            _buildings = buildings;
         }
 
         public void AcceptContract(ContractData contract)
@@ -89,6 +92,8 @@ namespace WheatFarm.Economy
                 _plants.Unlock(contract.Data.UnlockPlantId);
             if (!string.IsNullOrEmpty(contract.Data.UnlockDyeId))
                 _dyes.Grant(contract.Data.UnlockDyeId);
+            if (!string.IsNullOrEmpty(contract.Data.UnlockBuildingId))
+                _buildings.Grant(contract.Data.UnlockBuildingId);
 
             OnContractCompleted.OnNext(contract);
             ActiveContracts.RemoveAt(index);

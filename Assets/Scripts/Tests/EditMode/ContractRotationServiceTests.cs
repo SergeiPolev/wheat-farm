@@ -13,6 +13,7 @@ namespace WheatFarm.Tests
         private InventoryService _inventory;
         private PlantUnlockService _plants;
         private DyeUnlockService _dyes;
+        private BuildingUnlockService _buildings;
         private ContractService _contracts;
         private PlantDatabase _plantDb;
 
@@ -26,7 +27,8 @@ namespace WheatFarm.Tests
                 Plant("rose", unlockedByDefault: false));
             _plants = new PlantUnlockService(_plantDb);
             _dyes = new DyeUnlockService(_wallet);
-            _contracts = new ContractService(_wallet, _inventory, _plants, _dyes);
+            _buildings = new BuildingUnlockService(_wallet);
+            _contracts = new ContractService(_wallet, _inventory, _plants, _dyes, _buildings);
         }
 
         [TearDown]
