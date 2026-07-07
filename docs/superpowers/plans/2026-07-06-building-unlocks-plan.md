@@ -515,22 +515,22 @@ namespace WheatFarm.Economy
 - [ ] **Step 2: ContractDatabase.asset** — add `UnlockBuildingId:` to all 13 entries (empty), set:
   - Bakery reward: **NOT `flour_delivery`** — it already carries `UnlockDyeId: red`, and rotation
     hides a contract once ANY of its unlock rewards is owned (buy red dye → contract gone → Bakery
-    stranded to coin-only). Building-reward contracts must carry **no other unlock reward**. Pick a
-    reward-free crop/flour contract from the catalog; if none exists, add one:
-    `golden_harvest: 10 wheat + 5 corn → 120 coins + UnlockBuildingId: bakery`.
+    stranded to coin-only). Building-reward contracts must carry **no other unlock reward**.
+    Existing reward-free contracts (`wheat_harvest`, `corn_delivery`) are early-cheap — instead
+    **add a new contract**: `golden_harvest: 10 wheat + 5 corn → 120 coins + UnlockBuildingId: bakery`.
   - `tomato_crate` → `UnlockBuildingId: kitchen` (requires tomato, a crop — verified reward-free)
   - Sawmill reward: **NOT `mixed_harvest`** — it carries `UnlockDyeId: green` (same conflict as
     flour_delivery). No other reward-free mid-tier contract exists (`wheat_harvest`/`corn_delivery`
     are early-cheap) → **add a new contract**:
     `timber_prep: 15 corn → 150 coins + UnlockBuildingId: sawmill` (corn is a default-unlocked
-    crop; does not require Sawmill's own output — constraint holds). Entry count becomes 14
-    (15 with `golden_harvest` if the bakery fallback is needed); the "add empty `UnlockBuildingId:`
-    to all entries" instruction covers the new ones too.
+    crop; does not require Sawmill's own output — constraint holds). Entry count becomes 15
+    (with `golden_harvest`); the "add empty `UnlockBuildingId:` to all entries" instruction covers
+    the new ones too.
   - Workshop stays coin-only (400c).
   - Constraint check: no unlock contract requires its own building's output. `bread_order`/`sauce_batch`/`cherry_jam`/`rose_bouquet`/`lumber_order` auto-hidden by rotation until producers unlock.
 - [ ] **Step 3:** `refresh_unity mode=force` → `read_console` clean; verify via `execute_code`: load ContractDatabase + 4 placeables, assert `UnlockCost`/`UnlockBuildingId` parsed.
 - [ ] **Step 4: Play Mode e2e** (`manage_editor play`, then `execute_code` resolving from FarmScope.Container):
-  - Fresh state: `IBuildingUnlockService.IsUnlocked(bakery)` false; rotation `SelectEligible(20, 0)` contains no `bread_order`/`sauce_batch`/`cherry_jam`/`rose_bouquet`/`lumber_order`.
+  - Fresh state: `IBuildingUnlockService.IsUnlocked(bakery)` false; rotation `SelectEligible(20, 0)` contains no `bread_order`/`sauce_batch`/`cherry_jam`/`rose_bouquet`/`lumber_order`, and DOES contain `timber_prep` + `golden_harvest` (new building-reward contracts eligible on fresh state).
   - Coin path: `wallet.SetCoins(600)`; `TryUnlock(bakery)` → true, coins 300; `bread_order` now eligible.
   - Contract path: accept `tomato_crate` via db, add 8 tomato, `TryCompleteContract` → kitchen unlocked, board text shows `+Kitchen`.
   - Save/load: `SaveGame` (UniTaskExtensions.Forget), `Grant("sawmill")`, `LoadGame` → sawmill lock restored to saved state, bakery/kitchen stay unlocked.
