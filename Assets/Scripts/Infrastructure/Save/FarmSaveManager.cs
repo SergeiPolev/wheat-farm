@@ -36,6 +36,7 @@ namespace WheatFarm.Infrastructure.Save
         private readonly PlaceableDatabase _placeableDb;
         private readonly IPlantUnlockService _unlock;
         private readonly IDyeUnlockService _dyeUnlock;
+        private readonly IBuildingUnlockService _buildingUnlock;
         private readonly IContractService _contracts;
         private readonly ContractRotationService _rotation;
         private readonly ContractDatabase _contractDb;
@@ -61,7 +62,8 @@ namespace WheatFarm.Infrastructure.Save
             IDyeUnlockService dyeUnlock = null,
             IContractService contracts = null,
             ContractRotationService rotation = null,
-            ContractDatabase contractDb = null)
+            ContractDatabase contractDb = null,
+            IBuildingUnlockService buildingUnlock = null)
         {
             _saveService = saveService;
             _chunkSystem = chunkSystem;
@@ -78,6 +80,7 @@ namespace WheatFarm.Infrastructure.Save
             _contracts = contracts;
             _rotation = rotation;
             _contractDb = contractDb;
+            _buildingUnlock = buildingUnlock;
 
         }
 
@@ -191,6 +194,7 @@ namespace WheatFarm.Infrastructure.Save
             data.ProductionSlots = _production.GetSaveData();
             data.UnlockedPlants = _unlock?.ToSaveList() ?? new List<string>();
             data.UnlockedDyes = _dyeUnlock?.ToSaveList() ?? new List<string>();
+            data.UnlockedBuildings = _buildingUnlock?.ToSaveList() ?? new List<string>();
 
             // Contracts: active board + daily rotation state
             if (_contracts != null)
@@ -234,6 +238,10 @@ namespace WheatFarm.Infrastructure.Save
             // Unlocked dyes
             if (_dyeUnlock != null && data.UnlockedDyes != null)
                 _dyeUnlock.LoadFrom(data.UnlockedDyes);
+
+            // Unlocked buildings
+            if (_buildingUnlock != null && data.UnlockedBuildings != null)
+                _buildingUnlock.LoadFrom(data.UnlockedBuildings);
 
             // Contracts: active board + daily rotation state (after unlocks so
             // rotation eligibility on the next Dawn sees the restored sets)
