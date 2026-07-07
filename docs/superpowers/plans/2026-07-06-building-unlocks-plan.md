@@ -50,7 +50,7 @@ Recipe outputs → producing building: flour→Mill, bread→Bakery, sauce→Kit
 | `Assets/Scripts/Infrastructure/Save/FarmSaveData.cs` | + `UnlockedBuildings` | Modify |
 | `Assets/Scripts/Infrastructure/Save/FarmSaveManager.cs` | collect/restore | Modify |
 | `Assets/Settings/Placeables/Placeable_{Bakery,Kitchen,Workshop,Sawmill}.asset` | lock + UnlockCost | Modify |
-| `Assets/Settings/ContractDatabase.asset` | building rewards on 3 contracts | Modify |
+| `Assets/Settings/ContractDatabase.asset` | building rewards: 1 existing contract (kitchen) + 1-2 new authored (sawmill, bakery fallback) | Modify |
 | `Assets/Scripts/Tests/EditMode/BuildingUnlockServiceTests.cs` | TDD | Create |
 | `Assets/Scripts/Tests/EditMode/ContractServiceTests.cs` | + building grant test | Modify |
 | `Assets/Scripts/Tests/EditMode/ContractRotationServiceTests.cs` | + producer/reward eligibility tests | Modify |
@@ -518,9 +518,14 @@ namespace WheatFarm.Economy
     stranded to coin-only). Building-reward contracts must carry **no other unlock reward**. Pick a
     reward-free crop/flour contract from the catalog; if none exists, add one:
     `golden_harvest: 10 wheat + 5 corn → 120 coins + UnlockBuildingId: bakery`.
-  - `tomato_crate` → `UnlockBuildingId: kitchen` (requires tomato, a crop — OK; verify it carries
-    no dye/plant reward first, same rule as above)
-  - `mixed_harvest` → `UnlockBuildingId: sawmill` (requires wheat+corn — OK; same verification)
+  - `tomato_crate` → `UnlockBuildingId: kitchen` (requires tomato, a crop — verified reward-free)
+  - Sawmill reward: **NOT `mixed_harvest`** — it carries `UnlockDyeId: green` (same conflict as
+    flour_delivery). No other reward-free mid-tier contract exists (`wheat_harvest`/`corn_delivery`
+    are early-cheap) → **add a new contract**:
+    `timber_prep: 15 corn → 150 coins + UnlockBuildingId: sawmill` (corn is a default-unlocked
+    crop; does not require Sawmill's own output — constraint holds). Entry count becomes 14
+    (15 with `golden_harvest` if the bakery fallback is needed); the "add empty `UnlockBuildingId:`
+    to all entries" instruction covers the new ones too.
   - Workshop stays coin-only (400c).
   - Constraint check: no unlock contract requires its own building's output. `bread_order`/`sauce_batch`/`cherry_jam`/`rose_bouquet`/`lumber_order` auto-hidden by rotation until producers unlock.
 - [ ] **Step 3:** `refresh_unity mode=force` → `read_console` clean; verify via `execute_code`: load ContractDatabase + 4 placeables, assert `UnlockCost`/`UnlockBuildingId` parsed.
