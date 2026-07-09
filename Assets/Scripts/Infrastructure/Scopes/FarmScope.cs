@@ -75,9 +75,6 @@ namespace WheatFarm.Infrastructure
             builder.Register<HarvestRewardHandler>(Lifetime.Singleton)
                 .As<IInitializable, System.IDisposable>();
 
-            builder.Register<ContractStarter>(Lifetime.Singleton)
-                .As<IStartable>();
-
             // Phase 4: Tools
             builder.Register<WheatFarm.Player.Preview.PlacementGhostService>(Lifetime.Singleton)
                 .As<WheatFarm.Player.Preview.IPlacementGhostService, System.IDisposable>();
