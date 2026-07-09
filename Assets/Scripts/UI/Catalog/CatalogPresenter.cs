@@ -23,6 +23,7 @@ namespace WheatFarm.UI
         private readonly PlacementTool _placementTool;
         private readonly IPlantUnlockService _unlock;
         private readonly IShopService _shop;
+        private readonly IBuildingUnlockService _buildingUnlock;
 
         private readonly CompositeDisposable _disposables = new();
 
@@ -40,7 +41,8 @@ namespace WheatFarm.UI
             IToolService toolService,
             PlacementTool placementTool,
             IPlantUnlockService unlock,
-            IShopService shop)
+            IShopService shop,
+            IBuildingUnlockService buildingUnlock)
         {
             _view = view;
             _plantDb = plantDb;
@@ -49,6 +51,7 @@ namespace WheatFarm.UI
             _placementTool = placementTool;
             _unlock = unlock;
             _shop = shop;
+            _buildingUnlock = buildingUnlock;
         }
 
         public void Initialize()
@@ -58,6 +61,7 @@ namespace WheatFarm.UI
 
             // Refresh lock badges whenever the unlocked set changes
             _unlock.Changed += OnUnlocksChanged;
+            _buildingUnlock.Changed += OnUnlocksChanged;
 
             // Auto-select Crops tab
             OnTabSelected(0);
@@ -68,6 +72,7 @@ namespace WheatFarm.UI
             _view.OnTabClicked -= OnTabSelected;
             _view.OnItemClicked -= OnItemSelected;
             _unlock.Changed -= OnUnlocksChanged;
+            _buildingUnlock.Changed -= OnUnlocksChanged;
             _disposables.Dispose();
         }
 
@@ -132,6 +137,23 @@ namespace WheatFarm.UI
             }
             else if (item is PlaceableData placeable)
             {
+                // Gate ONLY buildings. Placeable_PathBrick has UnlockedByDefault=0 with no unlock
+                // path — gating all categories would make it permanently unselectable.
+                if (placeable.Category == PlaceableCategory.Building
+                    && !_buildingUnlock.IsUnlocked(placeable))
+                {
+                    if (!_buildingUnlock.TryUnlock(placeable))
+                    {
+                        Debug.Log($"[Catalog] {placeable.DisplayName} is locked — " +
+                            (placeable.UnlockCost > 0
+                                ? $"need {placeable.UnlockCost} coins."
+                                : "unlocked by a contract reward."));
+                        return;
+                    }
+                    Debug.Log($"[Catalog] Unlocked {placeable.DisplayName}.");
+                    // Changed → OnUnlocksChanged repopulates the tab; the click below still selects.
+                }
+
                 _toolService.EquipTool(ToolId.Placement);
                 _placementTool.SelectPlaceable(placeable);
                 Debug.Log($"[Catalog] Selected placeable: {placeable.DisplayName}");
@@ -158,7 +180,7 @@ namespace WheatFarm.UI
             foreach (var p in _placeableDb.GetByCategory(category))
             {
                 _currentItems.Add(p);
-                display.Add((p.DisplayName, p.Cost, !p.UnlockedByDefault));
+                display.Add((p.DisplayName, p.Cost, !_buildingUnlock.IsUnlocked(p)));
             }
         }
 

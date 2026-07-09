@@ -24,6 +24,7 @@ namespace WheatFarm.Infrastructure.Save
         public int ContractDayIndex;
         public List<string> UnlockedPlants = new();
         public List<string> UnlockedDyes = new();
+        public List<string> UnlockedBuildings = new();
         public List<ProductionSlotSaveData> ProductionSlots = new();
     }
 

@@ -13,6 +13,7 @@ namespace WheatFarm.Tests
         private InventoryService _inventory;
         private PlantUnlockService _plants;
         private DyeUnlockService _dyes;
+        private BuildingUnlockService _buildings;
         private ContractService _svc;
 
         [SetUp]
@@ -23,7 +24,8 @@ namespace WheatFarm.Tests
             _inventory = new InventoryService();
             _plants = new PlantUnlockService(ScriptableObject.CreateInstance<PlantDatabase>());
             _dyes = new DyeUnlockService(_wallet);
-            _svc = new ContractService(_wallet, _inventory, _plants, _dyes);
+            _buildings = new BuildingUnlockService(_wallet);
+            _svc = new ContractService(_wallet, _inventory, _plants, _dyes, _buildings);
         }
 
         [TearDown]
@@ -46,6 +48,18 @@ namespace WheatFarm.Tests
                 UnlockPlantId = plantId,
                 UnlockDyeId = dyeId
             };
+        }
+
+        [Test]
+        public void Complete_WithBuildingReward_GrantsBuilding()
+        {
+            _inventory.TryAdd(new InventoryItem("flour", ItemType.Product, 3));
+            var c = Contract(150, null, null, new ItemStack("flour", 3));
+            c.UnlockBuildingId = "bakery";
+            _svc.AcceptContract(c);
+
+            Assert.IsTrue(_svc.TryCompleteContract(0));
+            CollectionAssert.Contains(_buildings.UnlockedIds, "bakery");
         }
 
         [Test]

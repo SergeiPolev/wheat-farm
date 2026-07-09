@@ -285,16 +285,22 @@ ff6150d fix: GPU instanced crop rendering — proper scale, cropState, TRS matri
 433fa6d feat: VContainer+R3+MVP architecture (phases 0-11), remove legacy AllServices/GameStateMachine
 ```
 
+### Building Unlocks (Stage E)
+- BuildingUnlockService (GameScope, mirrors Dye pattern): UnlockedByDefault || granted set; TryUnlock spends PlaceableData.UnlockCost (0 = contract-only); Grant free via ContractData.UnlockBuildingId
+- Locked on start: Bakery 300c, Kitchen 400c, Workshop 400c (coin-only), Sawmill 500c; Mill/Market/Warehouse/Contracts unlocked
+- Catalog gates ONLY Category.Building on click (PathBrick has UnlockedByDefault=0 with no unlock path — must stay selectable); lock badge is service-driven for all placeables
+- Rotation: recipe-output→producer map; a required item produced only by locked buildings → contract hidden; building-reward contracts excluded once owned (IsUnlocked, not UnlockedIds — default-unlocked ids never enter the granted set)
+- Unlock contracts must carry NO other unlock reward (rotation hides on ANY owned reward): golden_harvest→bakery, tomato_crate→kitchen, timber_prep→sawmill; 15 contracts total
+- Save: UnlockedBuildings list, wired next to UnlockedDyes
+
 ### What's Next (polish & content)
 1. **Building 3D models** — replace placeholder cubes with actual meshes.
-2. **Building unlock gating** — Bakery et al. via contracts or shop.
-3. **Smoke particles on buildings** — add ParticleSystem named "SmokeEffect" to building prefabs (code already handles it).
-4. **More production chains** — additional recipes, new building types.
+2. **Smoke particles on buildings** — add ParticleSystem named "SmokeEffect" to building prefabs (code already handles it).
+3. **More production chains** — additional recipes, new building types.
 
 ### Known Issues
 - Graphy FPS counter shows 1 FPS on first frame after entering Play Mode (screenshot artifact, normalizes after).
 - No visual feedback for brush size changes.
-- Bakery UnlockedByDefault=false but no building-unlock system exists yet (set to true for testing). Contracts unlock plants/dyes only.
 
 ## Dev Environment Notes
 - Tests asmdef has overrideReferences=true — new precompiled deps go into precompiledReferences (e.g. ObservableCollections.dll)

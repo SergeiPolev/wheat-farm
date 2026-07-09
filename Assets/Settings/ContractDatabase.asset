@@ -21,6 +21,7 @@ MonoBehaviour:
     CoinReward: 50
     UnlockPlantId:
     UnlockDyeId:
+    UnlockBuildingId: 
     RewardMultiplier: 1.5
   - ContractId: corn_delivery
     Description: Deliver 8 corn
@@ -30,6 +31,7 @@ MonoBehaviour:
     CoinReward: 80
     UnlockPlantId:
     UnlockDyeId:
+    UnlockBuildingId: 
     RewardMultiplier: 1.5
   - ContractId: tomato_crate
     Description: Pack a crate of 8 tomatoes
@@ -39,6 +41,7 @@ MonoBehaviour:
     CoinReward: 90
     UnlockPlantId:
     UnlockDyeId:
+    UnlockBuildingId: kitchen
     RewardMultiplier: 1.5
   - ContractId: sunflower_bunch
     Description: Gather 6 sunflowers
@@ -48,6 +51,7 @@ MonoBehaviour:
     CoinReward: 70
     UnlockPlantId:
     UnlockDyeId: yellow
+    UnlockBuildingId: 
     RewardMultiplier: 1.5
   - ContractId: mixed_harvest
     Description: Deliver 10 wheat and 10 corn
@@ -59,6 +63,7 @@ MonoBehaviour:
     CoinReward: 180
     UnlockPlantId:
     UnlockDyeId: green
+    UnlockBuildingId: 
     RewardMultiplier: 2
   - ContractId: big_wheat
     Description: Harvest 20 wheat
@@ -68,6 +73,7 @@ MonoBehaviour:
     CoinReward: 200
     UnlockPlantId: rose
     UnlockDyeId:
+    UnlockBuildingId: 
     RewardMultiplier: 2
   - ContractId: flour_delivery
     Description: Produce 3 flour
@@ -77,6 +83,7 @@ MonoBehaviour:
     CoinReward: 150
     UnlockPlantId:
     UnlockDyeId: red
+    UnlockBuildingId: 
     RewardMultiplier: 2
   - ContractId: bread_order
     Description: Bake 3 bread
@@ -86,6 +93,7 @@ MonoBehaviour:
     CoinReward: 250
     UnlockPlantId:
     UnlockDyeId: orange
+    UnlockBuildingId: 
     RewardMultiplier: 2
   - ContractId: sauce_batch
     Description: Cook 4 tomato sauce
@@ -95,6 +103,7 @@ MonoBehaviour:
     CoinReward: 200
     UnlockPlantId:
     UnlockDyeId: blue
+    UnlockBuildingId: 
     RewardMultiplier: 2
   - ContractId: rose_bouquet
     Description: Arrange 2 bouquets
@@ -104,6 +113,7 @@ MonoBehaviour:
     CoinReward: 300
     UnlockPlantId:
     UnlockDyeId: pink
+    UnlockBuildingId: 
     RewardMultiplier: 2.5
   - ContractId: rose_garden
     Description: Deliver 8 roses
@@ -113,6 +123,7 @@ MonoBehaviour:
     CoinReward: 280
     UnlockPlantId: cherry
     UnlockDyeId:
+    UnlockBuildingId: 
     RewardMultiplier: 2.5
   - ContractId: cherry_jam
     Description: Preserve 2 jars of cherry jam
@@ -122,6 +133,7 @@ MonoBehaviour:
     CoinReward: 350
     UnlockPlantId:
     UnlockDyeId: purple
+    UnlockBuildingId: 
     RewardMultiplier: 3
   - ContractId: lumber_order
     Description: Deliver 6 planks
@@ -131,4 +143,27 @@ MonoBehaviour:
     CoinReward: 260
     UnlockPlantId:
     UnlockDyeId:
+    UnlockBuildingId:
     RewardMultiplier: 2.5
+  - ContractId: golden_harvest
+    Description: Deliver 10 wheat and 5 corn for the bakery charter
+    Required:
+    - ItemId: wheat
+      Amount: 10
+    - ItemId: corn
+      Amount: 5
+    CoinReward: 120
+    UnlockPlantId:
+    UnlockDyeId:
+    UnlockBuildingId: bakery
+    RewardMultiplier: 2
+  - ContractId: timber_prep
+    Description: Stock 15 corn to provision the sawmill crew
+    Required:
+    - ItemId: corn
+      Amount: 15
+    CoinReward: 150
+    UnlockPlantId:
+    UnlockDyeId:
+    UnlockBuildingId: sawmill
+    RewardMultiplier: 2

@@ -13,8 +13,10 @@ namespace WheatFarm.Tests
         private InventoryService _inventory;
         private PlantUnlockService _plants;
         private DyeUnlockService _dyes;
+        private BuildingUnlockService _buildings;
         private ContractService _contracts;
         private PlantDatabase _plantDb;
+        private PlaceableDatabase _placeableDb;
 
         [SetUp]
         public void SetUp()
@@ -26,7 +28,11 @@ namespace WheatFarm.Tests
                 Plant("rose", unlockedByDefault: false));
             _plants = new PlantUnlockService(_plantDb);
             _dyes = new DyeUnlockService(_wallet);
-            _contracts = new ContractService(_wallet, _inventory, _plants, _dyes);
+            _buildings = new BuildingUnlockService(_wallet);
+            _contracts = new ContractService(_wallet, _inventory, _plants, _dyes, _buildings);
+            _placeableDb = PlaceableDb(
+                Producer("mill", byDefault: true, "flour"),
+                Producer("bakery", byDefault: false, "bread"));
         }
 
         [TearDown]
@@ -73,8 +79,32 @@ namespace WheatFarm.Tests
             return db;
         }
 
+        private static PlaceableData Producer(string buildingId, bool byDefault, params string[] outputs)
+        {
+            var p = ScriptableObject.CreateInstance<PlaceableData>();
+            p.PlaceableId = buildingId;
+            p.UnlockedByDefault = byDefault;
+            p.Category = PlaceableCategory.Building;
+            p.Recipes = System.Array.ConvertAll(outputs, o =>
+            {
+                var r = ScriptableObject.CreateInstance<RecipeData>();
+                r.RecipeId = buildingId + "_" + o;
+                r.Inputs = new[] { new ItemStack("wheat", 1) };
+                r.Output = new ItemStack(o, 1);
+                return r;
+            });
+            return p;
+        }
+
+        private static PlaceableDatabase PlaceableDb(params PlaceableData[] placeables)
+        {
+            var db = ScriptableObject.CreateInstance<PlaceableDatabase>();
+            db.Items = placeables;
+            return db;
+        }
+
         private ContractRotationService Service(ContractDatabase db) =>
-            new(db, null, _plants, _dyes, _contracts, _plantDb);
+            new(db, null, _plants, _dyes, _contracts, _plantDb, _placeableDb, _buildings);
 
         [Test]
         public void Eligible_ExcludesAlreadyUnlockedReward()
@@ -149,6 +179,56 @@ namespace WheatFarm.Tests
             var (ids, day) = svc.ToSave();
             Assert.AreEqual(7, day);
             CollectionAssert.AreEquivalent(new[] { "c1", "c3" }, ids);
+        }
+
+        [Test]
+        public void Eligible_ExcludesItemsProducedOnlyByLockedBuildings()
+        {
+            var db = Db(
+                Contract("bread-req", required: new ItemStack("bread", 3)),   // bakery locked
+                Contract("flour-req", required: new ItemStack("flour", 2)),   // mill unlocked
+                Contract("wood-req", required: new ItemStack("wood", 2)));    // not a recipe output
+            var svc = Service(db);
+
+            var ids = svc.SelectEligible(10, 0).Select(c => c.ContractId).ToArray();
+            CollectionAssert.DoesNotContain(ids, "bread-req");
+            CollectionAssert.Contains(ids, "flour-req");
+            CollectionAssert.Contains(ids, "wood-req");
+        }
+
+        [Test]
+        public void Eligible_IncludesProducedItem_AfterBuildingUnlocked()
+        {
+            var db = Db(Contract("bread-req", required: new ItemStack("bread", 3)));
+            var svc = Service(db);
+
+            Assert.AreEqual(0, svc.SelectEligible(10, 0).Count);
+            _buildings.Grant("bakery");
+            Assert.AreEqual(1, svc.SelectEligible(10, 0).Count);
+        }
+
+        [Test]
+        public void Eligible_ExcludesAlreadyUnlockedBuildingReward()
+        {
+            var c = Contract("c1", required: new ItemStack("wheat", 5));
+            c.UnlockBuildingId = "bakery";
+            var db = Db(c);
+            var svc = Service(db);
+
+            Assert.AreEqual(1, svc.SelectEligible(10, 0).Count);
+            _buildings.Grant("bakery");
+            Assert.AreEqual(0, svc.SelectEligible(10, 0).Count);
+        }
+
+        [Test]
+        public void Eligible_ExcludesDefaultUnlockedBuildingReward()
+        {
+            var c = Contract("c1", required: new ItemStack("wheat", 5));
+            c.UnlockBuildingId = "mill"; // UnlockedByDefault — never in the granted set
+            var db = Db(c);
+            var svc = Service(db);
+
+            Assert.AreEqual(0, svc.SelectEligible(10, 0).Count);
         }
     }
 }

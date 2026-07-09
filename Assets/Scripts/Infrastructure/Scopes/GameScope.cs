@@ -29,6 +29,8 @@ namespace WheatFarm.Infrastructure
                 .As<IPlantUnlockService>();
             builder.Register<DyeUnlockService>(Lifetime.Singleton)
                 .As<IDyeUnlockService>();
+            builder.Register<BuildingUnlockService>(Lifetime.Singleton)
+                .As<IBuildingUnlockService>();
 
             // Debug / god-mode flags
             builder.Register<WheatFarm.Core.DebugFlags>(Lifetime.Singleton)
