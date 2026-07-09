@@ -34,6 +34,7 @@ MonoBehaviour:
   PathColor: {r: 1, g: 1, b: 1, a: 1}
   Cost: 80
   UnlockedByDefault: 0
+  UnlockCost: 300
   Interactable: 1
   Role: 0
   Recipes:
