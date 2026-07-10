@@ -295,12 +295,10 @@ ff6150d fix: GPU instanced crop rendering — proper scale, cropState, TRS matri
 
 ### What's Next (polish & content)
 1. **Building 3D models** — replace placeholder cubes with actual meshes.
-2. **Smoke particles on buildings** — add ParticleSystem named "SmokeEffect" to building prefabs (code already handles it).
-3. **More production chains** — additional recipes, new building types.
+2. **New building types** — second-tier recipe pack done (oil/popcorn/pie/birdhouse); next content step is a new building + chain.
 
 ### Known Issues
 - Graphy FPS counter shows 1 FPS on first frame after entering Play Mode (screenshot artifact, normalizes after).
-- No visual feedback for brush size changes.
 
 ## Dev Environment Notes
 - Tests asmdef has overrideReferences=true — new precompiled deps go into precompiledReferences (e.g. ObservableCollections.dll)

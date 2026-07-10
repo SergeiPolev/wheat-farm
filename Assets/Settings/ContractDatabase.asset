@@ -167,3 +167,43 @@ MonoBehaviour:
     UnlockDyeId:
     UnlockBuildingId: sawmill
     RewardMultiplier: 2
+  - ContractId: oil_delivery
+    Description: Press 3 bottles of sunflower oil
+    Required:
+    - ItemId: oil
+      Amount: 3
+    CoinReward: 320
+    UnlockPlantId:
+    UnlockDyeId:
+    UnlockBuildingId:
+    RewardMultiplier: 2.5
+  - ContractId: popcorn_stand
+    Description: Pop 4 batches of popcorn for the fair
+    Required:
+    - ItemId: popcorn
+      Amount: 4
+    CoinReward: 300
+    UnlockPlantId:
+    UnlockDyeId:
+    UnlockBuildingId:
+    RewardMultiplier: 2.5
+  - ContractId: pie_festival
+    Description: Bake 2 cherry pies for the festival
+    Required:
+    - ItemId: pie
+      Amount: 2
+    CoinReward: 450
+    UnlockPlantId:
+    UnlockDyeId:
+    UnlockBuildingId:
+    RewardMultiplier: 3
+  - ContractId: birdhouse_fair
+    Description: Craft 2 birdhouses for the spring fair
+    Required:
+    - ItemId: birdhouse
+      Amount: 2
+    CoinReward: 400
+    UnlockPlantId:
+    UnlockDyeId:
+    UnlockBuildingId:
+    RewardMultiplier: 3

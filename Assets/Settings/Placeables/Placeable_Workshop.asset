@@ -39,4 +39,5 @@ MonoBehaviour:
   Role: 0
   Recipes:
   - {fileID: 11400000, guid: 8115fbcbaa0145e4ac150d616977e8ab, type: 2}
+  - {fileID: 11400000, guid: 8d0b6b7b77a84d199751d63d857e453b, type: 2}
   MaxLevel: 3
