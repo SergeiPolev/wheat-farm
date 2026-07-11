@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 290eae8417233004da73a3ec87f0af9d, type: 3}
+  m_Name: Placeable_Cart
+  m_EditorClassIdentifier: 
+  PlaceableId: cart
+  DisplayName: Cart
+  Category: 1
+  Icon: {fileID: 0}
+  GridSize: {x: 8, y: 5}
+  BlocksPlanting: 1
+  Rotation: 2
+  FootprintRows:
+  - XXXXXXXX
+  - XXXXXXXX
+  - XXXXXXXX
+  - XXXXXXXX
+  - XXXXXXXX
+  PaddingCells: 0
+  Prefab: {fileID: 3445740378259184198, guid: a054ba45c3265c544b5b4099decf3645, type: 3}
+  PathSubtype: 0
+  PathColor: {r: 1, g: 1, b: 1, a: 1}
+  Cost: 80
+  UnlockedByDefault: 1
+  UnlockCost: 0
+  Interactable: 0
+  Role: 0
+  Recipes: []
+  MaxLevel: 1
