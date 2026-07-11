@@ -15,10 +15,10 @@ MonoBehaviour:
   PlantId: cherry
   DisplayName: Cherry Tree
   Category: 2
-  Mesh: {fileID: 5461320835613783329, guid: 444532a7a4b9aac4a8fcf64e7fb63934, type: 3}
-  Material: {fileID: 2100000, guid: aa74256b055741944a7aacc6436857d3, type: 2}
+  Mesh: {fileID: 4300000, guid: 58d7eeb064335ae4da7cb38407fb481a, type: 2}
+  Material: {fileID: 2100000, guid: 523d14503f3edcf48b268dc48f519997, type: 2}
   MeshId: 1
-  ScaleRange: {x: 2.6344385, y: 3.5125847}
+  ScaleRange: {x: 1.26485, y: 1.6864667}
   GrowthDuration: 180
   NeedsWatering: 1
   SeedCost: 25
