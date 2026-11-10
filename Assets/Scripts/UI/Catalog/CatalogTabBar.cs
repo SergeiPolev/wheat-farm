@@ -209,7 +209,7 @@ namespace WheatFarm.UI
             nameText.fontSize = 12;
             nameText.alignment = TextAlignmentOptions.Center;
             nameText.color = Color.white;
-            nameText.enableWordWrapping = true;
+            nameText.textWrappingMode = TextWrappingModes.Normal;
 
             // Cost label (bottom)
             var costGo = new GameObject("Cost");

@@ -13,7 +13,7 @@ public class UpdatePolygonCollider : MonoBehaviour
 		
 		if (collider != null && sprite != null) {
 			// update count
-			collider.pathCount = sprite.GetPhysicsShapeCount();
+			collider.pathCount = sprite.GetPhysicsOutlineCount();
                 
 			// new paths variable
 			List<Vector2> path = new List<Vector2>();
@@ -23,7 +23,7 @@ public class UpdatePolygonCollider : MonoBehaviour
 				// clear
 				path.Clear();
 				// get shape
-				sprite.GetPhysicsShape(i, path);
+				sprite.GetPhysicsOutline(i, path);
 				// set path
 				collider.SetPath(i, path.ToArray());
 			}

@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEditor;
@@ -117,7 +117,11 @@ namespace NaughtyAttributes.Editor
 
                 if (!_foldouts.ContainsKey(group.Key))
                 {
+#if UNITY_6000_2_OR_NEWER
+                    _foldouts[group.Key] = new SavedBool($"{target.GetEntityId()}.{group.Key}", false);
+#else
                     _foldouts[group.Key] = new SavedBool($"{target.GetInstanceID()}.{group.Key}", false);
+#endif
                 }
 
                 _foldouts[group.Key].Value = EditorGUILayout.Foldout(_foldouts[group.Key].Value, group.Key, true);

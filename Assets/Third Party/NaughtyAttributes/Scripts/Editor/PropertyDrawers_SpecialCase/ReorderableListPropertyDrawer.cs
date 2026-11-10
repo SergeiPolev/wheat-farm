@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEditor;
 using UnityEditorInternal;
 using System.Collections.Generic;
@@ -26,7 +26,11 @@ namespace NaughtyAttributes.Editor
 
         private string GetPropertyKeyName(SerializedProperty property)
         {
+#if UNITY_6000_2_OR_NEWER
+            return property.serializedObject.targetObject.GetEntityId() + "." + property.name;
+#else
             return property.serializedObject.targetObject.GetInstanceID() + "." + property.name;
+#endif
         }
 
         protected override float GetPropertyHeight_Internal(SerializedProperty property)
