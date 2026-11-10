@@ -298,7 +298,6 @@ ff6150d fix: GPU instanced crop rendering — proper scale, cropState, TRS matri
 2. **New building types** — second-tier recipe pack done (oil/popcorn/pie/birdhouse); next content step is a new building + chain.
 
 ### Known Issues
-- `com.phucnguyen.unity-ui-mcp` is a `file:D:/...` Windows path — fails to resolve on macOS (package resolution error, harmless otherwise).
 - DOTween .dll.meta files use PluginImporter v1 (warning on 6000.7; re-save to upgrade).
 - Graphy FPS counter shows 1 FPS on first frame after entering Play Mode (screenshot artifact, normalizes after).
 
