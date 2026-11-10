@@ -11,7 +11,7 @@ Farm creative sandbox for Steam (PC). Isometric top-down perspective. Player bui
 
 ## Tech Stack
 
-- **Unity 6000.0.48f1**, URP 17.0.4, Cinemachine 3.1.3
+- **Unity 6000.7.0b6** (beta), URP 17.7.0, Cinemachine 6.7.0. Pinned git packages: UniTask 2.5.11, R3.Unity 1.3.1, VContainer 1.19.0, CoplayDev unity-mcp v10.3.0
 - **DI:** VContainer (hierarchical scopes: RootScope -> GameScope -> FarmScope)
 - **Reactive:** R3 (ReactiveProperty, Subject). R3.Unity via git URL + R3.dll via NuGetForUnity
 - **Async:** UniTask (replacing coroutines)
@@ -294,10 +294,12 @@ ff6150d fix: GPU instanced crop rendering — proper scale, cropState, TRS matri
 - Save: UnlockedBuildings list, wired next to UnlockedDyes
 
 ### What's Next (polish & content)
-1. **Building 3D models** — replace placeholder cubes with actual meshes.
+1. **Optimize AI art meshes** — building/decor models (merged from ai-item-pack) are 140k–420k verts each; ~14 objects on screen = ~25M tris. Decimate/LOD before content grows.
 2. **New building types** — second-tier recipe pack done (oil/popcorn/pie/birdhouse); next content step is a new building + chain.
 
 ### Known Issues
+- `com.phucnguyen.unity-ui-mcp` is a `file:D:/...` Windows path — fails to resolve on macOS (package resolution error, harmless otherwise).
+- DOTween .dll.meta files use PluginImporter v1 (warning on 6000.7; re-save to upgrade).
 - Graphy FPS counter shows 1 FPS on first frame after entering Play Mode (screenshot artifact, normalizes after).
 
 ## Dev Environment Notes
