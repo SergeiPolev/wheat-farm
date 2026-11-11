@@ -38,6 +38,15 @@ namespace WheatFarm.Player
         /// <summary>True while an action animation is playing.</summary>
         public bool IsActing { get; private set; }
 
+        // The Actions layer only leaves "Empty" once the Animator has evaluated the new ToolAction,
+        // which can be a frame or more after PlayAction. Completion requires having seen the action
+        // state first; the timeout covers a missing/never-entered state.
+        private bool _actionEntered;
+        private float _actionStartTime;
+        private int _actionId;
+        private const int HeldActionId = 6; // KneelingWork exits on ToolAction == 0, so it is held, not one-shot
+        private const float ActionTimeout = 4f;
+
         private void Awake()
         {
             _animator = GetComponent<Animator>();
@@ -61,6 +70,9 @@ namespace WheatFarm.Player
         {
             if (_animator == null || IsActing) return;
             IsActing = true;
+            _actionEntered = false;
+            _actionStartTime = Time.time;
+            _actionId = actionId;
             _animator.SetInteger(ToolActionHash, actionId);
         }
 
@@ -68,6 +80,7 @@ namespace WheatFarm.Player
         public void OnActionComplete()
         {
             IsActing = false;
+            _actionEntered = false;
             if (_animator != null)
                 _animator.SetInteger(ToolActionHash, 0);
         }
@@ -91,7 +104,17 @@ namespace WheatFarm.Player
             // Check Actions Layer (last layer) — if back in Empty state, clear acting flag.
             int actionsLayerIndex = _animator.layerCount - 1;
             var stateInfo = _animator.GetCurrentAnimatorStateInfo(actionsLayerIndex);
-            if (stateInfo.IsName("Empty"))
+            bool inEmpty = stateInfo.IsName("Empty");
+            bool transitioning = _animator.IsInTransition(actionsLayerIndex);
+
+            if (!inEmpty || transitioning)
+                _actionEntered = true;
+            // Stop asking for the action once it is underway, so it plays once instead of looping.
+            if (_actionEntered && !inEmpty && _actionId != HeldActionId)
+                _animator.SetInteger(ToolActionHash, 0);
+
+            bool timedOut = _actionId != HeldActionId && Time.time - _actionStartTime > ActionTimeout;
+            if ((_actionEntered && inEmpty && !transitioning) || timedOut)
             {
                 OnActionComplete();
             }

@@ -302,6 +302,8 @@ ff6150d fix: GPU instanced crop rendering — proper scale, cropState, TRS matri
 - FeedbackService now Emit()s per cell (budget 90 particles/type/frame); dye strokes emit in the dye color.
 - **Hotkeys** (FarmInteractionController): 1 = sow last crop (`PlacementTool.LastCrop` survives tool switches), 2 = water, 3 = paint, 4 = harvest; hint strip under the tool label.
 - **SfxService** (Core/Feedback): all sounds synthesized at startup (no audio assets), rate-limited per id; FeedbackService plays one per action type, the meter plays refill glugs (pitch follows fill), Full/Unloaded chime, Empty bonk, tool-switch tick.
+- **Player model**: Kenney Animated Characters Survivors `characterMedium.fbx` (CC0, Assets/Project/Models/Characters/Kenney) imported as Humanoid, scale 0.466 (~25% shorter than the old Char_rig), custom `farmerMale` skin (edited from the pack's SVG in Skins/Source). FarmerAnimator's Mixamo clips retarget onto it. PlayerAnimationController + controller now live in Player.prefab (were scene overrides).
+- PlayerAnimationController fix: an action only completes after the Actions layer actually left "Empty" (previously reset ToolAction in the same frame, so tool animations rarely played).
 - **CoreLoopAutoplay** (Infrastructure/Debug, editor/dev only): live Play Mode run of the whole loop through the real ToolService, PASS/FAIL report + Temp/Screens/live_*.png. Start: `new GameObject().AddComponent<CoreLoopAutoplay>()` in Play Mode, read `CoreLoopAutoplay.Report`. Mutes audio and shrinks container sizes for the run.
 
 ### Rendering Performance Notes

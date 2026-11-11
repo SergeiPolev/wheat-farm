@@ -38,6 +38,7 @@ namespace WheatFarm.UI
         private CanvasGroup _meterGroup, _markerGroup, _hintGroup;
 
         private Transform _player;
+        private Transform _head; // humanoid head bone: meter follows the model's real height
         private Camera _cam;
         private ChargeKind? _kind;
         private float _shownFraction, _alpha, _markerAlpha, _hintTimer, _shake, _pulse, _flashT;
@@ -147,7 +148,12 @@ namespace WheatFarm.UI
             if (_player == null)
             {
                 var pc = UnityEngine.Object.FindFirstObjectByType<PlayerController>();
-                if (pc != null) _player = pc.transform;
+                if (pc != null)
+                {
+                    _player = pc.transform;
+                    var anim = pc.GetComponentInChildren<Animator>();
+                    if (anim != null && anim.isHuman) _head = anim.GetBoneTransform(HumanBodyBones.Head);
+                }
             }
             if (_cam == null) _cam = Camera.main;
 
@@ -191,7 +197,8 @@ namespace WheatFarm.UI
                     ? (k == ChargeKind.Basket ? "<color=#FFE070>Unloaded!</color>" : "<color=#B8FF9A>Full!</color>")
                     : LabelFor(k, atStation);
 
-                var screen = _cam.WorldToScreenPoint(_player.position + Vector3.up * 2.3f);
+                var anchorPos = _head != null ? _head.position + Vector3.up * 0.55f : _player.position + Vector3.up * 2.3f;
+                var screen = _cam.WorldToScreenPoint(anchorPos);
                 float shakeX = Mathf.Sin(Time.unscaledTime * 60f) * 9f * _shake;
                 SetScreenPos(_meter, screen, new Vector2(shakeX, 0f));
                 float s = 1f + 0.12f * _pulse;
