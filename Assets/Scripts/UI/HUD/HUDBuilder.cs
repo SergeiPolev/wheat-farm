@@ -130,6 +130,14 @@ namespace WheatFarm.UI
                 "Tool: Plant", 18, TextAlignmentOptions.Center,
                 new Vector2(8, 0), new Vector2(-8, 0));
 
+            // Hotkey cheat-sheet for the core loop (FarmInteractionController)
+            var keysPanel = CreatePanel(canvasGo.transform, "HotkeyPanel",
+                TextAnchor.UpperCenter, new Vector2(0.5f, 1), new Vector2(0.5f, 1),
+                new Vector2(0, -58), new Vector2(460, 26));
+            CreateTMPText(keysPanel.transform, "HotkeyText",
+                "<b>1</b> Plant   <b>2</b> Water   <b>3</b> Paint   <b>4</b> Harvest   <b>Q/E</b> Brush",
+                14, TextAlignmentOptions.Center, new Vector2(8, 0), new Vector2(-8, 0));
+
             
 SetPrivateField(hudView, "_coinsText", coinsText);
             SetPrivateField(hudView, "_toolIcons", toolIcons);

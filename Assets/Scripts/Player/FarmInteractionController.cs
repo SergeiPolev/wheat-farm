@@ -9,7 +9,7 @@ namespace WheatFarm.Player
     /// <summary>
     /// Handles mouse interaction with the farm grid.
     /// Click/hold left mouse -> raycast to ground plane -> use current tool.
-    /// Number keys 1-7 switch tools. Q/E change brush size. Scroll rotates placement.
+    /// Keys 1-4: Plant (last crop) / Water / Paint / Harvest. Q/E change brush size. Scroll rotates placement.
     /// Registered as component in FarmScope; VContainer injects dependencies.
     /// </summary>
     public class FarmInteractionController : MonoBehaviour
@@ -144,12 +144,30 @@ namespace WheatFarm.Player
 
         private void HandleToolSwitching()
         {
-            // Tool/item selection is now handled by CatalogTabBar UI.
-            // Only Escape remains as a keyboard shortcut for cancel.
+            // Core-loop hotkeys (the catalog stays the way to pick *which* crop / color / building).
+            if (Input.GetKeyDown(KeyCode.Alpha1) || Input.GetKeyDown(KeyCode.Keypad1)) EquipSowing();
+            if (Input.GetKeyDown(KeyCode.Alpha2) || Input.GetKeyDown(KeyCode.Keypad2)) EquipHotkey(ToolId.WateringCan);
+            if (Input.GetKeyDown(KeyCode.Alpha3) || Input.GetKeyDown(KeyCode.Keypad3)) EquipHotkey(ToolId.Dye);
+            if (Input.GetKeyDown(KeyCode.Alpha4) || Input.GetKeyDown(KeyCode.Keypad4)) EquipHotkey(ToolId.Sickle);
+
             if (Input.GetKeyDown(KeyCode.Escape) && _placementTool != null)
             {
                 _placementTool.ClearSelection();
             }
+        }
+
+        private void EquipSowing()
+        {
+            if (_placementTool == null) return;
+            var crop = _placementTool.SelectedPlant ?? _placementTool.LastCrop;
+            _toolService.EquipTool(ToolId.Placement);
+            if (crop != null) _placementTool.SelectPlant(crop);
+        }
+
+        private void EquipHotkey(ToolId id)
+        {
+            _placementTool?.ClearSelection(); // same as picking the tool in the catalog
+            _toolService.EquipTool(id);
         }
 
         private void HandleBrushSize()

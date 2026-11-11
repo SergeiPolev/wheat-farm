@@ -300,6 +300,9 @@ ff6150d fix: GPU instanced crop rendering — proper scale, cropState, TRS matri
 - New games get a starter Well (EconomyBuildingsBootstrap). Charges persist in saves (`HasToolCharges`; old saves → full can/bucket, empty bag/basket).
 - UI: ToolChargeMeterPresenter — bar above player for the active tool, pulse on refill, shake/flash/hint on empty, bobbing marker over the station.
 - FeedbackService now Emit()s per cell (budget 90 particles/type/frame); dye strokes emit in the dye color.
+- **Hotkeys** (FarmInteractionController): 1 = sow last crop (`PlacementTool.LastCrop` survives tool switches), 2 = water, 3 = paint, 4 = harvest; hint strip under the tool label.
+- **SfxService** (Core/Feedback): all sounds synthesized at startup (no audio assets), rate-limited per id; FeedbackService plays one per action type, the meter plays refill glugs (pitch follows fill), Full/Unloaded chime, Empty bonk, tool-switch tick.
+- **CoreLoopAutoplay** (Infrastructure/Debug, editor/dev only): live Play Mode run of the whole loop through the real ToolService, PASS/FAIL report + Temp/Screens/live_*.png. Start: `new GameObject().AddComponent<CoreLoopAutoplay>()` in Play Mode, read `CoreLoopAutoplay.Report`. Mutes audio and shrinks container sizes for the run.
 
 ### Rendering Performance Notes
 - ChunkCropRenderer compacts per-mesh instance buffers: each crop pass draws only its visible instances (was all 256 cells × every mesh type). Ground pass keeps the full buffer. Shader untouched.
@@ -307,7 +310,7 @@ ff6150d fix: GPU instanced crop rendering — proper scale, cropState, TRS matri
 - GPU frame time (editor, M-series Mac, 1280x720 game view): empty farm 8.6→4.1ms, full field (6.1k crops) 14.2→8.9ms. Remaining crop cost is mostly corn/tomato meshes (835/1732 tris) + shadows.
 
 ### What's Next (polish & content)
-1. **Tune the tool-charge loop by feel** — capacities/refill speed live in ToolChargeConfig (registered as an instance in FarmScope).
+1. **Tune the tool-charge loop by feel** (and the synthesized sounds — swap in real audio later) — capacities/refill speed live in ToolChargeConfig (registered as an instance in FarmScope).
 2. **Crop mesh cost** — corn/tomato meshes are heavy for 6k instances; consider simpler crop meshes or shadow-casting off for crops.
 3. **New building types** — second-tier recipe pack done (oil/popcorn/pie/birdhouse); next content step is a new building + chain.
 

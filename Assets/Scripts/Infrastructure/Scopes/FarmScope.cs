@@ -57,6 +57,8 @@ namespace WheatFarm.Infrastructure
                 .As<IBrushService, System.IDisposable>();
 
             // Action feedback (particles) — hook point for plant/water/harvest/build effects
+            builder.Register<SfxService>(Lifetime.Singleton)
+                .As<ISfxService, System.IDisposable>();
             builder.Register<FeedbackService>(Lifetime.Singleton)
                 .WithParameter<FeedbackConfig>(_feedbackConfig)
                 .As<IFeedbackService, System.IDisposable>();

@@ -29,7 +29,7 @@ namespace WheatFarm.UI
 
         public void Tick()
         {
-            var plant = _placementTool != null ? _placementTool.SelectedPlant : null;
+            var plant = _placementTool != null ? (_placementTool.SelectedPlant ?? _placementTool.LastCrop) : null;
 
             string label;
             if (plant == null)

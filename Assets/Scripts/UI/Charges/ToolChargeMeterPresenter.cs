@@ -4,6 +4,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using VContainer.Unity;
+using WheatFarm.Core;
 using WheatFarm.Core.Data;
 using WheatFarm.Player;
 using WheatFarm.Player.Charges;
@@ -27,7 +28,9 @@ namespace WheatFarm.UI
         private readonly IToolStationService _stations;
         private readonly IToolService _tools;
         private readonly PlacementTool _placementTool;
+        private readonly ISfxService _sfx;
         private readonly CompositeDisposable _subs = new();
+        private float _fullTimer;
 
         private RectTransform _meter, _fill, _flash, _marker, _markerDiamond;
         private Image _fillImage, _flashImage, _bgImage, _markerImage;
@@ -46,8 +49,10 @@ namespace WheatFarm.UI
             IToolChargeService charges,
             IToolStationService stations,
             IToolService tools,
-            PlacementTool placementTool = null)
+            PlacementTool placementTool = null,
+            ISfxService sfx = null)
         {
+            _sfx = sfx;
             _canvasRoot = canvasRoot;
             _charges = charges;
             _stations = stations;
@@ -59,16 +64,31 @@ namespace WheatFarm.UI
         {
             Build();
             _charges.OnDepleted.Subscribe(OnDepleted).AddTo(_subs);
-            _charges.OnTransferred.Subscribe(t =>
-            {
-                if (_kind == t.kind) _pulse = 1f;
-            }).AddTo(_subs);
+            _charges.OnTransferred.Subscribe(OnTransferred).AddTo(_subs);
+            _tools.CurrentToolId.Skip(1).Subscribe(_ => _sfx?.Play(SfxId.ToolSwitch)).AddTo(_subs);
         }
 
         // ── Behaviour ─────────────────────────────────────────
 
+        private void OnTransferred((ChargeKind kind, int amount) t)
+        {
+            if (_kind == t.kind) _pulse = 1f;
+            float f = _charges.Fraction(t.kind);
+            bool basket = t.kind == ChargeKind.Basket;
+            // Glug pitch climbs as a container fills (falls as the basket empties)
+            _sfx?.Play(SfxId.RefillTick, basket ? 1.3f - 0.5f * (1f - f) : 0.8f + 0.6f * f);
+
+            bool done = basket ? _charges.Basket.CurrentValue == 0 : _charges.Current(t.kind) >= _charges.Max(t.kind);
+            if (done && (_kind == null || _kind == t.kind))
+            {
+                _sfx?.Play(basket ? SfxId.Unload : SfxId.Full);
+                if (_kind == t.kind) _fullTimer = 0.9f;
+            }
+        }
+
         private void OnDepleted(ChargeKind kind)
         {
+            if (_hintTimer <= 0.2f) _sfx?.Play(SfxId.Empty);
             _depletedKind = kind;
             _depletedTimer = HintSeconds;
             if (_hintTimer <= 0.2f) _shake = 1f;       // don't re-shake every frame while the button is held
@@ -145,6 +165,7 @@ namespace WheatFarm.UI
             _shake = Mathf.Max(0f, _shake - dt * 3.5f);
             _pulse = Mathf.Max(0f, _pulse - dt * 4f);
             _flashT = Mathf.Max(0f, _flashT - dt * 2.5f);
+            _fullTimer = Mathf.Max(0f, _fullTimer - dt);
 
             var atStation = _stations.CurrentStation.CurrentValue;
 
@@ -166,7 +187,9 @@ namespace WheatFarm.UI
                 _fillImage.color = baseColor;
                 _flashImage.color = new Color(1f, 0.25f, 0.2f, 0.75f * _flashT);
 
-                _label.text = LabelFor(k, atStation);
+                _label.text = _fullTimer > 0f
+                    ? (k == ChargeKind.Basket ? "<color=#FFE070>Unloaded!</color>" : "<color=#B8FF9A>Full!</color>")
+                    : LabelFor(k, atStation);
 
                 var screen = _cam.WorldToScreenPoint(_player.position + Vector3.up * 2.3f);
                 float shakeX = Mathf.Sin(Time.unscaledTime * 60f) * 9f * _shake;

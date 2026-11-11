@@ -39,6 +39,12 @@ namespace WheatFarm.Player.Tools
         public bool RequiresResource => true;
 
         public PlantData SelectedPlant => _selectedPlant;
+
+        /// <summary>
+        /// Last crop/bush picked in the catalog. Survives switching to other tools (which clears
+        /// the selection) so the seed bag and the "1" hotkey know what to sow.
+        /// </summary>
+        public PlantData LastCrop { get; private set; }
         public PlaceableData SelectedPlaceable => _selectedPlaceable;
         public float PendingRotation => _pendingRotation;
 
@@ -71,6 +77,7 @@ namespace WheatFarm.Player.Tools
         {
             _selectedPlaceable = null;
             _selectedPlant = plant;
+            if (plant != null && plant.Category != PlantCategory.Tree) LastCrop = plant;
             _pendingRotation = 0f;
             _pendingRotationSteps = 0;
             _ghost.Hide();

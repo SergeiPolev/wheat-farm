@@ -90,7 +90,9 @@ namespace WheatFarm.Player.Charges
             {
                 _charges.UnloadBasket(Step(ref _basketAcc, _charges.Config.BasketMax / secs * dt));
 
-                var plant = _placementTool?.SelectedPlant;
+                // Load the bag for the crop the player is sowing (or last sowed), whatever tool is in hand.
+                var sel = _placementTool?.SelectedPlant;
+                var plant = sel != null && sel.Category != PlantCategory.Tree ? sel : _placementTool?.LastCrop;
                 if (plant != null && plant.Category != PlantCategory.Tree)
                 {
                     // Switching seed type at the Warehouse: swap the bag immediately.

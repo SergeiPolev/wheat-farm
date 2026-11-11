@@ -22,13 +22,15 @@ namespace WheatFarm.Core
     public class FeedbackService : IFeedbackService, IDisposable
     {
         private readonly FeedbackConfig _config;
+        private readonly ISfxService _sfx;
         private Transform _root;
         private Material _proceduralMat;
         private readonly Dictionary<FarmFxType, ParticleSystem> _instances = new();
 
-        public FeedbackService(FeedbackConfig config = null)
+        public FeedbackService(FeedbackConfig config = null, ISfxService sfx = null)
         {
             _config = config;
+            _sfx = sfx;
         }
 
         // Brush strokes call PlayEffect once per affected cell, every frame the button is held.
@@ -44,6 +46,7 @@ namespace WheatFarm.Core
 
         private void Emit(FarmFxType type, Vector3 worldPos, Color? color)
         {
+            _sfx?.Play(SfxFor(type)); // rate-limited inside: one stroke = one sound, not 30
             EnsureRoot();
             var ps = GetInstance(type);
             if (ps == null) return;
@@ -63,6 +66,18 @@ namespace WheatFarm.Core
             if (color.HasValue) ep.startColor = color.Value;
             ps.Emit(ep, count);
         }
+
+        private static SfxId SfxFor(FarmFxType t) => t switch
+        {
+            FarmFxType.Plant => SfxId.Plant,
+            FarmFxType.Water => SfxId.Water,
+            FarmFxType.Harvest => SfxId.Harvest,
+            FarmFxType.Uproot => SfxId.Uproot,
+            FarmFxType.Build => SfxId.Build,
+            FarmFxType.Remove => SfxId.Remove,
+            FarmFxType.Dye => SfxId.Paint,
+            _ => SfxId.Plant
+        };
 
         private static int PerCellFor(FarmFxType t) => t switch
         {
@@ -121,6 +136,8 @@ namespace WheatFarm.Core
             var go = new GameObject($"FarmFX_{type}");
             go.transform.SetParent(_root, false);
             var ps = go.AddComponent<ParticleSystem>();
+            // A freshly added system is already playing; duration can only be set while stopped.
+            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
 
             var main = ps.main;
             main.loop = false;

@@ -118,6 +118,7 @@ namespace WheatFarm.Infrastructure.Cheats
             _t0 = Time.time;
             _charges.OnDepleted.Subscribe(_ => _depleted++).AddTo(this);
 
+            AudioListener.volume = 0f; // silent run (it may be running at night next to someone asleep)
             await UniTask.DelayFrame(3);
             _brush.CurrentSize.Value = BrushSize.Large;
             _inventory.TryAdd(new InventoryItem("seed_wheat", ItemType.Seed, 60)); // as if bought at the shop
@@ -239,6 +240,7 @@ namespace WheatFarm.Infrastructure.Cheats
 
         private async UniTask Harvest()
         {
+            _placementTool.ClearSelection(); // what the catalog / "4" hotkey do
             _tools.EquipTool(ToolId.Sickle);
             int crops = CountCells(c => c.IsHarvestable);
             int wheat0 = _inventory.GetAmount("wheat");
@@ -260,6 +262,11 @@ namespace WheatFarm.Infrastructure.Cheats
             await WaitUntil(() => _charges.Basket.CurrentValue == 0, 6f);
             int got = _inventory.GetAmount("wheat") - wheat0;
             Log($"harvest: crops={crops} delivered={got} unloads={unloads} basket={_charges.Basket.CurrentValue}");
+            // Sickle in hand, catalog selection cleared: the Warehouse still loads the last crop's seeds.
+            await WaitUntil(() => _charges.Seeds.CurrentValue > 0, 3f);
+            Log($"bag with sickle in hand: {_charges.Seeds.CurrentValue} ({_charges.SeedPlantId.CurrentValue}), lastCrop={_placementTool.LastCrop?.PlantId}");
+            Check(_placementTool.SelectedPlant == null && _charges.Seeds.CurrentValue > 0 && _charges.SeedPlantId.CurrentValue == "wheat",
+                  "Warehouse reloads the bag for the last crop while holding another tool");
             Check(got == crops, "every harvested crop reaches inventory");
             Shot("08_delivered");
         }
