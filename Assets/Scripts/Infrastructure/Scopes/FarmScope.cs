@@ -184,6 +184,14 @@ namespace WheatFarm.Infrastructure
             var canvasRoot = _hudView != null
                 ? (_hudView.GetComponentInParent<Canvas>()?.transform ?? _hudView.transform)
                 : null;
+            // Floating tool-container meter + station marker (tool-charge loop)
+            if (canvasRoot != null)
+            {
+                builder.Register<ToolChargeMeterPresenter>(Lifetime.Singleton)
+                    .WithParameter<UnityEngine.Transform>(canvasRoot)
+                    .As<IStartable, ITickable, System.IDisposable>();
+            }
+
             if (_shopView == null && canvasRoot != null)
                 _shopView = PanelBuilder.BuildShopPanel(canvasRoot);
             if (_inventoryView == null && canvasRoot != null)

@@ -26,6 +26,8 @@ namespace WheatFarm.Infrastructure.Save
         public List<string> UnlockedDyes = new();
         public List<string> UnlockedBuildings = new();
         public List<ProductionSlotSaveData> ProductionSlots = new();
+        public bool HasToolCharges;
+        public WheatFarm.Player.Charges.ToolChargeSnapshot ToolCharges = new();
     }
 
     /// <summary>Serializable chunk state.</summary>

@@ -5,7 +5,7 @@ using UnityEngine;
 namespace WheatFarm.Core
 {
     /// <summary>Farm action that can trigger a visual/particle burst.</summary>
-    public enum FarmFxType { Plant, Water, Harvest, Uproot, Build, Remove }
+    public enum FarmFxType { Plant, Water, Harvest, Uproot, Build, Remove, Dye }
 
     /// <summary>
     /// Central hook for action feedback (particles). Call PlayEffect at the action's
@@ -15,6 +15,8 @@ namespace WheatFarm.Core
     public interface IFeedbackService
     {
         void PlayEffect(FarmFxType type, Vector3 worldPos);
+        /// <summary>Same, with a per-burst color override (e.g. the dye being applied).</summary>
+        void PlayEffect(FarmFxType type, Vector3 worldPos, Color color);
     }
 
     public class FeedbackService : IFeedbackService, IDisposable
@@ -29,15 +31,47 @@ namespace WheatFarm.Core
             _config = config;
         }
 
-        public void PlayEffect(FarmFxType type, Vector3 worldPos)
+        // Brush strokes call PlayEffect once per affected cell, every frame the button is held.
+        // Emitting (instead of restarting one system) lets every cell puff; a per-frame budget
+        // keeps big brushes from flooding the screen.
+        private const int MaxParticlesPerTypePerFrame = 90;
+        private int _budgetFrame = -1;
+        private readonly Dictionary<FarmFxType, int> _budget = new();
+
+        public void PlayEffect(FarmFxType type, Vector3 worldPos) => Emit(type, worldPos, null);
+
+        public void PlayEffect(FarmFxType type, Vector3 worldPos, Color color) => Emit(type, worldPos, color);
+
+        private void Emit(FarmFxType type, Vector3 worldPos, Color? color)
         {
             EnsureRoot();
             var ps = GetInstance(type);
             if (ps == null) return;
 
-            ps.transform.position = worldPos + Vector3.up * 0.1f;
-            ps.Play(true);
+            int frame = Time.frameCount;
+            if (frame != _budgetFrame) { _budgetFrame = frame; _budget.Clear(); }
+            _budget.TryGetValue(type, out int used);
+            int count = PerCellFor(type);
+            if (used + count > MaxParticlesPerTypePerFrame) return;
+            _budget[type] = used + count;
+
+            var ep = new ParticleSystem.EmitParams
+            {
+                position = worldPos + Vector3.up * 0.1f,
+                applyShapeToPosition = true
+            };
+            if (color.HasValue) ep.startColor = color.Value;
+            ps.Emit(ep, count);
         }
+
+        private static int PerCellFor(FarmFxType t) => t switch
+        {
+            FarmFxType.Build => 22,
+            FarmFxType.Remove => 18,
+            FarmFxType.Harvest => 5,
+            FarmFxType.Plant => 3,
+            _ => 4
+        };
 
         private void EnsureRoot()
         {
@@ -68,7 +102,15 @@ namespace WheatFarm.Core
             {
                 var main = ps.main;
                 main.playOnAwake = false;
-                ps.Stop();
+                main.simulationSpace = ParticleSystemSimulationSpace.World; // Emit at arbitrary world positions
+                main.maxParticles = Mathf.Max(main.maxParticles, 600);
+                ps.transform.position = Vector3.zero;
+                // Manual Emit only: keep the system playing (so emitted particles simulate)
+                // but with automatic emission/bursts off.
+                var emission = ps.emission;
+                emission.enabled = false;
+                main.loop = true;
+                ps.Play(true);
                 _instances[type] = ps;
             }
             return ps;
@@ -120,6 +162,7 @@ namespace WheatFarm.Core
             FarmFxType.Uproot => new Color(0.60f, 0.40f, 0.20f),
             FarmFxType.Build => Color.white,
             FarmFxType.Remove => new Color(0.70f, 0.70f, 0.70f),
+            FarmFxType.Dye => new Color(0.88f, 0.38f, 0.80f),
             _ => Color.white
         };
 

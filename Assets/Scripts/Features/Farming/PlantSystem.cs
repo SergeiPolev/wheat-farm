@@ -291,6 +291,7 @@ namespace WheatFarm.Farming
             ref var props = ref chunk.MeshProps[idx];
             props.color = new Vector4(dyed.r, dyed.g, dyed.b, dyed.a);
             chunk.Dirty = true;
+            _feedback?.PlayEffect(FarmFxType.Dye, _chunkSystem.CellToWorld(chunkCoord, cellX, cellY), dyed);
         }
 
         /// <summary>Punch up a dye color to survive the crop shader's lighting wash.</summary>

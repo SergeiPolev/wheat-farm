@@ -116,7 +116,7 @@ namespace WheatFarm.UI
             // === Seed Count (bottom-right, above brush) ===
             var seedPanel = CreatePanel(canvasGo.transform, "SeedPanel",
                 TextAnchor.LowerRight, new Vector2(1, 0), new Vector2(1, 0),
-                new Vector2(-20, 60), new Vector2(200, 30));
+                new Vector2(-20, 60), new Vector2(300, 30));
             var seedText = CreateTMPText(seedPanel.transform, "SeedText",
                 "", 16, TextAlignmentOptions.Center,
                 new Vector2(8, 0), new Vector2(-8, 0));

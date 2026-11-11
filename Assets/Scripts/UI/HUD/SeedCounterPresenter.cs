@@ -1,6 +1,7 @@
 using VContainer.Unity;
 using WheatFarm.Inventory;
 using WheatFarm.Player.Tools;
+using WheatFarm.Player.Charges;
 
 namespace WheatFarm.UI
 {
@@ -15,8 +16,12 @@ namespace WheatFarm.UI
         private readonly IInventoryService _inventory;
         private string _last = null;
 
-        public SeedCounterPresenter(HUDView view, PlacementTool placementTool, IInventoryService inventory)
+        private readonly IToolChargeService _charges;
+
+        public SeedCounterPresenter(HUDView view, PlacementTool placementTool, IInventoryService inventory,
+            IToolChargeService charges = null)
         {
+            _charges = charges;
             _view = view;
             _placementTool = placementTool;
             _inventory = inventory;
@@ -34,7 +39,13 @@ namespace WheatFarm.UI
             else
             {
                 int n = _inventory.GetAmount($"seed_{plant.PlantId}");
-                label = $"{plant.DisplayName}: {n} seed" + (n == 1 ? "" : "s");
+                if (_charges != null)
+                {
+                    int bag = _charges.SeedPlantId.CurrentValue == plant.PlantId ? _charges.Seeds.CurrentValue : 0;
+                    label = $"{plant.DisplayName} seeds: {bag} in bag, {n} stored";
+                }
+                else
+                    label = $"{plant.DisplayName}: {n} seed" + (n == 1 ? "" : "s");
             }
 
             if (label != _last)

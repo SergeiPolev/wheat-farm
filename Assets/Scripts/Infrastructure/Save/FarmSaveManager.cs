@@ -40,6 +40,7 @@ namespace WheatFarm.Infrastructure.Save
         private readonly IContractService _contracts;
         private readonly ContractRotationService _rotation;
         private readonly ContractDatabase _contractDb;
+        private readonly WheatFarm.Player.Charges.IToolChargeService _charges;
 
 
         /// <summary>Must match PlantSystem.MinGrowthScale</summary>
@@ -63,8 +64,10 @@ namespace WheatFarm.Infrastructure.Save
             IContractService contracts = null,
             ContractRotationService rotation = null,
             ContractDatabase contractDb = null,
-            IBuildingUnlockService buildingUnlock = null)
+            IBuildingUnlockService buildingUnlock = null,
+            WheatFarm.Player.Charges.IToolChargeService charges = null)
         {
+            _charges = charges;
             _saveService = saveService;
             _chunkSystem = chunkSystem;
             _wallet = wallet;
@@ -196,6 +199,13 @@ namespace WheatFarm.Infrastructure.Save
             data.UnlockedDyes = _dyeUnlock?.ToSaveList() ?? new List<string>();
             data.UnlockedBuildings = _buildingUnlock?.ToSaveList() ?? new List<string>();
 
+            // Tool containers (water / paint / seed bag / basket)
+            if (_charges != null)
+            {
+                data.ToolCharges = _charges.Snapshot();
+                data.HasToolCharges = true;
+            }
+
             // Contracts: active board + daily rotation state
             if (_contracts != null)
             {
@@ -242,6 +252,13 @@ namespace WheatFarm.Infrastructure.Save
             // Unlocked buildings
             if (_buildingUnlock != null && data.UnlockedBuildings != null)
                 _buildingUnlock.LoadFrom(data.UnlockedBuildings);
+
+            // Tool containers: older saves have none -> new-game defaults (full can/bucket, empty bag/basket)
+            if (_charges != null)
+            {
+                if (data.HasToolCharges) _charges.Restore(data.ToolCharges);
+                else _charges.ResetToNewGame();
+            }
 
             // Contracts: active board + daily rotation state (after unlocks so
             // rotation eligibility on the next Dawn sees the restored sets)
