@@ -23,6 +23,7 @@ namespace WheatFarm.UI
         private readonly IWalletService _wallet;
         private readonly IPlantUnlockService _unlock;
         private readonly FarmInteractionController _interaction;
+        private readonly WheatFarm.Player.FX.IResourceFlyFX _fly;
         private readonly CompositeDisposable _disposables = new();
 
         private PlacedObject _current;
@@ -34,8 +35,10 @@ namespace WheatFarm.UI
             IInventoryService inventory,
             IWalletService wallet,
             IPlantUnlockService unlock,
-            FarmInteractionController interaction)
+            FarmInteractionController interaction,
+            WheatFarm.Player.FX.IResourceFlyFX fly = null)
         {
+            _fly = fly;
             _view = view;
             _shop = shop;
             _inventory = inventory;
@@ -142,7 +145,16 @@ namespace WheatFarm.UI
 
         private void OnSellAll()
         {
+            int sold = 0;
+            foreach (var it in _shop.GetSellableHarvest()) sold += it.Amount;
             int earned = _shop.SellAllHarvest();
+            // Crops hop from the player onto the stall, coins hop back
+            if (earned > 0 && TryMarketPoint(out var at, out var stall))
+            {
+                int n = Mathf.Clamp(sold, 1, 14);
+                _fly?.FromPlayer(WheatFarm.Player.FX.FlyToken.Crop, at, n, stall);
+                _fly?.ToPlayer(WheatFarm.Player.FX.FlyToken.Coin, at, Mathf.Clamp(earned / 10, 3, 14), stall, delay: 0.4f);
+            }
             Debug.Log($"[Market] Sold all harvest for {earned}c");
             Refresh();
         }
@@ -152,10 +164,24 @@ namespace WheatFarm.UI
             if (index < 0 || index >= _buyPlants.Length) return;
             var plant = _buyPlants[index];
             if (_shop.TryBuySeed(plant))
+            {
                 Debug.Log($"[Market] Bought a {plant.DisplayName} seed");
+                if (TryMarketPoint(out var at, out var stall))
+                {
+                    _fly?.FromPlayer(WheatFarm.Player.FX.FlyToken.Coin, at, 1, stall);
+                    _fly?.ToPlayer(WheatFarm.Player.FX.FlyToken.Seed, at, 1, stall, delay: 0.3f);
+                }
+            }
             else
                 Debug.Log($"[Market] Cannot buy {plant.DisplayName} seed (not enough coins?)");
             Refresh();
+        }
+
+        private bool TryMarketPoint(out Vector3 at, out Transform stall)
+        {
+            stall = _current?.Instance != null ? _current.Instance.transform : null;
+            at = stall != null ? stall.position + Vector3.up * 1.1f : default;
+            return stall != null;
         }
 
         private void Close()

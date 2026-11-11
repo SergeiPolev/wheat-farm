@@ -19,6 +19,8 @@ namespace WheatFarm.Player.Charges
         StationKind StationFor(ChargeKind kind);
         /// <summary>World position above the nearest station of this kind (for markers). False if none placed.</summary>
         bool TryGetStationAnchor(StationKind kind, Vector3 from, out Vector3 anchor);
+        /// <summary>Nearest station of this kind: its bounds center and the placed instance.</summary>
+        bool TryGetStation(StationKind kind, Vector3 from, out Vector3 center, out Transform instance);
     }
 
     /// <summary>
@@ -145,6 +147,27 @@ namespace WheatFarm.Player.Charges
                 if (b.SqrDistance(new Vector3(pos.x, b.center.y, pos.z)) <= r * r) return true;
             }
             return false;
+        }
+
+        public bool TryGetStation(StationKind kind, Vector3 from, out Vector3 center, out Transform instance)
+        {
+            center = default;
+            instance = null;
+            string id = kind == StationKind.Well ? ToolChargeConfig.WellId
+                      : kind == StationKind.Warehouse ? ToolChargeConfig.WarehouseId : null;
+            if (id == null) return false;
+            float best = float.MaxValue;
+            foreach (var p in _placement.PlacedObjects)
+            {
+                if (p.Data == null || p.Data.PlaceableId != id || p.Instance == null) continue;
+                var b = GetBounds(p.Instance);
+                float d = (b.center - from).sqrMagnitude;
+                if (d >= best) continue;
+                best = d;
+                center = b.center;
+                instance = p.Instance.transform;
+            }
+            return instance != null;
         }
 
         public bool TryGetStationAnchor(StationKind kind, Vector3 from, out Vector3 anchor)

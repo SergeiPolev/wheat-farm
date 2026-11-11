@@ -107,7 +107,10 @@ namespace WheatFarm.Infrastructure
                 .As<IStartable>();
 
             // Harvest "resource collected" fly-to-player feedback
-            builder.Register<HarvestCollectFX>(Lifetime.Singleton)
+            // Resource transfer flights (replaces HarvestCollectFX billboards)
+            builder.Register<WheatFarm.Player.FX.ResourceFlyFX>(Lifetime.Singleton)
+                .As<WheatFarm.Player.FX.IResourceFlyFX, ITickable, System.IDisposable>();
+            builder.Register<ResourceFlyBridge>(Lifetime.Singleton)
                 .As<IInitializable, ITickable, System.IDisposable>();
 
             // Phase 6: Buildings & Production
