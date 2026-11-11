@@ -240,7 +240,7 @@ AnimatorState:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Water
-  m_Speed: 1.5
+  m_Speed: 1
   m_CycleOffset: 0
   m_Transitions:
   - {fileID: -6047834693899152529}
@@ -253,7 +253,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: 1090947340732559904, guid: 880a564457ad943b8b024dbcab175b88, type: 3}
+  m_Motion: {fileID: 4980751744999542695, guid: 880a564457ad943b8b024dbcab175b88, type: 3}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 
@@ -273,9 +273,9 @@ AnimatorStateTransition:
   m_Mute: 0
   m_IsExit: 0
   serializedVersion: 3
-  m_TransitionDuration: 0.1
+  m_TransitionDuration: 0.12
   m_TransitionOffset: 0
-  m_ExitTime: 0.75
+  m_ExitTime: 0.9
   m_HasExitTime: 1
   m_HasFixedDuration: 1
   m_InterruptionSource: 0
@@ -316,7 +316,7 @@ AnimatorState:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Harvest
-  m_Speed: 1.3
+  m_Speed: 0.9
   m_CycleOffset: 0
   m_Transitions:
   - {fileID: -5834546109850076380}
@@ -329,7 +329,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: -2760357578015435623, guid: 880a564457ad943b8b024dbcab175b88, type: 3}
+  m_Motion: {fileID: 3625414872004886998, guid: 880a564457ad943b8b024dbcab175b88, type: 3}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 
@@ -374,9 +374,9 @@ AnimatorStateTransition:
   m_Mute: 0
   m_IsExit: 0
   serializedVersion: 3
-  m_TransitionDuration: 0.1
+  m_TransitionDuration: 0.12
   m_TransitionOffset: 0
-  m_ExitTime: 0.75
+  m_ExitTime: 0.9
   m_HasExitTime: 1
   m_HasFixedDuration: 1
   m_InterruptionSource: 0
@@ -483,9 +483,9 @@ AnimatorStateTransition:
   m_Mute: 0
   m_IsExit: 0
   serializedVersion: 3
-  m_TransitionDuration: 0.1
+  m_TransitionDuration: 0.12
   m_TransitionOffset: 0
-  m_ExitTime: 0.75
+  m_ExitTime: 0.85
   m_HasExitTime: 1
   m_HasFixedDuration: 1
   m_InterruptionSource: 0
@@ -912,13 +912,13 @@ AnimatorController:
       m_Motion: {fileID: 0}
     - serializedVersion: 2
       m_State: {fileID: -7255757984940816253}
-      m_Motion: {fileID: 1090947340732559904, guid: 880a564457ad943b8b024dbcab175b88, type: 3}
+      m_Motion: {fileID: 4980751744999542695, guid: 880a564457ad943b8b024dbcab175b88, type: 3}
     - serializedVersion: 2
       m_State: {fileID: 7972890585943846093}
-      m_Motion: {fileID: -6793541716566796758, guid: 880a564457ad943b8b024dbcab175b88, type: 3}
+      m_Motion: {fileID: 2903320853443471174, guid: 880a564457ad943b8b024dbcab175b88, type: 3}
     - serializedVersion: 2
       m_State: {fileID: -6882012759734443345}
-      m_Motion: {fileID: -2760357578015435623, guid: 880a564457ad943b8b024dbcab175b88, type: 3}
+      m_Motion: {fileID: 3625414872004886998, guid: 880a564457ad943b8b024dbcab175b88, type: 3}
     - serializedVersion: 2
       m_State: {fileID: 1206273808149088725}
       m_Motion: {fileID: -203655887218126122, guid: a0e566a9646f3d44aa418d57d181537e, type: 3}
@@ -950,7 +950,7 @@ AnimatorState:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Paint
-  m_Speed: 1.2
+  m_Speed: 1.3
   m_CycleOffset: 0
   m_Transitions:
   - {fileID: 2414236450459653549}
@@ -1235,7 +1235,7 @@ AnimatorStateTransition:
   m_Mute: 0
   m_IsExit: 0
   serializedVersion: 3
-  m_TransitionDuration: 0.15
+  m_TransitionDuration: 0.12
   m_TransitionOffset: 0
   m_ExitTime: 0.8
   m_HasExitTime: 1
@@ -1453,7 +1453,7 @@ AnimatorState:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Plant
-  m_Speed: 1.4
+  m_Speed: 1.15
   m_CycleOffset: 0
   m_Transitions:
   - {fileID: -7114995654242581194}
@@ -1466,7 +1466,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: -6793541716566796758, guid: 880a564457ad943b8b024dbcab175b88, type: 3}
+  m_Motion: {fileID: 2903320853443471174, guid: 880a564457ad943b8b024dbcab175b88, type: 3}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 
