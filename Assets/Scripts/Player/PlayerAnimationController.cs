@@ -47,9 +47,27 @@ namespace WheatFarm.Player
         private const int HeldActionId = 6; // KneelingWork exits on ToolAction == 0, so it is held, not one-shot
         private const float ActionTimeout = 4f;
 
+        // "Upper Idle" layer hides the old rifle-pose arms of the strafe/backpedal clips. Forward
+        // walk/jog and idle are clean full-body clips, so the layer fades in only for sideways/back.
+        private int _upperLayer = -1;
+        private float _upperWeight;
+
+        // "Actions Full" is synced to "Actions" without the upper-body mask: planting, harvesting
+        // and the paint throw are whole-body moves, so they use the legs when the farmer stands still
+        // and fall back to upper-body only while walking (feet keep stepping).
+        private int _actionsLayer = -1;
+        private int _fullActionsLayer = -1;
+        private float _fullWeight;
+
         private void Awake()
         {
             _animator = GetComponent<Animator>();
+            if (_animator != null)
+            {
+                _upperLayer = _animator.GetLayerIndex("Upper Idle");
+                _actionsLayer = _animator.GetLayerIndex("Actions");
+                _fullActionsLayer = _animator.GetLayerIndex("Actions Full");
+            }
         }
 
         /// <summary>Set local-space movement for 2D blend tree. X = strafe, Z = forward/back. Range [-1,1].</summary>
@@ -99,10 +117,25 @@ namespace WheatFarm.Player
             _animator.SetFloat(MoveZHash, _moveZ);
             _animator.SetFloat(SpeedHash, _speed);
 
+            if (_upperLayer >= 0)
+            {
+                float strafe = Mathf.Abs(_moveX) + Mathf.Max(0f, -_moveZ);
+                float target = _speed > 0.05f ? Mathf.Clamp01(strafe * 1.6f) : 0f;
+                _upperWeight = Mathf.Lerp(_upperWeight, target, t);
+                _animator.SetLayerWeight(_upperLayer, _upperWeight);
+            }
+
+            if (_fullActionsLayer >= 0)
+            {
+                float target = IsActing && _speed < 0.1f ? 1f : 0f;
+                _fullWeight = Mathf.MoveTowards(_fullWeight, target, Time.deltaTime * 6f);
+                _animator.SetLayerWeight(_fullActionsLayer, _fullWeight);
+            }
+
             if (!IsActing) return;
 
             // Check Actions Layer (last layer) — if back in Empty state, clear acting flag.
-            int actionsLayerIndex = _animator.layerCount - 1;
+            int actionsLayerIndex = _actionsLayer >= 0 ? _actionsLayer : _animator.layerCount - 1;
             var stateInfo = _animator.GetCurrentAnimatorStateInfo(actionsLayerIndex);
             bool inEmpty = stateInfo.IsName("Empty");
             bool transitioning = _animator.IsInTransition(actionsLayerIndex);

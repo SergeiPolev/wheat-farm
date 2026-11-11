@@ -24,6 +24,8 @@ namespace WheatFarm.Player
         private WheatFarm.Player.Preview.IPlacementGhostService _ghostService;
         private WheatFarm.Player.Preview.IBrushPreviewService _brushPreview;
         private Camera _cam;
+        private WheatFarm.Player.Charges.IToolChargeService _charges;
+        private const int NoActionId = 8; // FarmerAnimator "No": head shake when the container is empty
         private PlayerAnimationController _animController;
         private readonly Plane _groundPlane = new(Vector3.up, Vector3.zero);
 
@@ -39,8 +41,10 @@ namespace WheatFarm.Player
             WheatFarm.Player.Preview.IPlacementGhostService ghostService,
             WheatFarm.Player.Preview.IBrushPreviewService brushPreview,
             PlacementTool placementTool = null,
-            BulldozeTool bulldozeTool = null)
+            BulldozeTool bulldozeTool = null,
+            WheatFarm.Player.Charges.IToolChargeService charges = null)
         {
+            _charges = charges;
             _toolService = toolService;
             _brushService = brushService;
             _ghostService = ghostService;
@@ -100,12 +104,29 @@ namespace WheatFarm.Player
             {
                 if (_animController != null && !_animController.IsActing)
                 {
-                    int actionId = GetToolActionId();
+                    int actionId = ContainerEmpty() ? NoActionId : GetToolActionId();
                     if (actionId > 0)
                         _animController.PlayAction(actionId);
                 }
 
                 _toolService.UseCurrentTool(hitPoint.Value);
+            }
+        }
+
+        /// <summary>The active tool's container can't serve a stroke (empty can/bucket/bag, full basket).</summary>
+        private bool ContainerEmpty()
+        {
+            if (_charges == null || _toolService?.CurrentToolId == null) return false;
+            switch (_toolService.CurrentToolId.CurrentValue)
+            {
+                case ToolId.WateringCan: return !_charges.HasWater;
+                case ToolId.Dye: return !_charges.HasDye;
+                case ToolId.Sickle: return !_charges.BasketHasRoom;
+                case ToolId.Placement:
+                    var plant = _placementTool?.SelectedPlant;
+                    return plant != null && plant.Category != WheatFarm.Core.Data.PlantCategory.Tree
+                           && !_charges.CanSow(plant.PlantId);
+                default: return false;
             }
         }
 
@@ -117,7 +138,7 @@ namespace WheatFarm.Player
                 ToolId.WateringCan => 1,  // Water animation
                 ToolId.Planter => 1,      // Same watering motion for planting
                 ToolId.Fertilizer => 1,   // Same watering motion for fertilizing
-                ToolId.Dye => 1,          // Same watering motion for dyeing
+                ToolId.Dye => 7,          // Paint: overhand splash
                 ToolId.Sickle => 3,       // Harvest animation
                 ToolId.Uproot => 4,       // Uproot animation
                 ToolId.Placement => 2,    // Plant/dig animation for buildings
