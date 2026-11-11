@@ -111,9 +111,11 @@ namespace WheatFarm.Player.Charges
             if (_starterSeedsLoaded) return;
             var plant = _placementTool?.SelectedPlant;
             if (plant == null) return;
-            _starterSeedsLoaded = true;
-            if (_charges.Seeds.CurrentValue == 0 && plant.Category != PlantCategory.Tree)
-                _charges.LoadSeeds(plant.PlantId, _charges.Config.SeedMax);
+            // Starting inventory may be granted a few frames after the first selection: keep trying briefly.
+            if (_charges.Seeds.CurrentValue > 0 || Time.timeSinceLevelLoad > 3f) { _starterSeedsLoaded = true; return; }
+            if (plant.Category != PlantCategory.Tree &&
+                _charges.LoadSeeds(plant.PlantId, _charges.Config.SeedMax) > 0)
+                _starterSeedsLoaded = true;
         }
 
         private static int Step(ref float acc, float add)
