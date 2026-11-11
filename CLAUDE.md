@@ -293,9 +293,23 @@ ff6150d fix: GPU instanced crop rendering — proper scale, cropState, TRS matri
 - Unlock contracts must carry NO other unlock reward (rotation hides on ANY owned reward): golden_harvest→bakery, tomato_crate→kitchen, timber_prep→sawmill; 15 contracts total
 - Save: UnlockedBuildings list, wired next to UnlockedDyes
 
+### Tool-Charge Loop (feature/core-loop-prototype)
+- **ToolChargeService** (Player/Charges, FarmScope): water 80, paint 80, seed bag 40, basket 60. Tools draw from their container; watering/painting skip cells that need nothing (no drain while holding over a finished patch).
+- **ToolStationService**: proximity refill, empty→full in 1.4s. **Well** = water + paint (falls back to Warehouse if no Well). **Warehouse** = unload basket → inventory, load seed bag with the *selected* plant's seeds (swaps type).
+- Harvest goes to the basket (HarvestRewardHandler), not inventory, until unloaded. Bonus seeds are handed over when the basket empties.
+- New games get a starter Well (EconomyBuildingsBootstrap). Charges persist in saves (`HasToolCharges`; old saves → full can/bucket, empty bag/basket).
+- UI: ToolChargeMeterPresenter — bar above player for the active tool, pulse on refill, shake/flash/hint on empty, bobbing marker over the station.
+- FeedbackService now Emit()s per cell (budget 90 particles/type/frame); dye strokes emit in the dye color.
+
+### Rendering Performance Notes
+- ChunkCropRenderer compacts per-mesh instance buffers: each crop pass draws only its visible instances (was all 256 cells × every mesh type). Ground pass keeps the full buffer. Shader untouched.
+- AI models (Buildings/Decor/Characters/Plants FBX) have **Generate Mesh LODs** on — sources untouched.
+- GPU frame time (editor, M-series Mac, 1280x720 game view): empty farm 8.6→4.1ms, full field (6.1k crops) 14.2→8.9ms. Remaining crop cost is mostly corn/tomato meshes (835/1732 tris) + shadows.
+
 ### What's Next (polish & content)
-1. **Optimize AI art meshes** — building/decor models (merged from ai-item-pack) are 140k–420k verts each; ~14 objects on screen = ~25M tris. Decimate/LOD before content grows.
-2. **New building types** — second-tier recipe pack done (oil/popcorn/pie/birdhouse); next content step is a new building + chain.
+1. **Tune the tool-charge loop by feel** — capacities/refill speed live in ToolChargeConfig (registered as an instance in FarmScope).
+2. **Crop mesh cost** — corn/tomato meshes are heavy for 6k instances; consider simpler crop meshes or shadow-casting off for crops.
+3. **New building types** — second-tier recipe pack done (oil/popcorn/pie/birdhouse); next content step is a new building + chain.
 
 ### Known Issues
 - DOTween .dll.meta files use PluginImporter v1 (warning on 6000.7; re-save to upgrade).
