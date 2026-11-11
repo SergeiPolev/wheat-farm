@@ -1,5 +1,6 @@
 using UnityEngine;
 using WheatFarm.Farming;
+using WheatFarm.Player.Charges;
 
 namespace WheatFarm.Player.Tools
 {
@@ -11,14 +12,16 @@ namespace WheatFarm.Player.Tools
     {
         private readonly IPlantSystem _plantSystem;
         private readonly IBrushService _brush;
+        private readonly IToolChargeService _charges;
 
         public ToolId Id => ToolId.Sickle;
         public bool RequiresResource => false;
 
-        public SickleTool(IPlantSystem plantSystem, IBrushService brush)
+        public SickleTool(IPlantSystem plantSystem, IBrushService brush, IToolChargeService charges = null)
         {
             _plantSystem = plantSystem;
             _brush = brush;
+            _charges = charges;
         }
 
         public void OnEquip() { }
@@ -26,11 +29,18 @@ namespace WheatFarm.Player.Tools
 
         public void UseAtPosition(Vector3 worldPos)
         {
+            if (_charges != null && !_charges.BasketHasRoom)
+            {
+                _charges.ReportDepleted(ChargeKind.Basket);
+                return;
+            }
             _brush.ApplyAtWorldPos(worldPos, this);
         }
 
+        /// <summary>Harvest goes into the basket (HarvestRewardHandler); a full basket stops the sickle.</summary>
         public bool CanApply(ChunkData chunk, int cellX, int cellY) =>
-            BrushPredicates.Harvestable(chunk.Cells[chunk.CellIndex(cellX, cellY)]);
+            BrushPredicates.Harvestable(chunk.Cells[chunk.CellIndex(cellX, cellY)])
+            && (_charges == null || _charges.BasketHasRoom);
 
         public void Apply(ChunkData chunk, int cellX, int cellY)
         {

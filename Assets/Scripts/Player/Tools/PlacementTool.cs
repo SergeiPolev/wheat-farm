@@ -5,6 +5,7 @@ using WheatFarm.Core.Data;
 using WheatFarm.Farming;
 using WheatFarm.Inventory;
 using WheatFarm.Player.Preview;
+using WheatFarm.Player.Charges;
 
 
 namespace WheatFarm.Player.Tools
@@ -26,6 +27,7 @@ namespace WheatFarm.Player.Tools
         private readonly IPlacementGhostService _ghost;
         private readonly IBrushPreviewService _brushPreview;
         private readonly FarmRenderConfig _config;
+        private readonly IToolChargeService _charges;
 
         private PlantData _selectedPlant;
         private PlaceableData _selectedPlaceable;
@@ -49,8 +51,10 @@ namespace WheatFarm.Player.Tools
             IInventoryService inventory,
             IPlacementGhostService ghost,
             IBrushPreviewService brushPreview,
-            FarmRenderConfig config)
+            FarmRenderConfig config,
+            IToolChargeService charges = null)
         {
+            _charges = charges;
             _plantSystem = plantSystem;
             _treePlacement = treePlacement;
             _brush = brush;
@@ -168,6 +172,18 @@ namespace WheatFarm.Player.Tools
                 return;
             }
 
+            // Seed bag mode: sow from the bag (filled at the Warehouse), not straight from inventory
+            if (_charges != null)
+            {
+                if (!_charges.CanSow(_selectedPlant.PlantId))
+                {
+                    _charges.ReportDepleted(ChargeKind.Seeds);
+                    return;
+                }
+                _brush.ApplyAtWorldPos(worldPos, this);
+                return;
+            }
+
             // Crops and bushes require a purchased seed
             string seedId = "seed_" + _selectedPlant.PlantId;
             if (!_inventory.HasItem(seedId, 1))
@@ -193,7 +209,9 @@ namespace WheatFarm.Player.Tools
             if (_selectedPlaceable != null && _selectedPlaceable.Category == PlaceableCategory.Path)
                 return BrushPredicates.PathPaintable(cell, SelectedPathState);
             if (_selectedPlant != null)
-                return BrushPredicates.Plantable(cell);
+                return BrushPredicates.Plantable(cell)
+                       && (_charges == null || _selectedPlant.Category == PlantCategory.Tree
+                           || _charges.CanSow(_selectedPlant.PlantId));
             // Non-path placeables (buildings) aren't brush-applied
             return false;
         }
@@ -210,6 +228,14 @@ namespace WheatFarm.Player.Tools
 
             // Plant mode
             if (_selectedPlant == null) return;
+
+            if (_charges != null && _selectedPlant.Category != PlantCategory.Tree)
+            {
+                if (!_charges.CanSow(_selectedPlant.PlantId)) return;
+                if (_plantSystem.Plant(chunk.ChunkCoord, cellX, cellY, _selectedPlant))
+                    _charges.TrySow(_selectedPlant.PlantId);
+                return;
+            }
 
             // One seed per planted cell
             string seedId = "seed_" + _selectedPlant.PlantId;

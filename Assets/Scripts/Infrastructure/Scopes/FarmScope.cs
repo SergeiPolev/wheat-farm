@@ -64,6 +64,13 @@ namespace WheatFarm.Infrastructure
             builder.Register<FarmRenderSystem>(Lifetime.Singleton)
                 .As<ITickable, System.IDisposable>();
 
+            // Tool-charge loop: water / paint / seed bag / harvest basket + Well & Warehouse refills
+            builder.RegisterInstance(new WheatFarm.Player.Charges.ToolChargeConfig());
+            builder.Register<WheatFarm.Player.Charges.ToolChargeService>(Lifetime.Singleton)
+                .As<WheatFarm.Player.Charges.IToolChargeService, System.IDisposable>();
+            builder.Register<WheatFarm.Player.Charges.ToolStationService>(Lifetime.Singleton)
+                .As<WheatFarm.Player.Charges.IToolStationService, ITickable, System.IDisposable>();
+
             builder.Register<FarmBootstrap>(Lifetime.Singleton)
                 .As<IStartable>();
 

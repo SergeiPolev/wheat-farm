@@ -294,7 +294,7 @@ namespace WheatFarm.Farming
         }
 
         /// <summary>Punch up a dye color to survive the crop shader's lighting wash.</summary>
-        private static Color VividDye(Color c)
+        public static Color VividDye(Color c)
         {
             Color.RGBToHSV(c, out float h, out float s, out float v);
             if (s < 0.1f) return c; // white / grey reset stays neutral (no tint)
