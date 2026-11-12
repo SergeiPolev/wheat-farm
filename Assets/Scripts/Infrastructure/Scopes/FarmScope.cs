@@ -158,6 +158,15 @@ namespace WheatFarm.Infrastructure
             if (_playerController != null)
             {
                 builder.RegisterComponent(_playerController);
+
+                // Tool prop in the farmer's hand (optional: only when the Player prefab carries the view)
+                var heldTools = _playerController.GetComponentInChildren<WheatFarm.Player.HeldTools.HeldToolView>(true);
+                if (heldTools != null)
+                {
+                    builder.RegisterComponent(heldTools);
+                    builder.Register<WheatFarm.Player.HeldTools.HeldToolPresenter>(Lifetime.Singleton)
+                        .As<ITickable>();
+                }
             }
 
             // Phase 9: UI (MVP) — Views are optional; Presenters only created when View is assigned
